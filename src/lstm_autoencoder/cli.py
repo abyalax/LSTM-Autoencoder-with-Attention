@@ -10,9 +10,12 @@ from lstm_autoencoder.config import DatasetConfig, ProbeConfig
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
 )
+from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
+from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -36,6 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
         "probe-signal",
         help="Check whether the fraud label can be learned from the features.",
     )
+    ablation_parser = subparsers.add_parser(
+        "ablation",
+        help="Train full/no-history/history-only baselines and compare per history bucket.",
+    )
+    _add_dataset_arguments(ablation_parser)
+
+    train_parser = subparsers.add_parser(
+        "train-model",
+        help="Train the hybrid LSTM-Autoencoder with attention on PaySim.",
+    )
+    _add_dataset_arguments(train_parser)
+    train_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
     _add_dataset_arguments(probe_parser)
     probe_parser.add_argument(
         "--max-train-rows",
@@ -104,6 +119,23 @@ def _run_probe_signal(
         SignalProbe(config=config, probe_config=probe_config).run()
     return 0
 
+def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
+    """Execute the full/no-history/history-only ablation baselines."""
+    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    BaselineEvaluator(config=config).run()
+    return 0
+
+
+def _run_train_model(project_root: Path, dataset: str, nrows: int | None, window: int) -> int:
+    """Execute LSTM-Autoencoder training."""
+    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    sequence_config = SequenceConfig(window_length=window)
+    PaySimModelTrainingPipeline(
+        dataset_config=config, sequence_config=sequence_config,
+        model_config=ModelConfig(), train_config=TrainConfig(),
+    ).run()
+    return 0
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Execute the selected CLI command."""
@@ -112,20 +144,34 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     project_root = arguments.project_root.resolve()
 
-    try:
-        if arguments.command == "inspect-data":
-            return _run_inspect_data(
-                project_root, arguments.dataset, arguments.nrows
-            )
-        if arguments.command == "probe-signal":
-            return _run_probe_signal(
-                project_root,
-                arguments.dataset,
-                arguments.nrows,
-                arguments.max_train_rows
-            )
+    commands = {
+        "inspect-data": lambda: _run_inspect_data(
+            project_root, arguments.dataset, arguments.nrows
+        ),
+        "probe-signal": lambda: _run_probe_signal(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.max_train_rows,
+        ),
+        "ablation": lambda: _run_ablation(
+            project_root, arguments.dataset, arguments.nrows
+        ),
+        "train-model": lambda: _run_train_model(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.window,
+        ),
+    }
 
-        parser.error(f"Unknown command: {arguments.command}")
+    try:
+        handler = commands.get(arguments.command)
+
+        if handler is None:
+            parser.error(f"Unknown command: {arguments.command}")
+
+        return handler()
 
     except (OSError, ValueError) as error:
         parser.error(str(error))
