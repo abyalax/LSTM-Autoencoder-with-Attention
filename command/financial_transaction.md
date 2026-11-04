@@ -87,3 +87,5 @@ Optional arguments:
 - `--dataset` : Dataset folder name in `data/raw/` (e.g., `financial_fraud_detection`). Required.
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--max-train-rows` : Maximum number of training rows sampled for the probe model. Defaults to 1,500,000. Lower it to speed up the run. Validation and test rows are never subsampled.
+
+_Last Updated 4 November 2026_

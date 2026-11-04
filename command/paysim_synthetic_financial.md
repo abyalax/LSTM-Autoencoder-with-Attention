@@ -119,3 +119,5 @@ Optional arguments:
 - `--dataset` : Dataset folder name in `data/raw/` (e.g., `paysim_synthetic_financial`). Required.
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
+
+_Last Updated 4 November 2026_
