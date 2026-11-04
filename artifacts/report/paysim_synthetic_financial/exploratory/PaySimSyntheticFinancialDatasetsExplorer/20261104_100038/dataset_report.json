@@ -1,0 +1,212 @@
+{
+  "structure": {
+    "n_rows": 4,
+    "n_cols": 11,
+    "dtypes": {
+      "step": "int64",
+      "type": "string",
+      "amount": "float64",
+      "nameOrig": "string",
+      "oldbalanceOrg": "float64",
+      "newbalanceOrig": "float64",
+      "nameDest": "string",
+      "oldbalanceDest": "float64",
+      "newbalanceDest": "float64",
+      "isFraud": "int8",
+      "isFlaggedFraud": "int64"
+    },
+    "n_missing": {
+      "step": 0,
+      "type": 0,
+      "amount": 0,
+      "nameOrig": 0,
+      "oldbalanceOrg": 0,
+      "newbalanceOrig": 0,
+      "nameDest": 0,
+      "oldbalanceDest": 0,
+      "newbalanceDest": 0,
+      "isFraud": 0,
+      "isFlaggedFraud": 0
+    },
+    "pct_missing": {
+      "step": 0.0,
+      "type": 0.0,
+      "amount": 0.0,
+      "nameOrig": 0.0,
+      "oldbalanceOrg": 0.0,
+      "newbalanceOrig": 0.0,
+      "nameDest": 0.0,
+      "oldbalanceDest": 0.0,
+      "newbalanceDest": 0.0,
+      "isFraud": 0.0,
+      "isFlaggedFraud": 0.0
+    },
+    "n_unique": {
+      "step": 1,
+      "type": 2,
+      "amount": 3,
+      "nameOrig": 4,
+      "oldbalanceOrg": 3,
+      "newbalanceOrig": 1,
+      "nameDest": 4,
+      "oldbalanceDest": 4,
+      "newbalanceDest": 2,
+      "isFraud": 2,
+      "isFlaggedFraud": 1
+    },
+    "duplicate_rows": 0
+  },
+  "target": {
+    "n_rows": 4,
+    "n_fraud": 2,
+    "prevalence": 0.5,
+    "by_type": "          n  n_fraud  fraud_rate\ntype                            \nCASH_OUT  2        1         0.5\nTRANSFER  2        1         0.5"
+  },
+  "is_flagged_fraud": {
+    "n_flagged": 0,
+    "n_flagged_and_fraud": 0,
+    "n_flagged_not_fraud": 0
+  },
+  "account_viability_namedest": {
+    "sender": {
+      "n_accounts": 4,
+      "txn_per_account_median": 1.0,
+      "txn_per_account_p95": 1.0,
+      "pct_accounts_with_window": {
+        "1": 100.0,
+        "3": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      }
+    },
+    "receiver": {
+      "n_accounts": 4,
+      "txn_per_account_median": 1.0,
+      "txn_per_account_p95": 1.0,
+      "pct_accounts_with_window": {
+        "1": 100.0,
+        "3": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      }
+    }
+  },
+  "account_viability_sender": {
+    "n_accounts": 4,
+    "txn_per_account_median": 1.0,
+    "txn_per_account_p95": 1.0,
+    "pct_accounts_with_window": {
+      "1": 100.0,
+      "3": 0.0,
+      "5": 0.0,
+      "10": 0.0
+    }
+  },
+  "fraud_window_coverage": {
+    "n_relevant_rows": 4,
+    "n_relevant_receivers": 4,
+    "receiver_history_median": 1.0,
+    "receiver_history_p95": 1.0,
+    "pct_fraud_with_window": {
+      "1": 100.0,
+      "3": 0.0,
+      "5": 0.0,
+      "10": 0.0
+    }
+  },
+  "fraud_history_strata": {
+    "n_fraud": {
+      "1": 2
+    },
+    "amount_median": {
+      "1": 181.0
+    },
+    "amount_p95": {
+      "1": 181.0
+    },
+    "step_min": {
+      "1": 1
+    },
+    "step_max": {
+      "1": 1
+    },
+    "pct_of_fraud": {
+      "1": 100.0
+    }
+  },
+  "history_bucket_comparison": {
+    "normal": {
+      "1": 2
+    },
+    "fraud": {
+      "1": 2
+    },
+    "pct_normal": {
+      "1": 100.0
+    },
+    "pct_fraud": {
+      "1": 100.0
+    },
+    "lift": {
+      "1": 1.0
+    }
+  },
+  "split": {
+    "train": {
+      "n": 2,
+      "fraud_rate": 1.0
+    },
+    "val": {
+      "n": 0,
+      "fraud_rate": NaN
+    },
+    "test": {
+      "n": 2,
+      "fraud_rate": 0.0
+    }
+  },
+  "signal_with_leakage": [
+    {
+      "feature": "amount",
+      "auc": 0.0,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "oldbalanceOrg",
+      "auc": 0.0,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "oldbalanceDest",
+      "auc": 0.25,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "newbalanceDest",
+      "auc": 0.25,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "step",
+      "auc": 0.5,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "newbalanceOrig",
+      "auc": 0.5,
+      "is_leakage_candidate": true
+    }
+  ],
+  "signal_without_leakage": [
+    {
+      "feature": "amount",
+      "auc": 0.0,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "step",
+      "auc": 0.5,
+      "is_leakage_candidate": false
+    }
+  ]
+}

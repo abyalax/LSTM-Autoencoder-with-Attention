@@ -1,0 +1,245 @@
+{
+  "structure": {
+    "n_rows": 2770409,
+    "n_cols": 11,
+    "dtypes": {
+      "step": "int64",
+      "type": "string",
+      "amount": "float64",
+      "nameOrig": "string",
+      "oldbalanceOrg": "float64",
+      "newbalanceOrig": "float64",
+      "nameDest": "string",
+      "oldbalanceDest": "float64",
+      "newbalanceDest": "float64",
+      "isFraud": "int8",
+      "isFlaggedFraud": "int64"
+    },
+    "n_missing": {
+      "step": 0,
+      "type": 0,
+      "amount": 0,
+      "nameOrig": 0,
+      "oldbalanceOrg": 0,
+      "newbalanceOrig": 0,
+      "nameDest": 0,
+      "oldbalanceDest": 0,
+      "newbalanceDest": 0,
+      "isFraud": 0,
+      "isFlaggedFraud": 0
+    },
+    "pct_missing": {
+      "step": 0.0,
+      "type": 0.0,
+      "amount": 0.0,
+      "nameOrig": 0.0,
+      "oldbalanceOrg": 0.0,
+      "newbalanceOrig": 0.0,
+      "nameDest": 0.0,
+      "oldbalanceDest": 0.0,
+      "newbalanceDest": 0.0,
+      "isFraud": 0.0,
+      "isFlaggedFraud": 0.0
+    },
+    "n_unique": {
+      "step": 743,
+      "type": 2,
+      "amount": 2685805,
+      "nameOrig": 2768630,
+      "oldbalanceOrg": 435702,
+      "newbalanceOrig": 271977,
+      "nameDest": 509565,
+      "oldbalanceDest": 2360852,
+      "newbalanceDest": 2562844,
+      "isFraud": 2,
+      "isFlaggedFraud": 2
+    },
+    "duplicate_rows": 0
+  },
+  "target": {
+    "n_rows": 2770409,
+    "n_fraud": 8213,
+    "prevalence": 0.002964544224336551,
+    "by_type": "                n  n_fraud  fraud_rate\ntype                                  \nCASH_OUT  2237500     4116    0.001840\nTRANSFER   532909     4097    0.007688"
+  },
+  "is_flagged_fraud": {
+    "n_flagged": 16,
+    "n_flagged_and_fraud": 16,
+    "n_flagged_not_fraud": 0
+  },
+  "account_viability_namedest": {
+    "sender": {
+      "n_accounts": 2768630,
+      "txn_per_account_median": 1.0,
+      "txn_per_account_p95": 1.0,
+      "pct_accounts_with_window": {
+        "1": 100.0,
+        "3": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      }
+    },
+    "receiver": {
+      "n_accounts": 509565,
+      "txn_per_account_median": 3.0,
+      "txn_per_account_p95": 17.0,
+      "pct_accounts_with_window": {
+        "1": 100.0,
+        "3": 59.22,
+        "5": 39.63,
+        "10": 17.03
+      }
+    }
+  },
+  "account_viability_sender": {
+    "n_accounts": 2768630,
+    "txn_per_account_median": 1.0,
+    "txn_per_account_p95": 1.0,
+    "pct_accounts_with_window": {
+      "1": 100.0,
+      "3": 0.0,
+      "5": 0.0,
+      "10": 0.0
+    }
+  },
+  "fraud_window_coverage": {
+    "n_relevant_rows": 2770409,
+    "n_relevant_receivers": 509565,
+    "receiver_history_median": 3.0,
+    "receiver_history_p95": 17.0,
+    "pct_fraud_with_window": {
+      "1": 100.0,
+      "3": 51.47,
+      "5": 38.4,
+      "10": 20.41
+    }
+  },
+  "fraud_history_strata": {
+    "n_fraud": {
+      "1": 3102,
+      "2-4": 1957,
+      "5-9": 1478,
+      ">=10": 1676
+    },
+    "amount_median": {
+      "1": 450259.575,
+      "2-4": 434401.5,
+      "5-9": 420616.315,
+      ">=10": 445465.95999999996
+    },
+    "amount_p95": {
+      "1": 9097679.75,
+      "2-4": 7630446.927999991,
+      "5-9": 8277751.551499998,
+      ">=10": 7062191.6225000005
+    },
+    "step_min": {
+      "1": 19,
+      "2-4": 9,
+      "5-9": 1,
+      ">=10": 1
+    },
+    "step_max": {
+      "1": 743,
+      "2-4": 743,
+      "5-9": 742,
+      ">=10": 743
+    },
+    "pct_of_fraud": {
+      "1": 37.77,
+      "2-4": 23.83,
+      "5-9": 18.0,
+      ">=10": 20.41
+    }
+  },
+  "history_bucket_comparison": {
+    "normal": {
+      "1": 125229,
+      "2-4": 499419,
+      "5-9": 758837,
+      ">=10": 1378711
+    },
+    "fraud": {
+      "1": 3102,
+      "2-4": 1957,
+      "5-9": 1478,
+      ">=10": 1676
+    },
+    "pct_normal": {
+      "1": 4.53,
+      "2-4": 18.08,
+      "5-9": 27.47,
+      ">=10": 49.91
+    },
+    "pct_fraud": {
+      "1": 37.77,
+      "2-4": 23.83,
+      "5-9": 18.0,
+      ">=10": 20.41
+    },
+    "lift": {
+      "1": 8.34,
+      "2-4": 1.32,
+      "5-9": 0.66,
+      ">=10": 0.41
+    }
+  },
+  "split": {
+    "train": {
+      "n": 1939286,
+      "fraud_rate": 0.001873369889742926
+    },
+    "val": {
+      "n": 415561,
+      "fraud_rate": 0.001347575927481164
+    },
+    "test": {
+      "n": 415562,
+      "fraud_rate": 0.009673646772322781
+    }
+  },
+  "signal_with_leakage": [
+    {
+      "feature": "oldbalanceOrg",
+      "auc": 0.9276501312650471,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "oldbalanceDest",
+      "auc": 0.21408999085382657,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "newbalanceDest",
+      "auc": 0.27333714415062454,
+      "is_leakage_candidate": true
+    },
+    {
+      "feature": "amount",
+      "auc": 0.6833706014872571,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "step",
+      "auc": 0.6695502818676871,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "newbalanceOrig",
+      "auc": 0.46116246382614395,
+      "is_leakage_candidate": true
+    }
+  ],
+  "signal_without_leakage": [
+    {
+      "feature": "amount",
+      "auc": 0.6833706014872571,
+      "is_leakage_candidate": false
+    },
+    {
+      "feature": "step",
+      "auc": 0.6695502818676871,
+      "is_leakage_candidate": false
+    }
+  ]
+}
