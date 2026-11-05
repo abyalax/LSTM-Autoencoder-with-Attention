@@ -33,6 +33,7 @@ class _PreparedData:
     test_subset: TransactionSequenceDataset
     val_labels: np.ndarray
     test_labels: np.ndarray
+    test_row_index: np.ndarray
     n_train_normal: int
     n_val: int
     n_test: int
@@ -104,6 +105,16 @@ class PaySimModelTrainingPipeline:
         )
         return aggregate
 
+    def prepared_test_data(self) -> tuple[TransactionSequenceDataset, np.ndarray, np.ndarray]:
+        """Return (test windows, test labels, test row positions into `built`).
+
+        For reuse by analyses that score an already-trained checkpoint -- e.g.
+        correlating LSTM-AE reconstruction error with another model's score on
+        the SAME test rows -- without repeating the full prepare+train run.
+        """
+        prepared = self._prepare_data()
+        return prepared.test_subset, prepared.test_labels, prepared.test_row_index
+
     def _prepare_data(self) -> _PreparedData:
         """Load, scale, and window the dataset once; reused across seeds."""
         loader = DatasetLoader(self._dataset_config, self._schema)
@@ -130,6 +141,7 @@ class PaySimModelTrainingPipeline:
             test_subset=TransactionSequenceDataset(batch, splits["test"]),
             val_labels=batch.labels[splits["val"]],
             test_labels=batch.labels[splits["test"]],
+            test_row_index=splits["test"],
             n_train_normal=len(normal_train_idx),
             n_val=len(splits["val"]),
             n_test=len(splits["test"]),

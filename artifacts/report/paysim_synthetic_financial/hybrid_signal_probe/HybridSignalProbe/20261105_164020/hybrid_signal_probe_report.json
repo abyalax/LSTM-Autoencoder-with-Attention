@@ -1,0 +1,16 @@
+{
+  "command": "uv run python -m lstm_autoencoder probe-hybrid-signal --dataset paysim_synthetic_financial --window 1 --bottleneck --seed 42",
+  "hybrid_signal_probe": {
+    "n_test": 415074,
+    "lr_test_auc": 0.8624877540193833,
+    "ae_test_auc": 0.696483558857841,
+    "ae_test_ap": 0.013837853409062892,
+    "pearson_r": 0.014838559636063274,
+    "spearman_r": 0.1504851603267714,
+    "mean_ae_error_by_lr_outcome": {
+      "normal": 0.003796685952693224,
+      "fraud_lr_low": 0.3304651379585266,
+      "fraud_lr_high": 0.007458799052983522
+    }
+  }
+}

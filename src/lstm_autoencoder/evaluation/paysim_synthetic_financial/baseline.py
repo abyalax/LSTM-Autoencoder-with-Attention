@@ -71,6 +71,26 @@ class BaselineEvaluator:
         """Skip target normalization; PaySim's isFraud is already 0/1."""
         return series
 
+    def fit_full_variant(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Fit the full-feature-set LR and return (test_idx, predicted_proba, labels).
+
+        `test_idx` indexes rows of the causal-feature-built frame (same frame
+        and same default random_seed=42 split as PaySimModelTrainingPipeline),
+        so it lines up with that pipeline's `prepared_test_data()` test rows --
+        for reuse by analyses that compare the two models row-for-row.
+        """
+        loaded = self._loader.load()
+        built = CausalFeatureBuilder(self._config, self._schema).build(loaded.frame)
+        labels = built[self._schema.target_column].to_numpy()
+        splits = self._stratified_receiver_split(built)
+
+        encoded = self._encode(built)
+        model, scaler = self._fit(encoded, labels, splits["train"])
+
+        test_idx = splits["test"]
+        predicted = model.predict_proba(scaler.transform(encoded.iloc[test_idx]))[:, 1]
+        return test_idx, predicted, labels[test_idx]
+
     def run(self) -> dict[str, object]:
         """Load data, build ablation variants, train and report each one."""
         loaded = self._loader.load()

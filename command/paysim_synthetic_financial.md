@@ -107,11 +107,16 @@ The pipeline (PaySimModelTrainingPipeline) performs the following operations:
 - **Training**: fits the LSTM-Autoencoder with attention via Adam, with early stopping on validation reconstruction-error AUC
 - **Evaluation**: scores the held-out test set (fraud included) by reconstruction-error AUC and average precision
 
+The model architecture supports three variants via the `--bottleneck` flag:
+- **Default (attention)**: Decoder receives self-attended context over encoder outputs (attends to other real steps, never to itself unless alone)
+- **Bottleneck (`--bottleneck`)**: Decoder receives only the encoder's final hidden state, repeated across the window — a true information bottleneck forcing the model to compress sequence information
+- **Plain**: Decoder receives raw per-step encoder outputs (can copy directly)
+
 The command saves the following artifacts under `artifacts/`:
 
-- `training_report.txt`
-- `training_report.json`
-- `lstm_ae_best.pt` (best checkpoint, under `artifacts/model/paysim_synthetic_financial/`)
+- `training_report.txt` or `multi_seed_training_report.txt` (when `--seeds` is used)
+- `training_report.json` or `multi_seed_training_report.json` (when `--seeds` is used)
+- `lstm_ae_w{window}_{attn|bottleneck|plain}_seed{seed}_best.pt` (best checkpoint, under `artifacts/model/paysim_synthetic_financial/`)
 
 Optional arguments:
 
@@ -119,6 +124,38 @@ Optional arguments:
 - `--dataset` : Dataset folder name in `data/raw/` (e.g., `paysim_synthetic_financial`). Required.
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
-- `--seeds` : Random seeds used for repeated experiments to ensure reproducibility and evaluate result stability. Default is 42.
+- `--seeds` : Comma-separated random seeds for repeated experiments (e.g., `42,123,2026`). When set, trains once per seed on the same data split and reports mean/std across runs to separate genuine improvement from training noise. Default is single run with seed 42.
+- `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window) instead of attention or raw per-step context. Default is False (uses attention).
 
-_Last Updated 4 November 2026_
+### 6. Probe hybrid signal
+
+Correlate a trained LSTM-Autoencoder checkpoint's reconstruction error with the logistic regression baseline's score on the same test rows, before committing to a full hybrid retrain. Low correlation suggests the reconstruction error could add complementary signal to the LR; high correlation suggests it is mostly redundant with what the LR already captures from the same underlying features.
+
+```Shell
+uv run python -m lstm_autoencoder probe-hybrid-signal --dataset paysim_synthetic_financial --window 5 --seed 42
+```
+
+The probe (HybridSignalProbe) performs the following operations:
+
+- **Autoencoder scoring**: Loads the trained checkpoint (no retraining) and scores the test windows by reconstruction error
+- **Baseline scoring**: Fits the LR 'full' baseline fresh and scores the same test rows
+- **Alignment check**: Ensures both pipelines score the SAME test rows (same dataset, nrows, and receiver split seed)
+- **Correlation analysis**: Computes Pearson and Spearman correlation between the two signals
+- **Error stratification**: Reports mean AE reconstruction error split by label and, for fraud rows, by whether LR scored it low (LR's likely blind spot) or high (LR already confident)
+
+The probe saves the following artifacts under `artifacts/`:
+
+- `hybrid_signal_probe_report.txt`
+- `hybrid_signal_probe_report.json`
+
+Optional arguments:
+
+- `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
+- `--dataset` : Dataset folder name in `data/raw/` (e.g., `paysim_synthetic_financial`). Required.
+- `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
+- `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
+- `--seed` : Seed used when the checkpoint was trained (for its filename). Default is 42.
+- `--bottleneck` : Match the checkpoint's architecture: bottleneck decoder instead of attention. Default is False.
+- `--checkpoint` : Path to the trained checkpoint. Defaults to the standard train-model naming convention (`lstm_ae_w{window}_{attn|bottleneck|plain}_seed{seed}_best.pt`).
+
+_Last Updated 5 November 2026_

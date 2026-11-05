@@ -85,8 +85,23 @@ class Trainer:
 
     def score(self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray) -> tuple[float, float]:
         """Return (AUC, average precision) of reconstruction error against labels."""
-        loader = self._make_loader(dataset, shuffle=False)
-        errors = self._predict_errors(model, loader)
+        return self._score_errors(self.predict_errors(model, dataset), labels)
+
+    def predict_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
+        """Run inference and return per-example reconstruction error, in dataset order."""
+        return self._predict_errors(model, self._make_loader(dataset, shuffle=False))
+
+    def build_eval_model(self, checkpoint_path: Path) -> LSTMAutoencoder:
+        """Build the configured architecture and load trained weights, for
+        inference only (no optimizer, no training loop)."""
+        model = self._build_model()
+        model.load_state_dict(torch.load(checkpoint_path, map_location=self._device))
+        model.eval()
+        return model
+
+    @staticmethod
+    def _score_errors(errors: np.ndarray, labels: np.ndarray) -> tuple[float, float]:
+        """AUC and average precision of a reconstruction-error array against labels."""
         return RankingMetrics.roc_auc(errors, labels), RankingMetrics.average_precision(errors, labels)
     
     def _make_loader(self, dataset: Dataset, shuffle: bool) -> DataLoader:

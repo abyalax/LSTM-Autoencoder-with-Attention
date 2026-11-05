@@ -11,6 +11,7 @@ from lstm_autoencoder.data.financial_fraud_detection.exploratory import Financia
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_signal_probe import HybridSignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
 )
@@ -69,6 +70,30 @@ def build_parser() -> argparse.ArgumentParser:
             "mean/std instead of a single run."
         ),
     )
+    hybrid_parser = subparsers.add_parser(
+        "probe-hybrid-signal",
+        help=(
+            "Correlate a trained LSTM-AE checkpoint's reconstruction error with "
+            "the LR baseline's score on the same test rows, before retraining a hybrid model."
+        ),
+    )
+    _add_dataset_arguments(hybrid_parser)
+    hybrid_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
+    hybrid_parser.add_argument(
+        "--bottleneck",
+        action="store_true",
+        help="Match the checkpoint's architecture: bottleneck decoder instead of attention.",
+    )
+    hybrid_parser.add_argument(
+        "--seed", type=int, default=42, help="Seed used when the checkpoint was trained (for its filename)."
+    )
+    hybrid_parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="Path to the trained checkpoint. Defaults to the standard train-model naming convention.",
+    )
+
     _add_dataset_arguments(probe_parser)
     probe_parser.add_argument(
         "--max-train-rows",
@@ -166,6 +191,28 @@ def _run_train_model(
     return 0
 
 
+def _run_probe_hybrid_signal(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    window: int,
+    bottleneck: bool,
+    seed: int,
+    checkpoint: Path | None,
+) -> int:
+    """Execute the LSTM-AE-vs-LR correlation probe."""
+    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    sequence_config = SequenceConfig(window_length=window)
+    HybridSignalProbe(
+        dataset_config=config,
+        sequence_config=sequence_config,
+        model_config=ModelConfig(bottleneck=bottleneck),
+        checkpoint_path=checkpoint,
+        seed=seed,
+    ).run()
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Execute the selected CLI command."""
     parser = build_parser()
@@ -193,6 +240,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.window,
             arguments.bottleneck,
             [int(s) for s in arguments.seeds.split(",")] if arguments.seeds else None,
+        ),
+        "probe-hybrid-signal": lambda: _run_probe_hybrid_signal(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.window,
+            arguments.bottleneck,
+            arguments.seed,
+            arguments.checkpoint,
         ),
     }
 
