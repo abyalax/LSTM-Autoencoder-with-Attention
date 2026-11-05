@@ -11,6 +11,10 @@ from lstm_autoencoder.data.financial_fraud_detection.exploratory import Financia
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier import (
+    HybridClassifierConfig,
+    HybridClassifierEvaluator,
+)
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_signal_probe import HybridSignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
@@ -48,7 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     train_parser = subparsers.add_parser(
         "train-model",
-        help="Train the hybrid LSTM-Autoencoder with attention on PaySim.",
+        help="Train the LSTM-Autoencoder on PaySim with configurable architecture.",
     )
     _add_dataset_arguments(train_parser)
     train_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
@@ -57,7 +61,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Use a single-vector bottleneck decoder (final encoder hidden state, "
-            "repeated across the window) instead of attention/raw per-step context."
+            "repeated across the window). Mutually exclusive with --plain."
+        ),
+    )
+    train_parser.add_argument(
+        "--plain",
+        action="store_true",
+        help=(
+            "Use raw per-step encoder outputs (can copy directly). "
+            "Mutually exclusive with --bottleneck. Default is attention."
         ),
     )
     train_parser.add_argument(
@@ -82,7 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     hybrid_parser.add_argument(
         "--bottleneck",
         action="store_true",
-        help="Match the checkpoint's architecture: bottleneck decoder instead of attention.",
+        help="Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with --plain.",
+    )
+    hybrid_parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with --bottleneck.",
     )
     hybrid_parser.add_argument(
         "--seed", type=int, default=42, help="Seed used when the checkpoint was trained (for its filename)."
@@ -92,6 +109,38 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Path to the trained checkpoint. Defaults to the standard train-model naming convention.",
+    )
+
+    eval_hybrid_parser = subparsers.add_parser(
+        "eval-hybrid",
+        help=(
+            "P3.5: fit LR + LSTM-AE reconstruction error with a leak-free protocol "
+            "(second stage fitted on val, judged on test) and compare against the LR baseline."
+        ),
+    )
+    _add_dataset_arguments(eval_hybrid_parser)
+    eval_hybrid_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
+    eval_hybrid_parser.add_argument(
+        "--bottleneck",
+        action="store_true",
+        help="Match the checkpoints' architecture: bottleneck decoder. Mutually exclusive with --plain.",
+    )
+    eval_hybrid_parser.add_argument(
+        "--plain",
+        action="store_true",
+        help="Match the checkpoints' architecture: raw per-step outputs. Mutually exclusive with --bottleneck.",
+    )
+    eval_hybrid_parser.add_argument(
+        "--seeds",
+        type=str,
+        default="42",
+        help="Comma-separated seeds of already-trained checkpoints (e.g. 42,123,2026).",
+    )
+    eval_hybrid_parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=HybridClassifierConfig.n_bootstrap,
+        help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
     )
 
     _add_dataset_arguments(probe_parser)
@@ -175,14 +224,18 @@ def _run_train_model(
     nrows: int | None,
     window: int,
     bottleneck: bool,
+    plain: bool,
     seeds: list[int] | None,
 ) -> int:
     """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
+    if bottleneck and plain:
+        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     pipeline = PaySimModelTrainingPipeline(
         dataset_config=config, sequence_config=sequence_config,
-        model_config=ModelConfig(bottleneck=bottleneck), train_config=TrainConfig(),
+        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
+        train_config=TrainConfig(),
     )
     if seeds:
         pipeline.run_with_seeds(seeds)
@@ -197,18 +250,44 @@ def _run_probe_hybrid_signal(
     nrows: int | None,
     window: int,
     bottleneck: bool,
+    plain: bool,
     seed: int,
     checkpoint: Path | None,
 ) -> int:
     """Execute the LSTM-AE-vs-LR correlation probe."""
+    if bottleneck and plain:
+        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     HybridSignalProbe(
         dataset_config=config,
         sequence_config=sequence_config,
-        model_config=ModelConfig(bottleneck=bottleneck),
+        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
         checkpoint_path=checkpoint,
         seed=seed,
+    ).run()
+    return 0
+
+
+def _run_eval_hybrid(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    window: int,
+    bottleneck: bool,
+    plain: bool,
+    seeds: list[int],
+    n_bootstrap: int,
+) -> int:
+    """Execute the P3.5 hybrid classifier evaluation on already-trained checkpoints."""
+    if bottleneck and plain:
+        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
+    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    HybridClassifierEvaluator(
+        dataset_config=config,
+        sequence_config=SequenceConfig(window_length=window),
+        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
+        config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap),
     ).run()
     return 0
 
@@ -239,7 +318,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.nrows,
             arguments.window,
             arguments.bottleneck,
+            arguments.plain,
             [int(s) for s in arguments.seeds.split(",")] if arguments.seeds else None,
+        ),
+        "eval-hybrid": lambda: _run_eval_hybrid(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.window,
+            arguments.bottleneck,
+            arguments.plain,
+            [int(seed) for seed in arguments.seeds.split(",")],
+            arguments.bootstrap,
         ),
         "probe-hybrid-signal": lambda: _run_probe_hybrid_signal(
             project_root,
@@ -247,6 +337,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.nrows,
             arguments.window,
             arguments.bottleneck,
+            arguments.plain,
             arguments.seed,
             arguments.checkpoint,
         ),

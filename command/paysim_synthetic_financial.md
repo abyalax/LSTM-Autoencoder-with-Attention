@@ -94,7 +94,7 @@ Optional arguments:
 
 ### 5. Train the LSTM-Autoencoder
 
-Build fixed-length per-receiver transaction windows, train the hybrid LSTM-Autoencoder with attention on normal-only windows, and evaluate reconstruction error as an anomaly score on the held-out test set.
+Build fixed-length per-receiver transaction windows, train the LSTM-Autoencoder on normal-only windows, and evaluate reconstruction error as an anomaly score on the held-out test set.
 
 ```Shell
 uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 5
@@ -104,13 +104,13 @@ The pipeline (PaySimModelTrainingPipeline) performs the following operations:
 
 - **Sequence building**: left-pads each receiver's last `--window` transactions into fixed-length windows (`amount`, `step_diff`, `log_amount_ratio`, `history_length`, `is_new_receiver`)
 - **Receiver-stratified split**: 70/15/15 split by `nameDest`, stratified by per-receiver fraud rate; the training set is further restricted to normal (non-fraud) windows only
-- **Training**: fits the LSTM-Autoencoder with attention via Adam, with early stopping on validation reconstruction-error AUC
+- **Training**: fits the LSTM-Autoencoder via Adam, with early stopping on validation reconstruction-error AUC
 - **Evaluation**: scores the held-out test set (fraud included) by reconstruction-error AUC and average precision
 
-The model architecture supports three variants via the `--bottleneck` flag:
-- **Default (attention)**: Decoder receives self-attended context over encoder outputs (attends to other real steps, never to itself unless alone)
-- **Bottleneck (`--bottleneck`)**: Decoder receives only the encoder's final hidden state, repeated across the window — a true information bottleneck forcing the model to compress sequence information
-- **Plain**: Decoder receives raw per-step encoder outputs (can copy directly)
+The model architecture supports three variants:
+- **Default (attention)**: Decoder receives self-attended context over encoder outputs (attends to other real steps, never to itself unless alone). Use this when neither `--bottleneck` nor `--plain` is specified.
+- **Bottleneck (`--bottleneck`)**: Decoder receives only the encoder's final hidden state, repeated across the window — a true information bottleneck forcing the model to compress sequence information. Mutually exclusive with `--plain`.
+- **Plain (`--plain`)**: Decoder receives raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck`.
 
 The command saves the following artifacts under `artifacts/`:
 
@@ -125,7 +125,8 @@ Optional arguments:
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
 - `--seeds` : Comma-separated random seeds for repeated experiments (e.g., `42,123,2026`). When set, trains once per seed on the same data split and reports mean/std across runs to separate genuine improvement from training noise. Default is single run with seed 42.
-- `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window) instead of attention or raw per-step context. Default is False (uses attention).
+- `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window). Mutually exclusive with `--plain`. Default is False.
+- `--plain` : Use raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck`. Default is False.
 
 ### 6. Probe hybrid signal
 
@@ -155,7 +156,79 @@ Optional arguments:
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
 - `--seed` : Seed used when the checkpoint was trained (for its filename). Default is 42.
-- `--bottleneck` : Match the checkpoint's architecture: bottleneck decoder instead of attention. Default is False.
+- `--bottleneck` : Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain`. Default is False.
+- `--plain` : Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck`. Default is False.
 - `--checkpoint` : Path to the trained checkpoint. Defaults to the standard train-model naming convention (`lstm_ae_w{window}_{attn|bottleneck|plain}_seed{seed}_best.pt`).
+
+### 7. Hybrid Classifier
+
+Evaluate whether LSTM-Autoencoder reconstruction error improves the logistic regression baseline when used as an additional feature, following a leak-free protocol.
+
+```Shell
+uv run python -m lstm_autoencoder eval-hybrid --dataset paysim_synthetic_financial --window 1 --seeds 42,123,2026
+```
+
+The evaluator (HybridClassifierEvaluator) tests whether the AE's reconstruction error adds complementary signal to the LR baseline. The key challenge is avoiding leakage: the AE trained on normal train rows, so their error is in-sample (optimistically low) while val/test error is out-of-sample. A second stage fitted on the same train rows would learn from a feature distribution that test never shows.
+
+**Leak-free protocol:**
+- The AE never saw validation rows, so the second stage is fitted on validation and judged on the untouched test set
+- All variants are scored on the same test rows for fair comparison
+
+**Variants evaluated (all scored on test):**
+- `baseline_train`: LR full, fit on train (the production baseline reference)
+- `lr_val_control`: LR full, fit on val (same fit data as the hybrids)
+- `hybrid_val`: LR full + log(error), fit on val [primary]
+- `stack_val`: LR on [baseline logit, log(error)], fit on val [primary]
+- `hybrid_train_naive`: LR full + log(error), fit on train (LEAKY, diagnostic)
+- `null_hybrid_val` / `null_stack_val`: same as hybrid/stack with error column shuffled (noise floor)
+- `ae_error_only`: reconstruction error alone
+
+**Key comparisons:**
+- `hybrid_val` vs `lr_val_control`: isolates the error feature (same fit data, only error differs)
+- `hybrid_val` vs `baseline_train`: vs. the production baseline
+- `stack_val` vs `baseline_train`: 2-parameter stack on top of baseline score
+
+**Bootstrap analysis:**
+- Paired, class-stratified bootstrap of delta AUC / delta AP for primary comparisons
+- Fraud and normal rows resampled separately to maintain test prevalence
+- All variants scored on the same draw (paired)
+- Reports 95% confidence intervals and proportion of seeds where CI stays above 0
+
+**Interpretation:**
+The error feature helps only if:
+1. `hybrid_val` beats `lr_val_control` (same fit data, only error differs)
+2. The paired CI of its delta AUC stays above 0 (`seeds_auc_ci_above_0 == n_seeds`)
+3. The `null_*` deltas are near 0 (noise floor)
+4. `hybrid_train_naive` minus `baseline_train` shows how much the in-sample (leaky) protocol would have inflated the gain
+
+**Per-bucket analysis:**
+Reports test AUC/AP per receiver history bucket (1, 2-4, 5-9, >=10) for:
+- `baseline_train`, `lr_val_control`, `hybrid_val`, `stack_val`, and `ae_error_only`
+
+**Configuration (HybridClassifierConfig):**
+- `seeds`: Random seeds for repeated experiments (default: (42,))
+- `n_bootstrap`: Number of bootstrap resamples for CI calculation (default: 200)
+- `error_epsilon`: Small constant added before log-transform to guard against exact zeros (default: 1e-8)
+- `random_seed`: Base random seed for reproducibility (default: 42)
+- `fpr_targets`: FPR thresholds for recall-at-FPR metrics (default: (0.01, 0.001))
+
+**Artifacts saved:**
+- `hybrid_classifier_report.txt`
+- `hybrid_classifier_report.json`
+
+**Caveats:**
+- The validation set also picked the AE checkpoint (early stopping on val AUC), which mildly favors the error feature on val
+- Test set is untouched, so reported test numbers remain valid
+- Bootstrap resamples rows, not receivers, so its CIs are somewhat optimistic
+
+**Optional arguments:**
+- `--project-root`: Project root containing data/raw/. Defaults to current working directory.
+- `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
+- `--nrows`: Read only the first N rows. Defaults to all rows.
+- `--window`: Window length for per-receiver sequences. Defaults to 5.
+- `--bottleneck`: Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain`. Default is False.
+- `--plain`: Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck`. Default is False.
+- `--seeds`: Comma-separated seeds for multi-seed evaluation (e.g., 42,123,2026). Checkpoints must have been trained with train-model using these seeds. Default is 42.
+- `--n-bootstrap`: Number of bootstrap resamples for confidence interval calculation. Default is 200.
 
 _Last Updated 5 November 2026_

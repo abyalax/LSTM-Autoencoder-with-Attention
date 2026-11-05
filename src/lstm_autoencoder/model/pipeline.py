@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -37,6 +38,21 @@ class _PreparedData:
     n_train_normal: int
     n_val: int
     n_test: int
+    # Only filled when `_prepare_data(with_train_scoring=True)`: scoring a trained
+    # checkpoint on ALL train rows (normal + fraud) needs its own dataset copy.
+    train_all_subset: TransactionSequenceDataset | None = None
+    train_all_labels: np.ndarray | None = None
+    train_row_index: np.ndarray | None = None
+    val_row_index: np.ndarray | None = None
+
+
+@dataclass(frozen=True)
+class SplitScoringData:
+    """Windows, labels and batch-row positions of one split, for scoring a trained checkpoint."""
+
+    dataset: TransactionSequenceDataset
+    labels: np.ndarray
+    row_index: np.ndarray
 
 
 class PaySimModelTrainingPipeline:
@@ -115,8 +131,32 @@ class PaySimModelTrainingPipeline:
         prepared = self._prepare_data()
         return prepared.test_subset, prepared.test_labels, prepared.test_row_index
 
-    def _prepare_data(self) -> _PreparedData:
-        """Load, scale, and window the dataset once; reused across seeds."""
+    def prepared_scoring_splits(self) -> dict[str, SplitScoringData]:
+        """Return train (ALL rows, normal and fraud), val and test windows with labels and row positions.
+
+        Used to score a trained checkpoint on every split, e.g. to build a
+        reconstruction-error feature for a hybrid classifier. Note the AE only
+        trained on the normal rows of `train`, so its error there is in-sample.
+        """
+        prepared = self._prepare_data(with_train_scoring=True)
+        return {
+            "train": SplitScoringData(prepared.train_all_subset, prepared.train_all_labels, prepared.train_row_index),
+            "val": SplitScoringData(prepared.val_subset, prepared.val_labels, prepared.val_row_index),
+            "test": SplitScoringData(prepared.test_subset, prepared.test_labels, prepared.test_row_index),
+        }
+
+    def checkpoint_path(self, seed: int) -> Path:
+        """Path of the checkpoint `_train_and_evaluate` writes for `seed` with this configuration."""
+        checkpoint_dir = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
+        return checkpoint_dir / self._checkpoint_name(seed)
+
+    def _prepare_data(self, with_train_scoring: bool = False) -> _PreparedData:
+        """Load, scale, and window the dataset once; reused across seeds.
+
+        `with_train_scoring` additionally wraps ALL train rows (not just normal
+        ones) in a dataset and keeps train/val row positions; off by default so
+        training runs do not pay for the extra shared-memory copy.
+        """
         loader = DatasetLoader(self._dataset_config, self._schema)
         loader._parse_timestamps = lambda series: series
         loader._normalize_target = lambda series: series
@@ -145,6 +185,10 @@ class PaySimModelTrainingPipeline:
             n_train_normal=len(normal_train_idx),
             n_val=len(splits["val"]),
             n_test=len(splits["test"]),
+            train_all_subset=TransactionSequenceDataset(batch, splits["train"]) if with_train_scoring else None,
+            train_all_labels=batch.labels[splits["train"]] if with_train_scoring else None,
+            train_row_index=splits["train"] if with_train_scoring else None,
+            val_row_index=splits["val"] if with_train_scoring else None,
         )
 
     def _train_and_evaluate(

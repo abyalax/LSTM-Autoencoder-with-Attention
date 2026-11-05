@@ -1,0 +1,59 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 3 --plain --seeds 42 --nrows 1000",
+  "multi_seed_training": {
+    "runs": [
+      {
+        "window_length": 3,
+        "n_train_normal": 218,
+        "n_val": 53,
+        "n_test": 52,
+        "best_epoch": 1,
+        "best_val_auc": 0.5192307692307693,
+        "test_auc": 0.96,
+        "test_ap": 0.6666666666666666,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7776004076004028,
+            "val_auc": 0.5192307692307693
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.7751663327217102,
+            "val_auc": 0.5192307692307693
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.7730032205581665,
+            "val_auc": 0.5
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.7708895802497864,
+            "val_auc": 0.46153846153846156
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.7687697410583496,
+            "val_auc": 0.46153846153846156
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.7666411399841309,
+            "val_auc": 0.46153846153846156
+          }
+        ],
+        "seed": 42
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 1,
+      "val_auc_mean": 0.5192307692307693,
+      "val_auc_std": 0.0,
+      "test_auc_mean": 0.96,
+      "test_auc_std": 0.0,
+      "test_ap_mean": 0.6666666666666666,
+      "test_ap_std": 0.0
+    }
+  }
+}

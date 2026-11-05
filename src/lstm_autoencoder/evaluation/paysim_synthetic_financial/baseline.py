@@ -35,6 +35,16 @@ class AblationVariant:
     columns: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class FullFeatureData:
+    """Leakage-free `full` LR feature matrix with aligned labels, buckets and receiver split."""
+
+    features: pd.DataFrame
+    labels: np.ndarray
+    buckets: np.ndarray
+    splits: dict[str, np.ndarray]
+
+
 class BaselineEvaluator:
     """Train logistic-regression ablations and report AUC/AP overall and per history bucket.
 
@@ -90,6 +100,22 @@ class BaselineEvaluator:
         test_idx = splits["test"]
         predicted = model.predict_proba(scaler.transform(encoded.iloc[test_idx]))[:, 1]
         return test_idx, predicted, labels[test_idx]
+
+    def prepare_full_features(self) -> FullFeatureData:
+        """Return the `full` LR feature matrix with labels, buckets and the receiver split.
+
+        Same frame, encoding and random_seed=42 split as `fit_full_variant`, so
+        row positions line up with PaySimModelTrainingPipeline's batch rows.
+        Exposed so hybrid analyses can refit LR on other splits or with extra columns.
+        """
+        loaded = self._loader.load()
+        built = CausalFeatureBuilder(self._config, self._schema).build(loaded.frame)
+        return FullFeatureData(
+            features=self._encode(built),
+            labels=built[self._schema.target_column].to_numpy(),
+            buckets=built[HISTORY_BUCKET].to_numpy(),
+            splits=self._stratified_receiver_split(built),
+        )
 
     def run(self) -> dict[str, object]:
         """Load data, build ablation variants, train and report each one."""

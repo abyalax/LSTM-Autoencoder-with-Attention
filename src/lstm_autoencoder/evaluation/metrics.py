@@ -59,6 +59,22 @@ class RankingMetrics:
         return float(np.sum(recall_steps * precision))
 
     @staticmethod
+    def recall_at_fpr(scores: np.ndarray, labels: np.ndarray, fpr: float) -> float:
+        """Return recall at the threshold that lets through `fpr` of the negatives.
+
+        The threshold is the (1 - fpr) quantile of negative scores and positives
+        must score strictly above it, so ties never push the real FPR above
+        `fpr`. Returns NaN when a class is missing.
+        """
+        values, truth = RankingMetrics._finite_pairs(scores, labels)
+        negatives = values[truth == 0]
+        positives = values[truth == 1]
+        if len(negatives) == 0 or len(positives) == 0:
+            return float("nan")
+        threshold = np.quantile(negatives, 1.0 - fpr)
+        return float((positives > threshold).mean())
+
+    @staticmethod
     def _finite_pairs(
         scores: np.ndarray, labels: np.ndarray
     ) -> tuple[np.ndarray, np.ndarray]:
