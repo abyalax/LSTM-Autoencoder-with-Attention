@@ -107,6 +107,7 @@ class Trainer:
             hidden_dim=self._model_config.hidden_dim,
             num_layers=self._model_config.num_layers,
             attention=self._model_config.attention,
+            bottleneck=self._model_config.bottleneck,
             dropout=self._model_config.dropout,
         ).to(self._device)
 

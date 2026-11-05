@@ -28,6 +28,7 @@ class ModelConfig:
     hidden_dim: int = 64
     num_layers: int = 2
     attention: bool = True
+    bottleneck: bool = False
     dropout: float = 0.1
 
 

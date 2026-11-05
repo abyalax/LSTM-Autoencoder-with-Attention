@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import shlex
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -47,6 +51,26 @@ class ReportWritter:
         self._domain_data = domain_data
         self._pipeline = pipeline
         self._class_name = class_name
+        self._command = self._get_command_line()
+
+    def _get_command_line(self) -> str:
+        """Get the command captured by the launcher or Python invocation.
+
+        ``LSTM_AUTOENCODER_COMMAND`` is set by the shell launcher when the
+        original shell command is available. Otherwise, fall back to Python's
+        original invocation arguments without fabricating a package-manager
+        prefix such as ``uv run``.
+        """
+        captured_command = os.getenv("LSTM_AUTOENCODER_COMMAND")
+        if captured_command:
+            return captured_command
+
+        command = getattr(sys, "orig_argv", None) or sys.argv
+
+        if sys.platform == "win32":
+            return subprocess.list2cmdline(command)
+
+        return shlex.join(command)
 
     @property
     def reporter(self) -> ConsoleReporter:
@@ -166,9 +190,12 @@ class ReportWritter:
         text_path = report_dir / text_filename
         self._reporter.save_transcript(text_path)
 
+        # Add command to summary before saving JSON
+        summary_with_command = {"command": self._command, **self._summary}
+
         # Save JSON summary
         json_path = report_dir / json_filename
-        JsonReportWriter().write(self._summary, json_path)
+        JsonReportWriter().write(summary_with_command, json_path)
 
         self._reporter.display_text(f"\nResult is saved on: {report_dir}")
 

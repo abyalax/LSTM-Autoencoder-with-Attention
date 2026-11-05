@@ -86,20 +86,41 @@ class LSTMAutoencoder(nn.Module):
         hidden_dim: int,
         num_layers: int = 1,
         attention: bool = True,
+        bottleneck: bool = False,
         dropout: float = 0.1,
     ) -> None:
-        """Create the encoder, optional attention, and decoder."""
+        """Create the encoder, decoder, and the context strategy between them.
+
+        `bottleneck=True` takes priority over `attention`: the decoder is fed
+        only the encoder's final hidden state, repeated across the window --
+        a real information bottleneck. Both `attention=True` and `attention=False`
+        instead give the decoder a per-step context it can copy from (self-attend
+        or raw per-step outputs), so neither is a genuine bottleneck on its own.
+        """
         super().__init__()
-        self.attention_enabled = attention
+        self.attention_enabled = attention and not bottleneck
+        self.bottleneck_enabled = bottleneck
         self.encoder = Encoder(input_dim, hidden_dim, num_layers, dropout)
-        self.attention = SelfAttention(hidden_dim) if attention else None
+        self.attention = SelfAttention(hidden_dim) if self.attention_enabled else None
         self.decoder = Decoder(hidden_dim, input_dim, num_layers, dropout)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Return the reconstructed sequence, same shape as `x`."""
-        encoded, _ = self.encoder(x)
-        context = self.attention(encoded, mask) if self.attention_enabled else encoded
+        encoded, (hidden, _) = self.encoder(x)
+        if self.bottleneck_enabled:
+            context = self._repeat_last_hidden(hidden, window=x.size(1))
+        elif self.attention_enabled:
+            context = self.attention(encoded, mask)
+        else:
+            context = encoded
         return self.decoder(context)
+
+    @staticmethod
+    def _repeat_last_hidden(hidden: torch.Tensor, window: int) -> torch.Tensor:
+        """Repeat the encoder's final-layer hidden state across all `window`
+        decode steps. This is the single-vector bottleneck a classic
+        seq2seq autoencoder uses, so the decoder cannot copy per-step input."""
+        return hidden[-1].unsqueeze(1).repeat(1, window, 1)
 
     @staticmethod
     def reconstruction_error(

@@ -79,11 +79,7 @@ class PaySimModelTrainingPipeline:
         prepared = self._prepare_data()
         per_seed: list[dict[str, object]] = []
         for seed in seeds:
-            seed_train_config = replace(
-                self._train_config,
-                seed=seed,
-                checkpoint_name=f"lstm_ae_w{self._sequence_config.window_length}_seed{seed}_best.pt",
-            )
+            seed_train_config = replace(self._train_config, seed=seed)
             summary = self._train_and_evaluate(prepared, seed_train_config)
             summary["seed"] = seed
             per_seed.append(summary)
@@ -144,6 +140,7 @@ class PaySimModelTrainingPipeline:
     ) -> dict[str, object]:
         """Fit one model on `prepared` with `train_config` and score it on test."""
         checkpoint_dir = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
+        train_config = replace(train_config, checkpoint_name=self._checkpoint_name(train_config.seed))
         trainer = Trainer(self._model_config, train_config, checkpoint_dir)
         model, result = trainer.fit(prepared.train_subset, prepared.val_subset, prepared.val_labels)
         test_auc, test_ap = trainer.score(model, prepared.test_subset, prepared.test_labels)
@@ -172,6 +169,17 @@ class PaySimModelTrainingPipeline:
             text_filename="training_report.txt",
             json_filename="training_report.json",
         )
+
+    def _checkpoint_name(self, seed: int) -> str:
+        """Checkpoint filename tagged by window, architecture variant, and seed
+        so different configurations never overwrite each other's checkpoint."""
+        return f"lstm_ae_w{self._sequence_config.window_length}_{self._architecture_tag()}_seed{seed}_best.pt"
+
+    def _architecture_tag(self) -> str:
+        """Short label for the current model variant, used in checkpoint names."""
+        if self._model_config.bottleneck:
+            return "bottleneck"
+        return "attn" if self._model_config.attention else "plain"
 
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:

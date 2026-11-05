@@ -52,6 +52,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_dataset_arguments(train_parser)
     train_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
     train_parser.add_argument(
+        "--bottleneck",
+        action="store_true",
+        help=(
+            "Use a single-vector bottleneck decoder (final encoder hidden state, "
+            "repeated across the window) instead of attention/raw per-step context."
+        ),
+    )
+    train_parser.add_argument(
         "--seeds",
         type=str,
         default=None,
@@ -137,14 +145,19 @@ def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
 
 
 def _run_train_model(
-    project_root: Path, dataset: str, nrows: int | None, window: int, seeds: list[int] | None
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    window: int,
+    bottleneck: bool,
+    seeds: list[int] | None,
 ) -> int:
     """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     pipeline = PaySimModelTrainingPipeline(
         dataset_config=config, sequence_config=sequence_config,
-        model_config=ModelConfig(), train_config=TrainConfig(),
+        model_config=ModelConfig(bottleneck=bottleneck), train_config=TrainConfig(),
     )
     if seeds:
         pipeline.run_with_seeds(seeds)
@@ -178,6 +191,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.dataset,
             arguments.nrows,
             arguments.window,
+            arguments.bottleneck,
             [int(s) for s in arguments.seeds.split(",")] if arguments.seeds else None,
         ),
     }
