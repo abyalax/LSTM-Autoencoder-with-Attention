@@ -51,6 +51,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_dataset_arguments(train_parser)
     train_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
+    train_parser.add_argument(
+        "--seeds",
+        type=str,
+        default=None,
+        help=(
+            "Comma-separated seeds to repeat training with (e.g. 42,123,2026). "
+            "When set, trains once per seed on the same data split and reports "
+            "mean/std instead of a single run."
+        ),
+    )
     _add_dataset_arguments(probe_parser)
     probe_parser.add_argument(
         "--max-train-rows",
@@ -126,14 +136,20 @@ def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
     return 0
 
 
-def _run_train_model(project_root: Path, dataset: str, nrows: int | None, window: int) -> int:
-    """Execute LSTM-Autoencoder training."""
+def _run_train_model(
+    project_root: Path, dataset: str, nrows: int | None, window: int, seeds: list[int] | None
+) -> int:
+    """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
-    PaySimModelTrainingPipeline(
+    pipeline = PaySimModelTrainingPipeline(
         dataset_config=config, sequence_config=sequence_config,
         model_config=ModelConfig(), train_config=TrainConfig(),
-    ).run()
+    )
+    if seeds:
+        pipeline.run_with_seeds(seeds)
+    else:
+        pipeline.run()
     return 0
 
 
@@ -162,6 +178,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.dataset,
             arguments.nrows,
             arguments.window,
+            [int(s) for s in arguments.seeds.split(",")] if arguments.seeds else None,
         ),
     }
 

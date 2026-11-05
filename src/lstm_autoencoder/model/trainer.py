@@ -42,6 +42,9 @@ class Trainer:
         val_labels: np.ndarray
     ) -> tuple[LSTMAutoencoder, TrainResult]:
         """Train on normal-only windows; validate using reconstruction-error AUC."""
+        torch.manual_seed(self._train_config.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self._train_config.seed)
         model = self._build_model()
         optimizer = torch.optim.Adam(
             model.parameters(),

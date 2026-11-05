@@ -43,3 +43,4 @@ class TrainConfig:
     patience: int = 5
     device: str = "cuda"
     checkpoint_name: str = "lstm_ae_best.pt"
+    seed: int = 42

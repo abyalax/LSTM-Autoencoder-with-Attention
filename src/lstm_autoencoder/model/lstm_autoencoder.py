@@ -35,17 +35,24 @@ class SelfAttention(nn.Module):
         self.scale = hidden_dim ** 0.5
 
     def forward(self, encoded: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """Return an attended context sequence, with padded steps masked out."""
-        query = self.query(encoded)
-        key = self.key(encoded)
-        value = self.value(encoded)
+       """Attend each step to the OTHER real steps in its window, never to
+       itself, unless it is the only real step (then fall back to self)."""
+       query = self.query(encoded)
+       key = self.key(encoded)
+       value = self.value(encoded)
 
-        scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale
-        padding = (mask == 0).unsqueeze(1)
-        scores = scores.masked_fill(padding, float("-inf"))
-        weights = torch.softmax(scores, dim=-1)
-        weights = torch.nan_to_num(weights)
-        return torch.matmul(weights, value)
+       scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale
+       padding = (mask == 0).unsqueeze(1)
+
+       window = encoded.size(1)
+       diagonal = torch.eye(window, dtype=torch.bool, device=encoded.device).unsqueeze(0)
+       real_count = mask.sum(dim=1, keepdim=True)  # (batch, 1)
+       exclude_self = diagonal & (real_count > 1).unsqueeze(-1)
+
+       scores = scores.masked_fill(padding | exclude_self, float("-inf"))
+       weights = torch.softmax(scores, dim=-1)
+       weights = torch.nan_to_num(weights)
+       return torch.matmul(weights, value)
 
 
 class Decoder(nn.Module):
