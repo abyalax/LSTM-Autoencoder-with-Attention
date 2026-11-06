@@ -30,6 +30,6 @@ uv run ruff format .
 ```
 
 ## Usage
-See on COMMAND/
+See on command/
 
 _Last Updated 4 November 2026_
