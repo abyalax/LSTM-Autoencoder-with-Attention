@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from lstm_autoencoder.config import DatasetConfig, ProbeConfig
+from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.financial_fraud_detection.causal_features import (
     ACCOUNT_CODE,
     CausalFeatureBuilder,
@@ -32,18 +33,19 @@ class SignalProbe(BaseSignalProbe):
 
     def __init__(
         self,
-        config: DatasetConfig,
+        dataset_config: DatasetConfig,
         probe_config: ProbeConfig | None = None,
+        split_config: SplitConfig | None = None,
         loader: DatasetLoader | None = None,
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create a probe; optional collaborators default to standard ones."""
-        super().__init__(config, probe_config, loader, reporter)
+        super().__init__(dataset_config, probe_config, split_config, loader, reporter)
         self._schema = FinancialFraudDetectionSchema()
         if self._loader is None:
             from lstm_autoencoder.data.loader import DatasetLoader
-            self._loader = DatasetLoader(config, self._schema)
-        self._builder = CausalFeatureBuilder(config, self._schema)
+            self._loader = DatasetLoader(dataset_config, self._schema)
+        self._builder = CausalFeatureBuilder(dataset_config, self._schema)
 
     def _get_schema(self) -> FinancialFraudDetectionSchema:
         """Return the schema for the dataset."""

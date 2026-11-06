@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from lstm_autoencoder.config import DatasetConfig, ProbeConfig
+from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.metrics import (
     UnivariateSignalChecker,
@@ -24,17 +25,18 @@ class PaySimSignalProbe(BaseSignalProbe):
 
     def __init__(
         self,
-        config: DatasetConfig,
+        dataset_config: DatasetConfig,
         probe_config: ProbeConfig | None = None,
+        split_config: SplitConfig | None = None,
         loader: "DatasetLoader | None" = None,  # noqa: UP037
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create a probe; optional collaborators default to standard ones."""
-        super().__init__(config, probe_config, loader, reporter)
+        super().__init__(dataset_config, probe_config, split_config, loader, reporter)
         self._schema = PaySimSchema()
         if self._loader is None:
             from lstm_autoencoder.data.loader import DatasetLoader
-            self._loader = DatasetLoader(config, self._schema)
+            self._loader = DatasetLoader(dataset_config, self._schema)
         # Override loader methods for PaySim-specific handling
         self._loader._parse_timestamps = self._skip_timestamp_parsing
         self._loader._normalize_target = self._skip_target_normalization

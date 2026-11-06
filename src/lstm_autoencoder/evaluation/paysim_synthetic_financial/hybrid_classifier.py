@@ -29,6 +29,7 @@ HYBRID_TRAIN_NAIVE = "hybrid_train_naive"
 NULL_HYBRID_VAL = "null_hybrid_val"
 NULL_STACK_VAL = "null_stack_val"
 AE_ONLY = "ae_error_only"
+HYBRID_VAL_NORM = "hybrid_val_norm"  # Normalized error per history bucket
 
 # (candidate, reference) pairs. Bootstrap CIs are computed for these.
 BOOTSTRAP_COMPARISONS: tuple[tuple[str, str], ...] = (
@@ -140,6 +141,7 @@ class HybridClassifierEvaluator:
         base = data.features.to_numpy(dtype="float64")
         x = {name: base[index] for name, index in data.splits.items()}
         y = {name: data.labels[index] for name, index in data.splits.items()}
+        buckets = {name: data.buckets[index] for name, index in data.splits.items()}
         buckets_test = data.buckets[data.splits["test"]]
 
         baseline_fit = self._fit(x["train"], y["train"])
@@ -151,7 +153,7 @@ class HybridClassifierEvaluator:
         )
 
         self._reporter.display_section(
-            f"HYBRID CLASSIFIER (W={self._sequence_config.window_length}, "
+            f"Hybrid Classifier (W={self._sequence_config.window_length}, "
             f"{self._architecture_tag()}, seeds={list(self._config.seeds)})"
         )
         self._reporter.display_text(
@@ -162,7 +164,7 @@ class HybridClassifierEvaluator:
         per_seed: list[dict[str, object]] = []
         for seed in self._config.seeds:
             errors = self._score_errors(pipeline, scoring, seed)
-            result = self._run_seed(seed, x, y, buckets_test, errors, shared)
+            result = self._run_seed(seed, x, y, buckets, buckets_test, errors, shared)
             per_seed.append(result)
             self._report_seed(result)
 
@@ -209,16 +211,19 @@ class HybridClassifierEvaluator:
         seed: int,
         x: dict[str, np.ndarray],
         y: dict[str, np.ndarray],
+        buckets: dict[str, np.ndarray],
         buckets_test: np.ndarray,
         errors: dict[str, np.ndarray],
         shared: _SeedIndependentScores,
     ) -> dict[str, object]:
         """Fit and score every variant for one AE seed."""
         feature = {name: self._error_feature(values) for name, values in errors.items()}
+        feature_norm = {name: self._error_feature(values, buckets[name]) for name, values in errors.items()}
         rng = np.random.default_rng(self._config.random_seed + seed)
         shuffled = {name: rng.permutation(feature[name]) for name in ("val", "test")}
 
         hybrid_fit = self._fit(np.column_stack([x["val"], feature["val"]]), y["val"])
+        hybrid_norm_fit = self._fit(np.column_stack([x["val"], feature_norm["val"]]), y["val"])
         stack_fit = self._fit(np.column_stack([shared.baseline_val, feature["val"]]), y["val"])
         naive_fit = self._fit(np.column_stack([x["train"], feature["train"]]), y["train"])
         null_hybrid_fit = self._fit(np.column_stack([x["val"], shuffled["val"]]), y["val"])
@@ -228,6 +233,7 @@ class HybridClassifierEvaluator:
             BASELINE: shared.baseline_test,
             LR_VAL_CONTROL: shared.control_test,
             HYBRID_VAL: hybrid_fit.score(np.column_stack([x["test"], feature["test"]])),
+            HYBRID_VAL_NORM: hybrid_norm_fit.score(np.column_stack([x["test"], feature_norm["test"]])),
             STACK_VAL: stack_fit.score(np.column_stack([shared.baseline_test, feature["test"]])),
             HYBRID_TRAIN_NAIVE: naive_fit.score(np.column_stack([x["test"], feature["test"]])),
             NULL_HYBRID_VAL: null_hybrid_fit.score(np.column_stack([x["test"], shuffled["test"]])),
@@ -248,6 +254,7 @@ class HybridClassifierEvaluator:
             "bootstrap": bootstrap,
             "error_coefficients": {
                 HYBRID_VAL: hybrid_fit.last_coefficient,
+                HYBRID_VAL_NORM: hybrid_norm_fit.last_coefficient,
                 STACK_VAL: stack_fit.last_coefficient,
                 HYBRID_TRAIN_NAIVE: naive_fit.last_coefficient,
             },
@@ -261,9 +268,33 @@ class HybridClassifierEvaluator:
         model.fit(scaler.fit_transform(x), y)
         return _FittedLogistic(scaler, model)
 
-    def _error_feature(self, errors: np.ndarray) -> np.ndarray:
-        """Log-transform the heavy-tailed reconstruction error (epsilon guards exact zeros)."""
-        return np.log(np.asarray(errors, dtype="float64") + self._config.error_epsilon)
+    def _error_feature(self, errors: np.ndarray, buckets: np.ndarray | None = None) -> np.ndarray:
+        """Log-transform the heavy-tailed reconstruction error (epsilon guards exact zeros).
+
+        If buckets are provided, normalizes error per history_bucket before log transform.
+        This tests the hypothesis that AE error mimics non-linear history effects.
+        """
+        error_array = np.asarray(errors, dtype="float64")
+        if buckets is not None:
+            # Normalize error per history bucket
+            normalized = error_array.copy()
+            for label in HISTORY_STRATA_LABELS:
+                mask = buckets == label
+                if mask.sum() > 0:
+                    bucket_errors = error_array[mask]
+                    bucket_mean = bucket_errors.mean()
+                    bucket_std = bucket_errors.std()
+                    if bucket_std > 1e-8:  # Avoid division by very small numbers
+                        normalized[mask] = (bucket_errors - bucket_mean) / bucket_std
+                    else:
+                        # If std is too small, use raw error minus mean
+                        normalized[mask] = bucket_errors - bucket_mean
+            error_array = normalized
+        # Handle any NaN or inf values before log transform
+        error_array = np.nan_to_num(error_array, nan=0.0, posinf=0.0, neginf=0.0)
+        # Ensure all values are non-negative before log transform
+        error_array = np.maximum(error_array, 0.0)
+        return np.log(error_array + self._config.error_epsilon)
 
     def _metrics(self, scores: np.ndarray, labels: np.ndarray) -> dict[str, float]:
         """AUC, AP and recall at the configured FPR targets."""
@@ -325,7 +356,7 @@ class HybridClassifierEvaluator:
         self, scores: dict[str, np.ndarray], labels: np.ndarray, buckets: np.ndarray
     ) -> dict[str, dict[str, dict[str, float]]]:
         """Test AUC/AP per receiver history bucket for the main variants and the AE error alone."""
-        wanted = (BASELINE, LR_VAL_CONTROL, HYBRID_VAL, STACK_VAL, AE_ONLY)
+        wanted = (BASELINE, LR_VAL_CONTROL, HYBRID_VAL, HYBRID_VAL_NORM, STACK_VAL, AE_ONLY)
         out: dict[str, dict[str, dict[str, float]]] = {}
         for name in wanted:
             rows: dict[str, dict[str, float]] = {}

@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.data.financial_fraud_detection.causal_features import CausalFeatureBuilder
 from lstm_autoencoder.data.financial_fraud_detection.schema import FinancialFraudDetectionSchema
 from lstm_autoencoder.data.financial_fraud_detection.sequence_profile import SequenceProfiler
@@ -30,18 +32,22 @@ class FinancialFraudDetectionExplorer:
 
     def __init__(
         self,
-        config: DatasetConfig,
+        dataset_config: DatasetConfig,
+        exploratory_config: ExploratoryConfig | None = None,
+        split_config: SplitConfig | None = None,
         loader: DatasetLoader | None = None,
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create an explorer; the loader and reporter default to standard ones."""
-        self._config = config
+        self._dataset_config = dataset_config
+        self._exploratory_config = exploratory_config or ExploratoryConfig()
+        self._split_config = split_config or SplitConfig()
         self._schema = FinancialFraudDetectionSchema()
-        self._loader = loader or DatasetLoader(config, self._schema)
-        self._reporter = reporter or ReportWritter(config)
+        self._loader = loader or DatasetLoader(dataset_config, self._schema)
+        self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
-        self._builder = CausalFeatureBuilder(config, self._schema)
-        self._profiler = SequenceProfiler(config, self._schema, self._reporter.reporter)
+        self._builder = CausalFeatureBuilder(dataset_config, self._schema)
+        self._profiler = SequenceProfiler(dataset_config, self._exploratory_config, self._schema, self._reporter.reporter)
 
     def run(self) -> dict[str, object]:
         """Execute every check, save the reports, and return the numeric summary."""
@@ -138,10 +144,10 @@ class FinancialFraudDetectionExplorer:
         reporter.display_section(f"2. TARGET ({self._schema.target_column})")
         reporter.display_text(
             f"Fraud: {n_fraud:,} dari {len(frame):,}  ->  {rate * 100:.3f}%   "
-            f"(harapan ~{self._config.expected_fraud_rate * 100:.1f}%)"
+            f"(harapan ~{self._exploratory_config.expected_fraud_rate * 100:.1f}%)"
         )
         reporter.display_text(f"AUPRC acak (tanpa kemampuan) = prevalensi = {rate:.4f}")
-        if abs(rate - self._config.expected_fraud_rate) > FRAUD_RATE_TOLERANCE:
+        if abs(rate - self._exploratory_config.expected_fraud_rate) > FRAUD_RATE_TOLERANCE:
             reporter.display_warning("Rasio fraud menyimpang dari harapan.")
         reporter.display_text(
             "  Catatan: prevalensi fraud dunia nyata umumnya <1%. Pertimbangkan "
@@ -320,8 +326,8 @@ class FinancialFraudDetectionExplorer:
         reporter.display_section("7. SIMULASI SPLIT KRONOLOGIS")
         ordered = frame.sort_values(self._schema.timestamp_column, kind="stable")
         n_rows = len(ordered)
-        first = int(self._config.train_fraction * n_rows)
-        second = int((self._config.train_fraction + self._config.validation_fraction) * n_rows)
+        first = int(self._split_config.train_fraction * n_rows)
+        second = int((self._split_config.train_fraction + self._split_config.validation_fraction) * n_rows)
         parts = {
             "train": ordered.iloc[:first],
             "val": ordered.iloc[first:second],

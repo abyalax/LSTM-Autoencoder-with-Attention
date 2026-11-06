@@ -6,7 +6,9 @@ import argparse
 from collections.abc import Sequence
 from pathlib import Path
 
-from lstm_autoencoder.config import DatasetConfig, ProbeConfig
+from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
@@ -178,11 +180,13 @@ def _run_inspect_data(
     project_root: Path, dataset: str, nrows: int | None
 ) -> int:
     """Execute dataset exploration."""
-    config = DatasetConfig(
+    dataset_config = DatasetConfig(
         project_root=project_root,
         dataset_name=dataset,
         row_limit=nrows,
     )
+    exploratory_config = ExploratoryConfig()
+    split_config = SplitConfig()
     explorers = {
         "financial_fraud_detection": FinancialFraudDetectionExplorer,
         "paysim_synthetic_financial": PaySimSyntheticFinancialDatasetsExplorer,
@@ -190,7 +194,11 @@ def _run_inspect_data(
     explorer = explorers.get(dataset.lower())
     if explorer is None:
         return 0
-    explorer(config=config).run()
+    explorer(
+        dataset_config=dataset_config,
+        exploratory_config=exploratory_config,
+        split_config=split_config,
+    ).run()
     return 0
 
 
@@ -198,23 +206,33 @@ def _run_probe_signal(
     project_root: Path, dataset: str, nrows: int | None, max_train_rows: int
 ) -> int:
     """Execute the signal learnability probe."""
-    config = DatasetConfig(
+    dataset_config = DatasetConfig(
         project_root=project_root,
         dataset_name=dataset,
         row_limit=nrows,
     )
     probe_config = ProbeConfig(max_train_rows=max_train_rows)
+    split_config = SplitConfig()
     # Use PaySim probe for PaySim dataset, otherwise use the default financial fraud detection probe
     if "paysim" in dataset.lower():
-        PaySimSignalProbe(config=config, probe_config=probe_config).run()
+        PaySimSignalProbe(
+            dataset_config=dataset_config,
+            probe_config=probe_config,
+            split_config=split_config,
+        ).run()
     else:
-        SignalProbe(config=config, probe_config=probe_config).run()
+        SignalProbe(
+            dataset_config=dataset_config,
+            probe_config=probe_config,
+            split_config=split_config,
+        ).run()
     return 0
 
 def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
     """Execute the full/no-history/history-only ablation baselines."""
-    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
-    BaselineEvaluator(config=config).run()
+    dataset_config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    split_config = SplitConfig()
+    BaselineEvaluator(dataset_config=dataset_config, split_config=split_config).run()
     return 0
 
 

@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-from lstm_autoencoder.config import DatasetConfig, ProbeConfig
+from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
@@ -50,16 +51,18 @@ class BaseSignalProbe(ABC):
 
     def __init__(
         self,
-        config: DatasetConfig,
+        dataset_config: DatasetConfig,
         probe_config: ProbeConfig | None = None,
+        split_config: SplitConfig | None = None,
         loader: DatasetLoader | None = None,
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create a probe; optional collaborators default to standard ones."""
-        self._config = config
+        self._dataset_config = dataset_config
         self._probe = probe_config or ProbeConfig()
+        self._split_config = split_config or SplitConfig()
         self._loader = loader
-        self._reporter = reporter or ReportWritter(config)
+        self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
 
     @abstractmethod
@@ -135,8 +138,8 @@ class BaseSignalProbe(ABC):
     ) -> dict[str, dict[str, float]]:
         """Evaluate the features using supervised model and shuffled control."""
         n_rows = len(features)
-        first = int(self._config.train_fraction * n_rows)
-        second = int((self._config.train_fraction + self._config.validation_fraction) * n_rows)
+        first = int(self._split_config.train_fraction * n_rows)
+        second = int((self._split_config.train_fraction + self._split_config.validation_fraction) * n_rows)
         rng = np.random.default_rng(self._probe.random_seed)
         train = np.arange(first)
         if len(train) > self._probe.max_train_rows:

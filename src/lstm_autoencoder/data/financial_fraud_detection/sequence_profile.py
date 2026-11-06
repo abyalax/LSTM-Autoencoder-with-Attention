@@ -5,6 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.config import ExploratoryConfig
 from lstm_autoencoder.data.financial_fraud_detection.causal_features import (
     ACCOUNT_CODE,
     HISTORY_LENGTH,
@@ -23,10 +24,11 @@ class SequenceProfiler:
     """Measure history lengths per sender account and where fraud falls in them."""
 
     def __init__(
-        self, config: DatasetConfig, schema: Schema | None = None, reporter: ConsoleReporter | None = None
+        self, dataset_config: DatasetConfig, exploratory_config: ExploratoryConfig | None = None, schema: Schema | None = None, reporter: ConsoleReporter | None = None
     ) -> None:
         """Bind the profiler to a configuration, schema, and reporter."""
-        self._config = config
+        self._dataset_config = dataset_config
+        self._exploratory_config = exploratory_config or ExploratoryConfig()
         self._schema = schema or Schema()
         self._reporter = reporter or ConsoleReporter()
 
@@ -78,7 +80,7 @@ class SequenceProfiler:
     ) -> float:
         rows: list[dict[str, float]] = []
         reference_share = 0.0
-        for window in self._config.window_sizes:
+        for window in self._exploratory_config.window_sizes:
             has_window = built[HISTORY_LENGTH] >= window - 1
             fraud_share = float((fraud_rows[HISTORY_LENGTH] >= window - 1).mean())
             if window == REFERENCE_WINDOW:
