@@ -7,9 +7,9 @@ import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.config import ExploratoryConfig
-from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
+from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.metrics import (
     SIGNAL_THRESHOLD,
     SignalCheckResult,

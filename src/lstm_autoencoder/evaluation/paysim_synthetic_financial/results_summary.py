@@ -21,6 +21,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.reporting.console_report import ConsoleReporter
 
@@ -196,8 +198,72 @@ class ResultsSummarizer:
                 "for d AUC is entirely above 0 ('-' for diagnostic rows):\n"
             )
             out.append(self._table(["comparison", "d AUC", "d AP", "CI>0"], rows))
+
+            # Add per-history_bucket results for the final model (hybrid_val)
+            if hybrid["per_seed"]:
+                by_bucket_section = self._by_bucket_table(hybrid["per_seed"], "hybrid_val")
+                if by_bucket_section:
+                    out.append("\n" + by_bucket_section)
+
             out.append("")
         return "\n".join(out)
+
+    def _by_bucket_table(self, per_seed: list[dict], variant_name: str) -> str:
+        """Generate a table showing per-history_bucket metrics for a variant across seeds."""
+        from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import HISTORY_STRATA_LABELS
+
+        # Aggregate across seeds for each bucket
+        bucket_stats: dict[str, dict[str, list[float]]] = {}
+        for seed_result in per_seed:
+            by_bucket = seed_result.get("by_bucket", {}).get(variant_name, {})
+            for bucket_label, metrics in by_bucket.items():
+                if bucket_label not in bucket_stats:
+                    bucket_stats[bucket_label] = {"auc": [], "ap": [], "n": [], "n_fraud": []}
+                bucket_stats[bucket_label]["auc"].append(metrics.get("auc", float("nan")))
+                bucket_stats[bucket_label]["ap"].append(metrics.get("ap", float("nan")))
+                bucket_stats[bucket_label]["n"].append(metrics.get("n", 0))
+                bucket_stats[bucket_label]["n_fraud"].append(metrics.get("n_fraud", 0))
+
+        # Build table rows
+        rows = []
+        for bucket_label in HISTORY_STRATA_LABELS:
+            if bucket_label not in bucket_stats:
+                continue
+            stats = bucket_stats[bucket_label]
+            auc_values = [v for v in stats["auc"] if not str(v) == "nan"]
+            ap_values = [v for v in stats["ap"] if not str(v) == "nan"]
+
+            if auc_values:
+                auc_mean = float(np.mean(auc_values))
+                auc_std = float(np.std(auc_values, ddof=1 if len(auc_values) > 1 else 0))
+            else:
+                auc_mean = float("nan")
+                auc_std = float("nan")
+
+            if ap_values:
+                ap_mean = float(np.mean(ap_values))
+                ap_std = float(np.std(ap_values, ddof=1 if len(ap_values) > 1 else 0))
+            else:
+                ap_mean = float("nan")
+                ap_std = float("nan")
+
+            n = int(stats["n"][0]) if stats["n"] else 0
+            n_fraud = int(stats["n_fraud"][0]) if stats["n_fraud"] else 0
+
+            rows.append([
+                bucket_label,
+                str(n),
+                str(n_fraud),
+                self._format(auc_mean, auc_std) if not str(auc_mean) == "nan" else "-",
+                self._format(ap_mean, ap_std) if not str(ap_mean) == "nan" else "-",
+            ])
+
+        if not rows:
+            return ""
+
+        header = f"#### {variant_name} per history bucket (mean ± std across seeds)\n"
+        table = self._table(["bucket", "n", "n_fraud", "AUC", "AP"], rows)
+        return header + table
 
     @staticmethod
     def _architecture_from_command(command: str) -> str:

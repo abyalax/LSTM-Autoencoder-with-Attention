@@ -129,6 +129,8 @@ class HybridClassifierEvaluator:
         self._config = config or HybridClassifierConfig()
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
+        # Override class_name to include window and architecture
+        self._reporter._class_name = f"window={self._sequence_config.window_length}_architecture={self._architecture_tag()}"
 
     def run(self) -> dict[str, object]:
         """Score every split with each seed's checkpoint, fit all variants, report, and return the aggregate."""
