@@ -1,0 +1,145 @@
+{
+  "command": "uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 3 --seeds 42,123,2026",
+  "multi_seed_training": {
+    "runs": [
+      {
+        "window_length": 3,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5937608913124353,
+        "test_auc": 0.599521104028476,
+        "test_ap": 0.009919685518389022,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6850745666874726,
+            "val_auc": 0.5937608913124353
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.36851127890746216,
+            "val_auc": 0.37602670491069135
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.17327084526788006,
+            "val_auc": 0.36877631416754425
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.1471869178388741,
+            "val_auc": 0.369397457455138
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.12008812729853209,
+            "val_auc": 0.3722681373661353
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.07299796089008945,
+            "val_auc": 0.38547031843695345
+          }
+        ],
+        "seed": 42
+      },
+      {
+        "window_length": 3,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5929924730719677,
+        "test_auc": 0.5986462307561118,
+        "test_ap": 0.009912901812990475,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6782270998352988,
+            "val_auc": 0.5929924730719677
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.4009246097533915,
+            "val_auc": 0.4016444693482387
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.18392593751955444,
+            "val_auc": 0.3904305119186597
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.11868501200890799,
+            "val_auc": 0.36953771207095615
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.07781068160757226,
+            "val_auc": 0.35451399251811283
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.05445747728114705,
+            "val_auc": 0.39591833677766597
+          }
+        ],
+        "seed": 123
+      },
+      {
+        "window_length": 3,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5874550818656491,
+        "test_auc": 0.5932075562292297,
+        "test_ap": 0.009652269060110425,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6851569046256302,
+            "val_auc": 0.5874550818656491
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.34903439306750617,
+            "val_auc": 0.39012231686457066
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.16781704380592813,
+            "val_auc": 0.37798841556643864
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.11813662730188912,
+            "val_auc": 0.4010861331974468
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.06714305051355063,
+            "val_auc": 0.3959965497904308
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.042851469684549885,
+            "val_auc": 0.4234727946206391
+          }
+        ],
+        "seed": 2026
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "val_auc_mean": 0.591402815416684,
+      "val_auc_std": 0.003440358526454163,
+      "test_auc_mean": 0.5971249636712725,
+      "test_auc_std": 0.003420659528644078,
+      "test_ap_mean": 0.009828285463829975,
+      "test_ap_std": 0.00015247240881059766
+    }
+  }
+}

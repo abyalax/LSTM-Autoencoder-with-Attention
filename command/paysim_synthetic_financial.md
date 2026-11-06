@@ -100,6 +100,12 @@ Build fixed-length per-receiver transaction windows, train the LSTM-Autoencoder 
 uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 5
 ```
 
+Train with attention pooling (learned bottleneck):
+
+```Shell
+uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 5 --attention-pooling
+```
+
 The pipeline (PaySimModelTrainingPipeline) performs the following operations:
 
 - **Sequence building**: left-pads each receiver's last `--window` transactions into fixed-length windows (`amount`, `step_diff`, `log_amount_ratio`, `history_length`, `is_new_receiver`)
@@ -107,16 +113,17 @@ The pipeline (PaySimModelTrainingPipeline) performs the following operations:
 - **Training**: fits the LSTM-Autoencoder via Adam, with early stopping on validation reconstruction-error AUC
 - **Evaluation**: scores the held-out test set (fraud included) by reconstruction-error AUC and average precision
 
-The model architecture supports three variants:
-- **Default (attention)**: Decoder receives self-attended context over encoder outputs (attends to other real steps, never to itself unless alone). Use this when neither `--bottleneck` nor `--plain` is specified.
-- **Bottleneck (`--bottleneck`)**: Decoder receives only the encoder's final hidden state, repeated across the window — a true information bottleneck forcing the model to compress sequence information. Mutually exclusive with `--plain`.
-- **Plain (`--plain`)**: Decoder receives raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck`.
+The model architecture supports four variants:
+- **Default (attention)**: Decoder receives self-attended context over encoder outputs (attends to other real steps, never to itself unless alone). Use this when neither `--bottleneck`, `--plain`, nor `--attention-pooling` is specified.
+- **Bottleneck (`--bottleneck`)**: Decoder receives only the encoder's final hidden state, repeated across the window — a true information bottleneck forcing the model to compress sequence information. Mutually exclusive with `--plain` and `--attention-pooling`.
+- **Plain (`--plain`)**: Decoder receives raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck` and `--attention-pooling`.
+- **Attention pooling (`--attention-pooling`)**: Decoder receives a single bottleneck vector created by attention pooling over encoder outputs, then repeated across the window. This uses a learnable query vector to attend to all time steps and compress them into a single representation, providing a learned bottleneck. Mutually exclusive with `--bottleneck` and `--plain`.
 
 The command saves the following artifacts under `artifacts/`:
 
 - `training_report.txt` or `multi_seed_training_report.txt` (when `--seeds` is used)
 - `training_report.json` or `multi_seed_training_report.json` (when `--seeds` is used)
-- `lstm_ae_w{window}_{attn|bottleneck|plain}_seed{seed}_best.pt` (best checkpoint, under `artifacts/model/paysim_synthetic_financial/`)
+- `lstm_ae_w{window}_{attn|bottleneck|plain|attn_pool}_seed{seed}_best.pt` (best checkpoint, under `artifacts/model/paysim_synthetic_financial/`)
 
 Optional arguments:
 
@@ -125,8 +132,9 @@ Optional arguments:
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
 - `--seeds` : Comma-separated random seeds for repeated experiments (e.g., `42,123,2026`). When set, trains once per seed on the same data split and reports mean/std across runs to separate genuine improvement from training noise. Default is single run with seed 42.
-- `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window). Mutually exclusive with `--plain`. Default is False.
-- `--plain` : Use raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck`. Default is False.
+- `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window). Mutually exclusive with `--plain` and `--attention-pooling`. Default is False.
+- `--plain` : Use raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck` and `--attention-pooling`. Default is False.
+- `--attention-pooling` : Use attention to pool encoder outputs to a single bottleneck vector, then repeat across the window. Mutually exclusive with `--bottleneck` and `--plain`. Default is False.
 
 ### 6. Probe hybrid signal
 
@@ -156,9 +164,10 @@ Optional arguments:
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Same caveat as `inspect-data`.
 - `--window` : Window length for per-receiver sequences. Defaults to 5. Matches the grid explored in `inspect-data` (1, 3, 5, 10).
 - `--seed` : Seed used when the checkpoint was trained (for its filename). Default is 42.
-- `--bottleneck` : Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain`. Default is False.
-- `--plain` : Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck`. Default is False.
-- `--checkpoint` : Path to the trained checkpoint. Defaults to the standard train-model naming convention (`lstm_ae_w{window}_{attn|bottleneck|plain}_seed{seed}_best.pt`).
+- `--bottleneck` : Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain` and `--attention-pooling`. Default is False.
+- `--plain` : Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck` and `--attention-pooling`. Default is False.
+- `--attention-pooling` : Match the checkpoint's architecture: attention pooling. Mutually exclusive with `--bottleneck` and `--plain`. Default is False.
+- `--checkpoint` : Path to the trained checkpoint. Defaults to the standard train-model naming convention (`lstm_ae_w{window}_{attn|bottleneck|plain|attn_pool}_seed{seed}_best.pt`).
 
 ### 7. Hybrid Classifier
 
@@ -226,8 +235,9 @@ Reports test AUC/AP per receiver history bucket (1, 2-4, 5-9, >=10) for:
 - `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
 - `--nrows`: Read only the first N rows. Defaults to all rows.
 - `--window`: Window length for per-receiver sequences. Defaults to 5.
-- `--bottleneck`: Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain`. Default is False.
-- `--plain`: Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck`. Default is False.
+- `--bottleneck`: Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with `--plain` and `--attention-pooling`. Default is False.
+- `--plain`: Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with `--bottleneck` and `--attention-pooling`. Default is False.
+- `--attention-pooling`: Match the checkpoint's architecture: attention pooling. Mutually exclusive with `--bottleneck` and `--plain`. Default is False.
 - `--seeds`: Comma-separated seeds for multi-seed evaluation (e.g., 42,123,2026). Checkpoints must have been trained with train-model using these seeds. Default is 42.
 - `--n-bootstrap`: Number of bootstrap resamples for confidence interval calculation. Default is 200.
 

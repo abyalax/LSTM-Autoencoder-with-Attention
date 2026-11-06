@@ -76,8 +76,23 @@ class PaySimModelTrainingPipeline:
         self._model_config = model_config or ModelConfig()
         self._train_config = train_config or TrainConfig()
         self._schema = PaySimSchema()
+
+        # Build architecture config for reporter
+        architecture_config = {
+            "window": self._sequence_config.window_length,
+        }
+        if self._model_config.bottleneck:
+            architecture_config["bottleneck"] = True
+        elif self._model_config.attention_pooling:
+            architecture_config["attention-pooling"] = True
+        elif not self._model_config.attention:
+            architecture_config["plain"] = True
+
         self._reporter = reporter or ReportWritter(
-            dataset_config, domain_data="paysim_synthetic_financial", pipeline="model_training"
+            dataset_config,
+            domain_data="paysim_synthetic_financial",
+            pipeline="model_training",
+            architecture_config=architecture_config,
         )
         self._reporter.set_path_info_from_module()
         self._seed = random_seed
@@ -238,10 +253,17 @@ class PaySimModelTrainingPipeline:
         return f"lstm_ae_w{self._sequence_config.window_length}_{self._architecture_tag()}_seed{seed}_best.pt"
 
     def _architecture_tag(self) -> str:
-        """Short label for the current model variant, used in checkpoint names."""
-        if self._model_config.bottleneck:
-            return "bottleneck"
-        return "attn" if self._model_config.attention else "plain"
+        """Return a short label for the current model architecture."""
+        config = self._model_config
+        architecture_tags = {
+            "bottleneck": config.bottleneck,
+            "attn_pool": config.attention_pooling,
+            "attn": config.attention,
+        }
+        return next(
+            (tag for tag, enabled in architecture_tags.items() if enabled),
+            "plain",
+        )
 
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:

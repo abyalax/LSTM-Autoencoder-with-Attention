@@ -1,0 +1,150 @@
+{
+  "command": "uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 10 --bottleneck --seeds 42,123,2026",
+  "multi_seed_training": {
+    "runs": [
+      {
+        "window_length": 10,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5701248483865319,
+        "test_auc": 0.575134341248102,
+        "test_ap": 0.009934250155691285,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7263860463181785,
+            "val_auc": 0.5701248483865319
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.46226365706259875,
+            "val_auc": 0.41784503411820995
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.3763503506274118,
+            "val_auc": 0.4086631516733133
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.3748500639981557,
+            "val_auc": 0.40948265555114804
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.30746494576427225,
+            "val_auc": 0.38351984738696066
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.2776857155451283,
+            "val_auc": 0.36035615546862937
+          }
+        ],
+        "seed": 42
+      },
+      {
+        "window_length": 10,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 2,
+        "best_val_auc": 0.6065530387671747,
+        "test_auc": 0.6073096890649636,
+        "test_ap": 0.009980166793813706,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7225036333987948,
+            "val_auc": 0.5723432856921268
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.480071536010702,
+            "val_auc": 0.6065530387671747
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.43770903606220035,
+            "val_auc": 0.4906299670258704
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.3313036116133704,
+            "val_auc": 0.4085472783259333
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.4291213734016416,
+            "val_auc": 0.4866065846729771
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.3930737410631187,
+            "val_auc": 0.4137668846957818
+          },
+          {
+            "epoch": 7,
+            "train_loss": 0.30781266159972775,
+            "val_auc": 0.3914316583074111
+          }
+        ],
+        "seed": 123
+      },
+      {
+        "window_length": 10,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5771219730849562,
+        "test_auc": 0.5804088170845215,
+        "test_ap": 0.010294670475030843,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7204727345720892,
+            "val_auc": 0.5771219730849562
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.46899532218983986,
+            "val_auc": 0.43507264583542554
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.38355920326861415,
+            "val_auc": 0.40448190153966385
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.4291142393937667,
+            "val_auc": 0.41549692324723697
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.33293658616263605,
+            "val_auc": 0.37875208259039755
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.29525860126295955,
+            "val_auc": 0.3734419950387367
+          }
+        ],
+        "seed": 2026
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "val_auc_mean": 0.5845999534128876,
+      "val_auc_std": 0.019331151179916486,
+      "test_auc_mean": 0.5876176157991958,
+      "test_auc_std": 0.01725654472846524,
+      "test_ap_mean": 0.010069695808178613,
+      "test_ap_std": 0.0001961817651008138
+    }
+  }
+}

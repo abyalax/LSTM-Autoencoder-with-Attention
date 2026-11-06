@@ -1,0 +1,145 @@
+{
+  "command": "uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 5 --seeds 42,123,2026",
+  "multi_seed_training": {
+    "runs": [
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5875943147883489,
+        "test_auc": 0.5925007938652197,
+        "test_ap": 0.009732117419692918,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6723735740640499,
+            "val_auc": 0.5875943147883489
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.3989217320909062,
+            "val_auc": 0.36818209509446875
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.2329792184771102,
+            "val_auc": 0.37426448646109794
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.11804937858476428,
+            "val_auc": 0.3788184985318064
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.0808248529245554,
+            "val_auc": 0.40028535152703193
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.06276811840948081,
+            "val_auc": 0.3937743682396426
+          }
+        ],
+        "seed": 42
+      },
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5930068847355111,
+        "test_auc": 0.5981461056952531,
+        "test_ap": 0.010022986598219534,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6666699333943226,
+            "val_auc": 0.5930068847355111
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.4067067322877603,
+            "val_auc": 0.4043382383357576
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.25358707657327434,
+            "val_auc": 0.3800342004753949
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.13746447766018494,
+            "val_auc": 0.37321651983199383
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.1032493139201225,
+            "val_auc": 0.3912316881333911
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.07257628581170344,
+            "val_auc": 0.4238506169320668
+          }
+        ],
+        "seed": 123
+      },
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5917585975534789,
+        "test_auc": 0.5965892650482424,
+        "test_ap": 0.009788794465393292,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6716489645917696,
+            "val_auc": 0.5917585975534789
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.4012062569891884,
+            "val_auc": 0.3942622222870767
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.23519565920287075,
+            "val_auc": 0.3764840514567917
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.13713643504168643,
+            "val_auc": 0.3601687743989591
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.11928586575314126,
+            "val_auc": 0.36826381974794176
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.10904782185163794,
+            "val_auc": 0.35887583598886197
+          }
+        ],
+        "seed": 2026
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "val_auc_mean": 0.5907865990257796,
+      "val_auc_std": 0.002834177872261739,
+      "test_auc_mean": 0.595745388202905,
+      "test_auc_std": 0.0029157301850738916,
+      "test_ap_mean": 0.009847966161101914,
+      "test_ap_std": 0.00015419853090727724
+    }
+  }
+}

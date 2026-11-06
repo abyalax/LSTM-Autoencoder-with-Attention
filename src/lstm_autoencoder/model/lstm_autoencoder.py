@@ -55,6 +55,51 @@ class SelfAttention(nn.Module):
        return torch.matmul(weights, value)
 
 
+class AttentionPooling(nn.Module):
+    """Attention-based pooling to compress encoder outputs to a single bottleneck vector."""
+
+    def __init__(self, hidden_dim: int) -> None:
+        """Create the attention pooling layer with a learnable query vector."""
+        super().__init__()
+        self.query = nn.Parameter(torch.randn(hidden_dim))
+        self.key = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.value = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.scale = hidden_dim ** 0.5
+
+    def forward(self, encoded: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Pool encoder outputs to a single vector using attention.
+        
+        Args:
+            encoded: (batch, seq_len, hidden_dim) encoder outputs
+            mask: (batch, seq_len) padding mask (1 = real, 0 = padding)
+            
+        Returns:
+            (batch, hidden_dim) pooled representation
+        """
+        batch_size = encoded.size(0)
+        
+        # Expand query to batch dimension
+        query = self.query.unsqueeze(0).expand(batch_size, -1).unsqueeze(1)  # (batch, 1, hidden_dim)
+        
+        key = self.key(encoded)  # (batch, seq_len, hidden_dim)
+        value = self.value(encoded)  # (batch, seq_len, hidden_dim)
+        
+        # Compute attention scores
+        scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale  # (batch, 1, seq_len)
+        
+        # Mask padding positions
+        padding_mask = (mask == 0).unsqueeze(1)  # (batch, 1, seq_len)
+        scores = scores.masked_fill(padding_mask, float("-inf"))
+        
+        # Normalize attention weights
+        weights = torch.softmax(scores, dim=-1)  # (batch, 1, seq_len)
+        weights = torch.nan_to_num(weights)
+        
+        # Apply attention to values
+        pooled = torch.matmul(weights, value)  # (batch, 1, hidden_dim)
+        return pooled.squeeze(1)  # (batch, hidden_dim)
+
+
 class Decoder(nn.Module):
     """LSTM decoder that reconstructs the input sequence from a context sequence."""
 
@@ -87,21 +132,28 @@ class LSTMAutoencoder(nn.Module):
         num_layers: int = 1,
         attention: bool = True,
         bottleneck: bool = False,
+        attention_pooling: bool = False,
         dropout: float = 0.1,
     ) -> None:
         """Create the encoder, decoder, and the context strategy between them.
 
-        `bottleneck=True` takes priority over `attention`: the decoder is fed
-        only the encoder's final hidden state, repeated across the window --
-        a real information bottleneck. Both `attention=True` and `attention=False`
-        instead give the decoder a per-step context it can copy from (self-attend
-        or raw per-step outputs), so neither is a genuine bottleneck on its own.
+        `attention_pooling=True` uses attention to pool encoder outputs to a single
+        bottleneck vector, then repeats it across the window.
+        
+        `bottleneck=True` takes priority over `attention` and `attention_pooling`:
+        the decoder is fed only the encoder's final hidden state, repeated across
+        the window -- a real information bottleneck. Both `attention=True` and
+        `attention=False` instead give the decoder a per-step context it can copy
+        from (self-attend or raw per-step outputs), so neither is a genuine
+        bottleneck on its own.
         """
         super().__init__()
-        self.attention_enabled = attention and not bottleneck
+        self.attention_enabled = attention and not bottleneck and not attention_pooling
         self.bottleneck_enabled = bottleneck
+        self.attention_pooling_enabled = attention_pooling and not bottleneck
         self.encoder = Encoder(input_dim, hidden_dim, num_layers, dropout)
         self.attention = SelfAttention(hidden_dim) if self.attention_enabled else None
+        self.attention_pooling = AttentionPooling(hidden_dim) if self.attention_pooling_enabled else None
         self.decoder = Decoder(hidden_dim, input_dim, num_layers, dropout)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -109,6 +161,9 @@ class LSTMAutoencoder(nn.Module):
         encoded, (hidden, _) = self.encoder(x)
         if self.bottleneck_enabled:
             context = self._repeat_last_hidden(hidden, window=x.size(1))
+        elif self.attention_pooling_enabled:
+            pooled = self.attention_pooling(encoded, mask)  # (batch, hidden_dim)
+            context = pooled.unsqueeze(1).repeat(1, x.size(1), 1)  # (batch, window, hidden_dim)
         elif self.attention_enabled:
             context = self.attention(encoded, mask)
         else:

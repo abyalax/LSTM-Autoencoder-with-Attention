@@ -33,15 +33,16 @@ class ModelConfig:
     num_layers: int = 2
     attention: bool = True
     bottleneck: bool = False
+    attention_pooling: bool = False
     dropout: float = 0.1
 
 
 @dataclass(frozen=True)
 class TrainConfig:
-    """Training loop settings, sized for a 6GB-VRAM GPU."""
+    """Training loop settings, sized for a RTX 3050 6GB-VRAM GPU."""
 
-    batch_size: int = 4096
-    num_workers: int = 4
+    batch_size: int = 16384
+    num_workers: int = 8
     max_epochs: int = 50
     learning_rate: float = 1e-3
     weight_decay: float = 1e-5

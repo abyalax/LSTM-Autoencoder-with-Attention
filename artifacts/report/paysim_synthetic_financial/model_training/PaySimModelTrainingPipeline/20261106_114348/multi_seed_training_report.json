@@ -1,0 +1,145 @@
+{
+  "command": "uv run python -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 5 --bottleneck --seeds 42,123,2026",
+  "multi_seed_training": {
+    "runs": [
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.4729990878331692,
+        "test_auc": 0.4702669004266587,
+        "test_ap": 0.007254240568101391,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.7039456474740928,
+            "val_auc": 0.4729990878331692
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.33401229105590813,
+            "val_auc": 0.3732198714957776
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.22069201261153532,
+            "val_auc": 0.3559077978512111
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.15969882176023759,
+            "val_auc": 0.3674308846786339
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.13087699780403567,
+            "val_auc": 0.3689193384452065
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.10770372834112063,
+            "val_auc": 0.3761029628680368
+          }
+        ],
+        "seed": 42
+      },
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5638267502200821,
+        "test_auc": 0.5671466987694846,
+        "test_ap": 0.009600547757178597,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.697387102098705,
+            "val_auc": 0.5638267502200821
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.32563761265613833,
+            "val_auc": 0.38526196272402613
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.20113110015581184,
+            "val_auc": 0.355622115378051
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.1515354424506168,
+            "val_auc": 0.3588684063856868
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.12489265501626383,
+            "val_auc": 0.34054202407916134
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.09591177965322331,
+            "val_auc": 0.3269108310254748
+          }
+        ],
+        "seed": 123
+      },
+      {
+        "window_length": 5,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.4148829700881585,
+        "test_auc": 0.4082091421009009,
+        "test_ap": 0.006463997577078385,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6589672294786052,
+            "val_auc": 0.4148829700881585
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.30722369955833295,
+            "val_auc": 0.36956839132665653
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.20180318916864307,
+            "val_auc": 0.3791560998963754
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.15590517194433898,
+            "val_auc": 0.34198127954349317
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.1283704964051483,
+            "val_auc": 0.3561694543421088
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.11152335811378516,
+            "val_auc": 0.3768206213137072
+          }
+        ],
+        "seed": 2026
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "val_auc_mean": 0.4839029360471366,
+      "val_auc_std": 0.07506818793205035,
+      "test_auc_mean": 0.4818742470990147,
+      "test_auc_std": 0.08010202620735637,
+      "test_ap_mean": 0.007772928634119457,
+      "test_ap_std": 0.001631338328012874
+    }
+  }
+}

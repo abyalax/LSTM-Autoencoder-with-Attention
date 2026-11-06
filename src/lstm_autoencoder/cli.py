@@ -67,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Use a single-vector bottleneck decoder (final encoder hidden state, "
-            "repeated across the window). Mutually exclusive with --plain."
+            "repeated across the window). Mutually exclusive with --plain and --attention-pooling."
         ),
     )
     train_parser.add_argument(
@@ -75,7 +75,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "Use raw per-step encoder outputs (can copy directly). "
-            "Mutually exclusive with --bottleneck. Default is attention."
+            "Mutually exclusive with --bottleneck and --attention-pooling. Default is attention."
+        ),
+    )
+    train_parser.add_argument(
+        "--attention-pooling",
+        action="store_true",
+        help=(
+            "Use attention to pool encoder outputs to a single bottleneck vector, "
+            "then repeat across the window. Mutually exclusive with --bottleneck and --plain."
         ),
     )
     train_parser.add_argument(
@@ -100,12 +108,17 @@ def build_parser() -> argparse.ArgumentParser:
     hybrid_parser.add_argument(
         "--bottleneck",
         action="store_true",
-        help="Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with --plain.",
+        help="Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with --plain and --attention-pooling.",
     )
     hybrid_parser.add_argument(
         "--plain",
         action="store_true",
-        help="Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with --bottleneck.",
+        help="Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with --bottleneck and --attention-pooling.",
+    )
+    hybrid_parser.add_argument(
+        "--attention-pooling",
+        action="store_true",
+        help="Match the checkpoint's architecture: attention pooling. Mutually exclusive with --bottleneck and --plain.",
     )
     hybrid_parser.add_argument(
         "--seed", type=int, default=42, help="Seed used when the checkpoint was trained (for its filename)."
@@ -129,12 +142,17 @@ def build_parser() -> argparse.ArgumentParser:
     eval_hybrid_parser.add_argument(
         "--bottleneck",
         action="store_true",
-        help="Match the checkpoints' architecture: bottleneck decoder. Mutually exclusive with --plain.",
+        help="Match the checkpoints' architecture: bottleneck decoder. Mutually exclusive with --plain and --attention-pooling.",
     )
     eval_hybrid_parser.add_argument(
         "--plain",
         action="store_true",
-        help="Match the checkpoints' architecture: raw per-step outputs. Mutually exclusive with --bottleneck.",
+        help="Match the checkpoints' architecture: raw per-step outputs. Mutually exclusive with --bottleneck and --attention-pooling.",
+    )
+    eval_hybrid_parser.add_argument(
+        "--attention-pooling",
+        action="store_true",
+        help="Match the checkpoints' architecture: attention pooling. Mutually exclusive with --bottleneck and --plain.",
     )
     eval_hybrid_parser.add_argument(
         "--seeds",
@@ -282,18 +300,24 @@ def _run_train_model(
     window: int,
     bottleneck: bool,
     plain: bool,
+    attention_pooling: bool,
     seeds: list[int] | None,
 ) -> int:
     """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
-    if bottleneck and plain:
+    if sum([bottleneck, plain, attention_pooling]) > 1:
         raise ValueError(
-            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            "--bottleneck, --plain, and --attention-pooling are mutually exclusive. "
+            "Choose one architecture or neither (default: attention)."
             )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     pipeline = PaySimModelTrainingPipeline(
         dataset_config=config, sequence_config=sequence_config,
-        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
+        model_config=ModelConfig(
+            bottleneck=bottleneck,
+            attention=not plain and not bottleneck and not attention_pooling,
+            attention_pooling=attention_pooling,
+        ),
         train_config=TrainConfig(),
     )
     if seeds:
@@ -310,20 +334,26 @@ def _run_probe_hybrid_signal(
     window: int,
     bottleneck: bool,
     plain: bool,
+    attention_pooling: bool,
     seed: int,
     checkpoint: Path | None,
 ) -> int:
     """Execute the LSTM-AE-vs-LR correlation probe."""
-    if bottleneck and plain:
+    if sum([bottleneck, plain, attention_pooling]) > 1:
         raise ValueError(
-            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            "--bottleneck, --plain, and --attention-pooling are mutually exclusive. "
+            "Choose one architecture or neither (default: attention)."
             )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     HybridSignalProbe(
         dataset_config=config,
         sequence_config=sequence_config,
-        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
+        model_config=ModelConfig(
+            bottleneck=bottleneck,
+            attention=not plain and not bottleneck and not attention_pooling,
+            attention_pooling=attention_pooling,
+        ),
         checkpoint_path=checkpoint,
         seed=seed,
     ).run()
@@ -337,19 +367,25 @@ def _run_eval_hybrid(
     window: int,
     bottleneck: bool,
     plain: bool,
+    attention_pooling: bool,
     seeds: list[int],
     n_bootstrap: int,
 ) -> int:
     """Execute the P3.5 hybrid classifier evaluation on already-trained checkpoints."""
-    if bottleneck and plain:
+    if sum([bottleneck, plain, attention_pooling]) > 1:
         raise ValueError(
-            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            "--bottleneck, --plain, and --attention-pooling are mutually exclusive. "
+            "Choose one architecture or neither (default: attention)."
             )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     HybridClassifierEvaluator(
         dataset_config=config,
         sequence_config=SequenceConfig(window_length=window),
-        model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
+        model_config=ModelConfig(
+            bottleneck=bottleneck,
+            attention=not plain and not bottleneck and not attention_pooling,
+            attention_pooling=attention_pooling,
+        ),
         config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap),
     ).run()
     return 0
@@ -404,6 +440,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.window,
             arguments.bottleneck,
             arguments.plain,
+            arguments.attention_pooling,
             [int(s) for s in arguments.seeds.split(",")] if arguments.seeds else None,
         ),
         "eval-hybrid": lambda: _run_eval_hybrid(
@@ -413,6 +450,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.window,
             arguments.bottleneck,
             arguments.plain,
+            arguments.attention_pooling,
             [int(seed) for seed in arguments.seeds.split(",")],
             arguments.bootstrap,
         ),
@@ -432,6 +470,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.window,
             arguments.bottleneck,
             arguments.plain,
+            arguments.attention_pooling,
             arguments.seed,
             arguments.checkpoint,
         ),

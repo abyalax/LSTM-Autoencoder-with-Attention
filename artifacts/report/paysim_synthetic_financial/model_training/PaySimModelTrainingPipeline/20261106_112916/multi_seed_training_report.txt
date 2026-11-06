@@ -1,0 +1,8 @@
+[seed 42] best_epoch 1 | val AUC 0.6014 | test AUC 0.6070 | test AP 0.0102
+[seed 123] best_epoch 1 | val AUC 0.5958 | test AUC 0.6008 | test AP 0.0100
+[seed 2026] best_epoch 1 | val AUC 0.6323 | test AUC 0.6373 | test AP 0.0118
+
+--------------------------------------------------------------------------------
+LSTM-Autoencoder multi-seed summary (W=3, seeds=[42, 123, 2026])
+--------------------------------------------------------------------------------
+test AUC 0.6150 +/- 0.0195 | test AP 0.0107 +/- 0.0010
