@@ -49,3 +49,23 @@ class TrainConfig:
     device: str = "cuda"
     checkpoint_name: str = "lstm_ae_best.pt"
     seed: int = 42
+
+
+@dataclass(frozen=True)
+class DenseAutoencoderConfig:
+    """Hyperparameters for the dense (feed-forward) autoencoder baseline.
+
+    `latent_dim` is deliberately smaller than the number of input features (5),
+    otherwise the network can learn the identity and reconstruct every row,
+    fraud included. Early stopping uses validation reconstruction loss on
+    normal rows only (no labels needed to pick the epoch).
+    """
+
+    hidden_dim: int = 32
+    latent_dim: int = 3
+    batch_size: int = 4096
+    max_epochs: int = 50
+    learning_rate: float = 1e-3
+    weight_decay: float = 1e-5
+    patience: int = 5
+    device: str = "cuda"

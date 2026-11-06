@@ -7,6 +7,9 @@ dist/
 wheels/
 *.egg-info
 
+# Temporary patch files
+*.patch
+
 # Virtual environments
 .venv/
 data/raw/*

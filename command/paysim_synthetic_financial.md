@@ -231,4 +231,47 @@ Reports test AUC/AP per receiver history bucket (1, 2-4, 5-9, >=10) for:
 - `--seeds`: Comma-separated seeds for multi-seed evaluation (e.g., 42,123,2026). Checkpoints must have been trained with train-model using these seeds. Default is 42.
 - `--n-bootstrap`: Number of bootstrap resamples for confidence interval calculation. Default is 200.
 
-_Last Updated 5 November 2026_
+### 8. Evaluate Unsupervised Baselines
+
+Train and evaluate unsupervised anomaly detection models (Isolation Forest and Dense Autoencoder) on the same data split used by the LSTM-Autoencoder, providing a fair comparison against supervised baselines.
+
+```Shell
+uv run python -m lstm_autoencoder eval-unsupervised --dataset paysim_synthetic_financial --seeds 42,123,2026
+```
+
+The evaluator (UnsupervisedBaselineEvaluator) performs the following operations:
+
+- **Receiver-stratified split**: 70/15/15 split by `nameDest`, stratified by per-receiver fraud rate; the training set is restricted to normal (non-fraud) rows only
+- **Model training**: Fits each unsupervised model on normal training rows
+- **Model evaluation**: Scores the held-out test set (fraud included) by anomaly scores (AUC and average precision)
+
+**Models evaluated:**
+- `isolation_forest_all`: Isolation Forest trained on all features (amount, step_diff, log_amount_ratio, history_length, is_new_receiver, type encoded)
+- `isolation_forest_seq5`: Isolation Forest trained on the same 5 features used by LSTM-AE (amount, step_diff, log_amount_ratio, history_length, is_new_receiver)
+- `dense_ae_seq5`: Dense Autoencoder trained on the same 5 features as LSTM-AE
+
+**Feature handling:**
+- `account_code`: Dropped by default to prevent data leakage. Can be retained with `--keep-account-code` flag if needed for specific use cases.
+
+**Dense Autoencoder configuration:**
+- Latent dimension: 3 (smaller than the 5 input features, forcing compression)
+- Epoch selection: Chosen based on validation loss on normal rows (not validation AUC like the LSTM-AE trainer)
+
+**Training protocol:**
+- All models are trained on normal rows from the training set only
+- All models are evaluated on the same test rows for fair comparison
+- Multi-seed evaluation uses the same receiver-stratified split across seeds
+
+The command saves the following artifacts under `artifacts/`:
+- `unsupervised_baseline_report.txt` or `multi_seed_unsupervised_baseline_report.txt` (when `--seeds` is used)
+- `unsupervised_baseline_report.json` or `multi_seed_unsupervised_baseline_report.json` (when `--seeds` is used)
+
+Optional arguments:
+
+- `--project-root`: Project root containing data/raw/. Defaults to current working directory.
+- `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
+- `--nrows`: Read only the first N rows. Defaults to all rows.
+- `--seeds`: Comma-separated random seeds for repeated experiments (e.g., 42,123,2026). When set, trains and evaluates once per seed on the same data split and reports mean/std across runs. Default is single run with seed 42.
+- `--keep-account-code`: Retain the account_code feature in the feature set. By default, account_code is dropped to prevent data leakage.
+
+_Last Updated 6 November 2026_

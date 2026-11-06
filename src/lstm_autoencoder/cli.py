@@ -8,9 +8,9 @@ from pathlib import Path
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.config import ExploratoryConfig
-from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier import (
@@ -21,7 +21,11 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_signal_probe 
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
 )
-from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.unsupervised_baselines import (
+    UnsupervisedBaselineConfig,
+    UnsupervisedBaselineEvaluator,
+)
+from lstm_autoencoder.model.config import DenseAutoencoderConfig, ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
 
 
@@ -145,6 +149,41 @@ def build_parser() -> argparse.ArgumentParser:
         help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
     )
 
+    eval_unsupervised_parser = subparsers.add_parser(
+        "eval-unsupervised",
+        help=(
+            "RQ D1 baselines: Isolation Forest (all features and the 5 sequence features) and a "
+            "dense autoencoder on the same split, scored on the same test rows."
+        ),
+    )
+    _add_dataset_arguments(eval_unsupervised_parser)
+    eval_unsupervised_parser.add_argument(
+        "--seeds",
+        type=str,
+        default="42,123,2026",
+        help="Comma-separated seeds (Isolation Forest random_state and dense AE init/shuffle).",
+    )
+    eval_unsupervised_parser.add_argument(
+        "--keep-account-code",
+        action="store_true",
+        help=(
+            "Keep `account_code` (a factorize id of the receiver) in the Isolation Forest features."
+            "Dropped by default."
+        ),
+    )
+    eval_unsupervised_parser.add_argument(
+        "--latent-dim",
+        type=int,
+        default=DenseAutoencoderConfig.latent_dim,
+        help="Dense AE latent size; keep it below 5 (the number of input features).",
+    )
+    eval_unsupervised_parser.add_argument(
+        "--hidden-dim",
+        type=int,
+        default=DenseAutoencoderConfig.hidden_dim,
+        help="Dense AE hidden layer size.",
+    )
+
     _add_dataset_arguments(probe_parser)
     probe_parser.add_argument(
         "--max-train-rows",
@@ -247,7 +286,9 @@ def _run_train_model(
 ) -> int:
     """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
     if bottleneck and plain:
-        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
+        raise ValueError(
+            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     pipeline = PaySimModelTrainingPipeline(
@@ -274,7 +315,9 @@ def _run_probe_hybrid_signal(
 ) -> int:
     """Execute the LSTM-AE-vs-LR correlation probe."""
     if bottleneck and plain:
-        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
+        raise ValueError(
+            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     sequence_config = SequenceConfig(window_length=window)
     HybridSignalProbe(
@@ -299,13 +342,37 @@ def _run_eval_hybrid(
 ) -> int:
     """Execute the P3.5 hybrid classifier evaluation on already-trained checkpoints."""
     if bottleneck and plain:
-        raise ValueError("--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention).")
+        raise ValueError(
+            "--bottleneck and --plain are mutually exclusive. Choose one architecture or neither (default: attention)."
+            )
     config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     HybridClassifierEvaluator(
         dataset_config=config,
         sequence_config=SequenceConfig(window_length=window),
         model_config=ModelConfig(bottleneck=bottleneck, attention=not plain and not bottleneck),
         config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap),
+    ).run()
+    return 0
+
+
+def _run_eval_unsupervised(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    seeds: list[int],
+    keep_account_code: bool,
+    latent_dim: int,
+    hidden_dim: int,
+) -> int:
+    """Execute the RQ D1 unsupervised baselines (Isolation Forest, dense AE)."""
+    config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+    UnsupervisedBaselineEvaluator(
+        dataset_config=config,
+        dense_config=DenseAutoencoderConfig(hidden_dim=hidden_dim, latent_dim=latent_dim),
+        config=UnsupervisedBaselineConfig(
+            seeds=tuple(seeds),
+            drop_columns=() if keep_account_code else UnsupervisedBaselineConfig.drop_columns,
+        ),
     ).run()
     return 0
 
@@ -348,6 +415,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.plain,
             [int(seed) for seed in arguments.seeds.split(",")],
             arguments.bootstrap,
+        ),
+        "eval-unsupervised": lambda: _run_eval_unsupervised(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            [int(seed) for seed in arguments.seeds.split(",")],
+            arguments.keep_account_code,
+            arguments.latent_dim,
+            arguments.hidden_dim,
         ),
         "probe-hybrid-signal": lambda: _run_probe_hybrid_signal(
             project_root,
