@@ -15,6 +15,7 @@ from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
+    ACCOUNT_CODE,
     HISTORY_BUCKET,
     HISTORY_LENGTH,
     IS_NEW_RECEIVER,
@@ -99,10 +100,11 @@ class BaselineEvaluator:
         splits = self._stratified_receiver_split(built)
 
         encoded = self._encode(built)
-        model, scaler = self._fit(encoded, labels, splits["train"])
+        modeling_columns = [c for c in encoded.columns if c != ACCOUNT_CODE]
+        model, scaler = self._fit(encoded[modeling_columns], labels, splits["train"])
 
         test_idx = splits["test"]
-        predicted = model.predict_proba(scaler.transform(encoded.iloc[test_idx]))[:, 1]
+        predicted = model.predict_proba(scaler.transform(encoded[modeling_columns].iloc[test_idx]))[:, 1]
         return test_idx, predicted, labels[test_idx]
 
     def prepare_full_features(self) -> FullFeatureData:
@@ -114,8 +116,10 @@ class BaselineEvaluator:
         """
         loaded = self._loader.load()
         built = CausalFeatureBuilder(self._dataset_config, self._schema).build(loaded.frame)
+        encoded = self._encode(built)
+        modeling_columns = [c for c in encoded.columns if c != ACCOUNT_CODE]
         return FullFeatureData(
-            features=self._encode(built),
+            features=encoded[modeling_columns],
             labels=built[self._schema.target_column].to_numpy(),
             buckets=built[HISTORY_BUCKET].to_numpy(),
             splits=self._stratified_receiver_split(built),
@@ -194,14 +198,19 @@ class BaselineEvaluator:
     def _build_variants(self, encoded: pd.DataFrame) -> list[AblationVariant]:
         """Define the full, no-history, history-only, and non-linear control feature sets."""
         history_columns = (HISTORY_LENGTH, IS_NEW_RECEIVER)
-        all_columns = tuple(encoded.columns)
-        no_history = tuple(c for c in all_columns if c not in history_columns)
-        history_only = tuple(c for c in history_columns if c in all_columns)
+        modeling_columns = tuple(c for c in encoded.columns if c != ACCOUNT_CODE)
+        # history_bucket_* is a one-hot of the same history signal (derived from
+        # history_length); no_history must drop it too or the ablation leaks.
+        history_bucket_columns = tuple(c for c in modeling_columns if c.startswith(f"{HISTORY_BUCKET}_"))
+        no_history = tuple(
+            c for c in modeling_columns if c not in history_columns and c not in history_bucket_columns
+        )
+        history_only = tuple(c for c in history_columns if c in modeling_columns)
         return [
-            AblationVariant("full", all_columns),
+            AblationVariant("full", modeling_columns),
             AblationVariant("no_history", no_history),
             AblationVariant("history_only", history_only),
-            AblationVariant("full_gbm", all_columns),  # Non-linear control: HistGradientBoosting
+            AblationVariant("full_gbm", modeling_columns),  # Non-linear control: HistGradientBoosting
         ]
 
     def _stratified_receiver_split(self, built: pd.DataFrame) -> dict[str, np.ndarray]:

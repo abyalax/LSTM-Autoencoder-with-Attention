@@ -7,9 +7,10 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import HISTORY_LENGTH
+from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
     HISTORY_STRATA_LABELS,
@@ -18,6 +19,7 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
 )
 from lstm_autoencoder.model.config import DenseAutoencoderConfig, SequenceConfig
 from lstm_autoencoder.model.dense_autoencoder import DenseAutoencoderTrainer
+from lstm_autoencoder.model.feature_scaler import FeatureScaler
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 ISOLATION_FOREST_ALL = "isolation_forest_all"
@@ -67,6 +69,7 @@ class UnsupervisedBaselineEvaluator:
         self._sequence_config = sequence_config or SequenceConfig()
         self._dense_config = dense_config or DenseAutoencoderConfig()
         self._config = config or UnsupervisedBaselineConfig()
+        self._schema = PaySimSchema()
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
 
@@ -83,7 +86,11 @@ class UnsupervisedBaselineEvaluator:
             ISOLATION_FOREST_ALL: data.features[all_columns].to_numpy(dtype="float64"),
             ISOLATION_FOREST_SEQ: data.features[sequence_columns].to_numpy(dtype="float64"),
         }
-        matrices[DENSE_AE_SEQ] = matrices[ISOLATION_FOREST_SEQ]
+        # Dense AE gets its own frame: unlike Isolation Forest (tree-based, invariant
+        # to a monotonic per-feature transform), its reconstruction MSE is sensitive
+        # to raw scale -- amount/history_length are heavy-tailed, so they get log1p'd
+        # before standardizing (see FeatureScaler, same recipe as the LSTM-AE).
+        sequence_frame = data.features[sequence_columns]
         y = {name: data.labels[index] for name, index in data.splits.items()}
         buckets_test = data.buckets[data.splits["test"]]
 
@@ -97,7 +104,10 @@ class UnsupervisedBaselineEvaluator:
             f"IF features: all={len(all_columns)}, seq5={len(sequence_columns)}"
         )
 
-        per_seed = [self._run_seed(seed, data, matrices, y, buckets_test) for seed in self._config.seeds]
+        per_seed = [
+            self._run_seed(seed, data, matrices, sequence_frame, y, buckets_test)
+            for seed in self._config.seeds
+        ]
         aggregate = self._aggregate(per_seed)
         self._report(aggregate)
         self._reporter.update_summary(
@@ -122,6 +132,7 @@ class UnsupervisedBaselineEvaluator:
         seed: int,
         data: FullFeatureData,
         matrices: dict[str, np.ndarray],
+        sequence_frame: pd.DataFrame,
         y: dict[str, np.ndarray],
         buckets_test: np.ndarray,
     ) -> dict[str, object]:
@@ -141,14 +152,15 @@ class UnsupervisedBaselineEvaluator:
             forest.fit(matrices[name][normal_train])
             scores[name] = -forest.score_samples(matrices[name][test])  # higher = more anomalous
 
-        scaler = StandardScaler().fit(matrices[DENSE_AE_SEQ][normal_train])
+        fit_mask = pd.Series(False, index=sequence_frame.index)
+        fit_mask.iloc[normal_train] = True
+        log1p_columns = (self._schema.amount_column, HISTORY_LENGTH)
+        scaler = FeatureScaler(tuple(sequence_frame.columns), log1p_columns).fit(sequence_frame, fit_mask)
+        scaled = scaler.transform(sequence_frame).to_numpy(dtype="float64")
+
         trainer = DenseAutoencoderTrainer(self._dense_config)
-        model, train_result = trainer.fit(
-            scaler.transform(matrices[DENSE_AE_SEQ][normal_train]),
-            scaler.transform(matrices[DENSE_AE_SEQ][normal_val]),
-            seed,
-        )
-        scores[DENSE_AE_SEQ] = trainer.predict_errors(model, scaler.transform(matrices[DENSE_AE_SEQ][test]))
+        model, train_result = trainer.fit(scaled[normal_train], scaled[normal_val], seed)
+        scores[DENSE_AE_SEQ] = trainer.predict_errors(model, scaled[test])
 
         labels = y["test"]
         return {

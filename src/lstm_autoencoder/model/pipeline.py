@@ -12,7 +12,10 @@ from sklearn.model_selection import train_test_split
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.loader import DatasetLoader
-from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import CausalFeatureBuilder
+from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
+    HISTORY_LENGTH,
+    CausalFeatureBuilder,
+)
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
@@ -168,7 +171,10 @@ class PaySimModelTrainingPipeline:
         train_normal_mask = built[self._schema.receiver_column].isin(receiver_ids["train"]) & (
             built[self._schema.target_column] == 0
         )
-        scaler = FeatureScaler(self._sequence_config.feature_columns).fit(built, train_normal_mask)
+        log1p_columns = (self._schema.amount_column, HISTORY_LENGTH)
+        scaler = FeatureScaler(self._sequence_config.feature_columns, log1p_columns).fit(
+            built, train_normal_mask
+        )
         scaled = scaler.transform(built)
 
         batch = SequenceBuilder(self._sequence_config, self._schema).build(scaled)
