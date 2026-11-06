@@ -107,10 +107,7 @@ class HybridSignalProbe:
     def _default_checkpoint_path(self) -> Path:
         """Checkpoint path matching PaySimModelTrainingPipeline's naming
         convention for the current window, architecture, and seed."""
-        if self._model_config.bottleneck:
-            tag = "bottleneck"
-        else:
-            tag = "attn" if self._model_config.attention else "plain"
+        tag = self._model_config.architecture_tag
         name = f"lstm_ae_w{self._sequence_config.window_length}_{tag}_seed{self._seed}_best.pt"
         return self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial" / name
 

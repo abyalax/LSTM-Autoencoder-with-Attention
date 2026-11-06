@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,9 +37,9 @@ class Trainer:
         torch.backends.cudnn.benchmark = True
 
     def fit(
-        self, 
-        train_dataset: Dataset, 
-        val_dataset: Dataset, 
+        self,
+        train_dataset: Dataset,
+        val_dataset: Dataset,
         val_labels: np.ndarray
     ) -> tuple[LSTMAutoencoder, TrainResult]:
         """Train on normal-only windows; validate using reconstruction-error AUC."""
@@ -81,6 +82,13 @@ class Trainer:
             history=history,
             checkpoint_path=str(checkpoint_path),
         )
+
+        del train_loader
+        del val_loader
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         return model, result
 
     def score(self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray) -> tuple[float, float]:
@@ -116,15 +124,27 @@ class Trainer:
         )
 
     def _build_model(self) -> LSTMAutoencoder:
-        """Instantiate the model on the trainer's device."""
-        return LSTMAutoencoder(
+        """Instantiate the model on the trainer's device.
+
+        Raises if the built model's architecture differs from the requested
+        config, so a flag that is not forwarded can never silently train (and
+        get a checkpoint named after) a different architecture.
+        """
+        model = LSTMAutoencoder(
             input_dim=self._model_config.input_dim,
             hidden_dim=self._model_config.hidden_dim,
             num_layers=self._model_config.num_layers,
             attention=self._model_config.attention,
             bottleneck=self._model_config.bottleneck,
+            attention_pooling=self._model_config.attention_pooling,
             dropout=self._model_config.dropout,
-        ).to(self._device)
+        )
+        if model.architecture_tag != self._model_config.architecture_tag:
+            raise RuntimeError(
+                f"Architecture mismatch: config requests '{self._model_config.architecture_tag}' "
+                f"but the built model is '{model.architecture_tag}'."
+            )
+        return model.to(self._device)
 
     def _train_epoch(self, model: LSTMAutoencoder, loader: DataLoader, optimizer: torch.optim.Optimizer) -> float:
         """Run one training epoch and return the mean reconstruction loss."""

@@ -35,7 +35,6 @@ class ReportWritter:
         domain_data: str = "general",
         pipeline: str = "general",
         class_name: str | None = None,
-        architecture_config: dict[str, object] | None = None,
     ) -> None:
         """Initialize the report writer with config and optional reporter.
 
@@ -45,7 +44,6 @@ class ReportWritter:
             domain_data: Optional domain data name (auto-detected if not provided)
             pipeline: Optional pipeline name (auto-detected if not provided)
             class_name: Optional class name (auto-detected if not provided)
-            architecture_config: Optional dict with architecture details (window, architecture, seeds, etc.)
         """
         self._config = config
         self._reporter = reporter or ConsoleReporter()
@@ -53,7 +51,6 @@ class ReportWritter:
         self._domain_data = domain_data
         self._pipeline = pipeline
         self._class_name = class_name
-        self._architecture_config = architecture_config or {}
         self._command = self._get_command_line()
 
     def _get_command_line(self) -> str:
@@ -66,27 +63,14 @@ class ReportWritter:
         """
         captured_command = os.getenv("LSTM_AUTOENCODER_COMMAND")
         if captured_command:
-            # If architecture config is available, append it to the command
-            if self._architecture_config:
-                config_str = " ".join(f"--{k} {v}" if v is not True else f"--{k}"
-                                      for k, v in self._architecture_config.items())
-                return f"{captured_command} {config_str}"
             return captured_command
 
         command = getattr(sys, "orig_argv", None) or sys.argv
 
         if sys.platform == "win32":
-            base_command = subprocess.list2cmdline(command)
-        else:
-            base_command = shlex.join(command)
+            return subprocess.list2cmdline(command)
 
-        # If architecture config is available, append it to the command
-        if self._architecture_config:
-            config_str = " ".join(f"--{k} {v}" if v is not True else f"--{k}"
-                                  for k, v in self._architecture_config.items())
-            return f"{base_command} {config_str}"
-
-        return base_command
+        return shlex.join(command)
 
     @property
     def reporter(self) -> ConsoleReporter:

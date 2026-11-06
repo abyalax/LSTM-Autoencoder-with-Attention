@@ -156,6 +156,16 @@ class LSTMAutoencoder(nn.Module):
         self.attention_pooling = AttentionPooling(hidden_dim) if self.attention_pooling_enabled else None
         self.decoder = Decoder(hidden_dim, input_dim, num_layers, dropout)
 
+    @property
+    def architecture_tag(self) -> str:
+        """Architecture this instance ACTUALLY implements (from its enabled flags,
+        not from the requested config). Same labels as `ModelConfig.architecture_tag`."""
+        if self.bottleneck_enabled:
+            return "bottleneck"
+        if self.attention_pooling_enabled:
+            return "attn_pool"
+        return "attn" if self.attention_enabled else "plain"
+
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Return the reconstructed sequence, same shape as `x`."""
         encoded, (hidden, _) = self.encoder(x)

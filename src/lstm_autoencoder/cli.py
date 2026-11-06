@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -324,7 +326,9 @@ def _run_train_model(
         pipeline.run_with_seeds(seeds)
     else:
         pipeline.run()
-    return 0
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)
 
 
 def _run_probe_hybrid_signal(

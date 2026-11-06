@@ -1,5 +1,6 @@
 """Train LSTM-Autoencoder for all window sizes, seeds, and architectures."""
 
+import argparse
 import subprocess
 import sys
 from itertools import product
@@ -13,6 +14,55 @@ from lstm_autoencoder.reporting.beautify_log import (
     print_success,
     print_warning,
 )
+
+DEFAULT_WINDOWS = [1, 3, 5, 10]
+DEFAULT_SEEDS = [42, 123, 2026]
+ARCHITECTURES = ["attention", "bottleneck", "plain", "attention_pooling"]
+
+
+def _csv_ints(value: str) -> list[int]:
+    """Parse a comma-separated list of integers, e.g. '1,3,5'."""
+    return [int(item) for item in value.split(",") if item.strip()]
+
+
+def _csv_architectures(value: str) -> list[str]:
+    """Parse a comma-separated list of architecture names and validate each."""
+    names = [item.strip() for item in value.split(",") if item.strip()]
+    unknown = [name for name in names if name not in ARCHITECTURES]
+    if unknown:
+        raise argparse.ArgumentTypeError(
+            f"Unknown architecture(s): {unknown}. Choose from: {ARCHITECTURES}"
+        )
+    return names
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI options that select which configurations to train."""
+    parser = argparse.ArgumentParser(
+        description="Train LSTM-Autoencoder for a grid of windows, seeds, and architectures."
+    )
+    parser.add_argument(
+        "--architectures", type=_csv_architectures, default=list(ARCHITECTURES),
+        help=f"Comma-separated architectures to train (default: all). Choices: {', '.join(ARCHITECTURES)}",
+    )
+    parser.add_argument(
+        "--windows", type=_csv_ints, default=list(DEFAULT_WINDOWS),
+        help="Comma-separated window sizes (default: 1,3,5,10).",
+    )
+    parser.add_argument(
+        "--seeds", type=_csv_ints, default=list(DEFAULT_SEEDS),
+        help="Comma-separated seeds (default: 42,123,2026).",
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Retrain even if checkpoints already exist (overwrites them). "
+             "Needed when existing checkpoints of a selected architecture are invalid.",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Print the commands that would run (and which would be skipped) without training.",
+    )
+    return parser.parse_args(argv)
 
 
 def get_checkpoint_path(
@@ -61,61 +111,53 @@ def checkpoint_exists(
 
 
 def run_command(cmd: list[str]) -> tuple[int, str, str]:
-    """Run a command with streaming stdout/stderr and return exit code, stdout, stderr."""
+    """Run a command, stream its combined output live, and return (exit code, output, "").
+
+    stderr is merged into stdout: reading the two pipes one after another can
+    deadlock once the unread pipe's OS buffer fills up during a long training run.
+    """
     print_dim(f"Running: {' '.join(cmd)}")
     print()
 
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,  # Line buffered
         universal_newlines=True,
     )
 
-    stdout_lines = []
-    stderr_lines = []
-
-    # Stream stdout in real-time
+    output_lines: list[str] = []
     if process.stdout:
-        for line in iter(process.stdout.readline, ''):
-            if line:
-                print(line, end='', flush=True)
-                stdout_lines.append(line)
-
-    # Stream stderr in real-time
-    if process.stderr:
-        for line in iter(process.stderr.readline, ''):
-            if line:
-                print(line, end='', flush=True, file=sys.stderr)
-                stderr_lines.append(line)
+        for line in iter(process.stdout.readline, ""):
+            print(line, end="", flush=True)
+            output_lines.append(line)
 
     process.wait()
-    return_code = process.returncode
-
-    stdout = ''.join(stdout_lines)
-    stderr = ''.join(stderr_lines)
-
-    return return_code, stdout, stderr
+    return process.returncode, "".join(output_lines), ""
 
 
-def main() -> int:
-    """Train all configurations."""
+def main(argv: list[str] | None = None) -> int:
+    """Train the selected configurations."""
+    args = parse_args(argv)
     project_root = Path.cwd()
     dataset = "paysim_synthetic_financial"
-    windows = [1, 3, 5, 10]
-    seeds = [42, 123, 2026]
-    architectures = ["attention", "bottleneck", "plain", "attention_pooling"]
+    windows: list[int] = args.windows
+    seeds: list[int] = args.seeds
+    architectures: list[str] = args.architectures
 
     seed_list = ",".join(map(str, seeds))
 
-    print_header("Starting comprehensive training for all configurations")
+    print_header("Starting training for selected configurations")
     print()
     print_info(f"Dataset: {dataset}")
     print_info(f"Windows: {windows}")
     print_info(f"Seeds: {seeds}")
     print_info(f"Architectures: {architectures}")
+    print_info(f"Force retrain: {args.force}")
+    if args.dry_run:
+        print_warning("Dry run: nothing will be trained")
     print()
     print_dim(f"Total configurations: {len(windows) * len(architectures)} (x {len(seeds)} seeds each)")
     print()
@@ -132,11 +174,11 @@ def main() -> int:
         current += 1
         arch_flags = get_architecture_flags(arch_name)
 
-        # Check if checkpoints already exist
-        if checkpoint_exists(project_root, window, arch_name, seeds):
+        # Resume mechanism: skip configurations whose checkpoints all exist (unless --force)
+        if not args.force and checkpoint_exists(project_root, window, arch_name, seeds):
             print_header(f"[{current}/{total_configs}] Skipping: Window={window}, Architecture={arch_name}, Seeds={seed_list}")  # noqa: E501
             print()
-            print_warning("⊘ Checkpoints already exist, skipping...")
+            print_warning("⊘ Checkpoints already exist, skipping (use --force to retrain)...")
             for seed in seeds:
                 checkpoint_path = get_checkpoint_path(project_root, window, arch_name, seed)
                 print_dim(f"  - {checkpoint_path.name}")
@@ -151,15 +193,15 @@ def main() -> int:
             "uv", "run", "python", "-m", "lstm_autoencoder", "train-model",
             "--dataset", dataset,
             "--window", str(window),
-            "--seeds", seed_list,
-        ] + arch_flags
+        ] + arch_flags + ["--seeds", seed_list]
+
+        if args.dry_run:
+            print_dim(f"Would run: {' '.join(cmd)}")
+            print()
+            continue
 
         try:
-            return_code, stdout, stderr = run_command(cmd)
-            print()
-            print_success(f"✓ Completed: Window={window}, Architecture={arch_name}")
-            print()
-            completed += 1
+            return_code, output, _ = run_command(cmd)
         except Exception as e:
             print()
             print_error(f"✗ Error: Command failed with exception: {e}")
@@ -168,23 +210,18 @@ def main() -> int:
             failed += 1
             continue
 
-        # Check return code manually since we're not using check=True
         if return_code != 0:
             print()
             print_error(f"✗ Error: Command failed with exit code {return_code}")
             print_error(f"Command: {' '.join(cmd)}")
-
-            if stdout:
-                print_error("STDOUT:")
-                print_error(stdout)
-
-            if stderr:
-                print_error("STDERR:")
-                print_error(stderr)
-
             print()
             failed += 1
             continue
+
+        print()
+        print_success(f"✓ Completed: Window={window}, Architecture={arch_name}")
+        print()
+        completed += 1
 
     print_header("Training Summary")
     print()
@@ -196,7 +233,7 @@ def main() -> int:
     print()
 
     if failed == 0:
-        print_success("All training runs completed successfully!")
+        print_success("Selected training runs completed successfully!")
     else:
         print_warning(f"Training completed with {failed} failures.")
 

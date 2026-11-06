@@ -77,28 +77,17 @@ class PaySimModelTrainingPipeline:
         self._train_config = train_config or TrainConfig()
         self._schema = PaySimSchema()
 
-        # Build architecture config for reporter
-        architecture_config = {
-            "window": self._sequence_config.window_length,
-        }
-        if self._model_config.bottleneck:
-            architecture_config["bottleneck"] = True
-        elif self._model_config.attention_pooling:
-            architecture_config["attention-pooling"] = True
-        elif not self._model_config.attention:
-            architecture_config["plain"] = True
-
         self._reporter = reporter or ReportWritter(
             dataset_config,
             domain_data="paysim_synthetic_financial",
             pipeline="model_training",
-            architecture_config=architecture_config,
         )
         self._reporter.set_path_info_from_module()
         self._seed = random_seed
 
     def run(self) -> dict[str, object]:
         """Run the full pipeline once and return a JSON-friendly summary."""
+        self._record_run_config([self._train_config.seed])
         prepared = self._prepare_data()
         summary = self._train_and_evaluate(prepared, self._train_config)
         self._report_single(summary)
@@ -111,6 +100,7 @@ class PaySimModelTrainingPipeline:
         so they run once; only model init/shuffle/dropout vary per seed. This
         separates genuine improvement from run-to-run training noise.
         """
+        self._record_run_config(list(seeds))
         prepared = self._prepare_data()
         per_seed: list[dict[str, object]] = []
         for seed in seeds:
@@ -138,6 +128,34 @@ class PaySimModelTrainingPipeline:
             json_filename="multi_seed_training_report.json",
         )
         return aggregate
+
+    def _record_run_config(self, seeds: Sequence[int]) -> None:
+        """Write the resolved run configuration into the report (JSON + transcript).
+
+        Unlike the free-text `command` field (what was typed), this records
+        what the pipeline is configured to train: architecture, window, seeds
+        and the checkpoint file each seed will write.
+        """
+        config = self._model_config
+        run_config = {
+            "architecture": config.architecture_tag,
+            "window_length": self._sequence_config.window_length,
+            "seeds": list(seeds),
+            "model_config": {
+                "attention": config.attention,
+                "bottleneck": config.bottleneck,
+                "attention_pooling": config.attention_pooling,
+                "hidden_dim": config.hidden_dim,
+                "num_layers": config.num_layers,
+                "dropout": config.dropout,
+            },
+            "checkpoints": [self._checkpoint_name(seed) for seed in seeds],
+        }
+        self._reporter.update_summary({"run_config": run_config})
+        self._reporter.display_text(
+            f"Run config: architecture={config.architecture_tag} | "
+            f"W={self._sequence_config.window_length} | seeds={list(seeds)}"
+        )
 
     def prepared_test_data(self) -> tuple[TransactionSequenceDataset, np.ndarray, np.ndarray]:
         """Return (test windows, test labels, test row positions into `built`).
@@ -223,6 +241,8 @@ class PaySimModelTrainingPipeline:
         test_auc, test_ap = trainer.score(model, prepared.test_subset, prepared.test_labels)
 
         return {
+            "architecture": model.architecture_tag,
+            "checkpoint_path": result.checkpoint_path,
             "window_length": self._sequence_config.window_length,
             "n_train_normal": prepared.n_train_normal,
             "n_val": prepared.n_val,
@@ -255,15 +275,7 @@ class PaySimModelTrainingPipeline:
     def _architecture_tag(self) -> str:
         """Return a short label for the current model architecture."""
         config = self._model_config
-        architecture_tags = {
-            "bottleneck": config.bottleneck,
-            "attn_pool": config.attention_pooling,
-            "attn": config.attention,
-        }
-        return next(
-            (tag for tag, enabled in architecture_tags.items() if enabled),
-            "plain",
-        )
+        return config.architecture_tag
 
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:

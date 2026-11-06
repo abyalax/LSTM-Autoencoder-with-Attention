@@ -36,6 +36,20 @@ class ModelConfig:
     attention_pooling: bool = False
     dropout: float = 0.1
 
+    @property
+    def architecture_tag(self) -> str:
+        """Short architecture label used in checkpoint names and reports.
+
+        Precedence mirrors `LSTMAutoencoder`: bottleneck > attention pooling >
+        self-attention > plain. Single source of truth for every module that
+        needs to name or locate a checkpoint.
+        """
+        if self.bottleneck:
+            return "bottleneck"
+        if self.attention_pooling:
+            return "attn_pool"
+        return "attn" if self.attention else "plain"
+
 
 @dataclass(frozen=True)
 class TrainConfig:

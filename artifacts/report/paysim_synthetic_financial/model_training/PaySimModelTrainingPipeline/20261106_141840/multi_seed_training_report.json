@@ -1,0 +1,173 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 1 --attention-pooling --seeds 42,123,2026",
+  "run_config": {
+    "architecture": "attn_pool",
+    "window_length": 1,
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "model_config": {
+      "attention": false,
+      "bottleneck": false,
+      "attention_pooling": true,
+      "hidden_dim": 64,
+      "num_layers": 2,
+      "dropout": 0.1
+    },
+    "checkpoints": [
+      "lstm_ae_w1_attn_pool_seed42_best.pt",
+      "lstm_ae_w1_attn_pool_seed123_best.pt",
+      "lstm_ae_w1_attn_pool_seed2026_best.pt"
+    ]
+  },
+  "multi_seed_training": {
+    "runs": [
+      {
+        "architecture": "attn_pool",
+        "checkpoint_path": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\lstm_ae_w1_attn_pool_seed42_best.pt",
+        "window_length": 1,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.6181042677929388,
+        "test_auc": 0.6265490423807267,
+        "test_ap": 0.010044705576682987,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.6770829257836408,
+            "val_auc": 0.6181042677929388
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.17957243056020156,
+            "val_auc": 0.5879396500066855
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.05456655634374664,
+            "val_auc": 0.5265715772857531
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.042884104246141676,
+            "val_auc": 0.4819683727230087
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.03743547149417602,
+            "val_auc": 0.4482578585562708
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.03164231320326859,
+            "val_auc": 0.44993012286459416
+          }
+        ],
+        "seed": 42
+      },
+      {
+        "architecture": "attn_pool",
+        "checkpoint_path": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\lstm_ae_w1_attn_pool_seed123_best.pt",
+        "window_length": 1,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5732550393310237,
+        "test_auc": 0.5769997785033126,
+        "test_ap": 0.009127368666773881,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.639403208239898,
+            "val_auc": 0.5732550393310237
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.15969315124926536,
+            "val_auc": 0.5502086203127974
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.05112592768480004,
+            "val_auc": 0.4980996566887351
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.03987101521027893,
+            "val_auc": 0.45687399782063143
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.03463738002484584,
+            "val_auc": 0.43453800295415157
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.02657128647994377,
+            "val_auc": 0.49310646183229123
+          }
+        ],
+        "seed": 123
+      },
+      {
+        "architecture": "attn_pool",
+        "checkpoint_path": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\lstm_ae_w1_attn_pool_seed2026_best.pt",
+        "window_length": 1,
+        "n_train_normal": 1935179,
+        "n_val": 414411,
+        "n_test": 415074,
+        "best_epoch": 1,
+        "best_val_auc": 0.5909256889834162,
+        "test_auc": 0.5949419679363857,
+        "test_ap": 0.009858054702388448,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.636137986223466,
+            "val_auc": 0.5909256889834162
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.1417598928869259,
+            "val_auc": 0.5581919674176902
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.05150834477221743,
+            "val_auc": 0.4904002166075779
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.04127817638130833,
+            "val_auc": 0.4533445260648675
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.036880331569947765,
+            "val_auc": 0.4342828760735477
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.03368352805766048,
+            "val_auc": 0.41124218579953975
+          }
+        ],
+        "seed": 2026
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "val_auc_mean": 0.5940949987024596,
+      "val_auc_std": 0.022591961324300296,
+      "test_auc_mean": 0.5994969296068083,
+      "test_auc_std": 0.025086712510065327,
+      "test_ap_mean": 0.009676709648615106,
+      "test_ap_std": 0.000484810553687148
+    }
+  }
+}

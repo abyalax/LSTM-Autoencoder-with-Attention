@@ -459,6 +459,4 @@ class HybridClassifierEvaluator:
 
     def _architecture_tag(self) -> str:
         """Short label for the current model variant."""
-        if self._model_config.bottleneck:
-            return "bottleneck"
-        return "attn" if self._model_config.attention else "plain"
+        return self._model_config.architecture_tag
