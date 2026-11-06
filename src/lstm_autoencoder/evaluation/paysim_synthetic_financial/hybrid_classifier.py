@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
     HISTORY_STRATA_LABELS,
@@ -116,6 +117,7 @@ class HybridClassifierEvaluator:
         dataset_config: DatasetConfig,
         sequence_config: SequenceConfig | None = None,
         model_config: ModelConfig | None = None,
+        split_config: SplitConfig | None = None,
         config: HybridClassifierConfig | None = None,
         reporter: ReportWritter | None = None,
     ) -> None:
@@ -123,17 +125,19 @@ class HybridClassifierEvaluator:
         self._dataset_config = dataset_config
         self._sequence_config = sequence_config or SequenceConfig()
         self._model_config = model_config or ModelConfig()
+        self._split_config = split_config or SplitConfig()
         self._config = config or HybridClassifierConfig()
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
 
     def run(self) -> dict[str, object]:
         """Score every split with each seed's checkpoint, fit all variants, report, and return the aggregate."""
-        data = BaselineEvaluator(config=self._dataset_config).prepare_full_features()
+        data = BaselineEvaluator(dataset_config=self._dataset_config).prepare_full_features()
         pipeline = PaySimModelTrainingPipeline(
             dataset_config=self._dataset_config,
             sequence_config=self._sequence_config,
             model_config=self._model_config,
+            split_config=self._split_config,
         )
         scoring = pipeline.prepared_scoring_splits()
         self._assert_aligned(data, scoring)

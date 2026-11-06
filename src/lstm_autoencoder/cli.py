@@ -20,6 +20,11 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier im
     HybridClassifierEvaluator,
 )
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_signal_probe import HybridSignalProbe
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.results_summary import (
+    DEFAULT_LEGACY_SINCE,
+    ResultsSummarizer,
+    ResultsSummaryConfig,
+)
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
 )
@@ -110,17 +115,26 @@ def build_parser() -> argparse.ArgumentParser:
     hybrid_parser.add_argument(
         "--bottleneck",
         action="store_true",
-        help="Match the checkpoint's architecture: bottleneck decoder. Mutually exclusive with --plain and --attention-pooling.",
+        help=(
+            "Match the checkpoint's architecture: bottleneck decoder."
+            "Mutually exclusive with --plain and --attention-pooling."
+        ),
     )
     hybrid_parser.add_argument(
         "--plain",
         action="store_true",
-        help="Match the checkpoint's architecture: raw per-step outputs. Mutually exclusive with --bottleneck and --attention-pooling.",
+        help=(
+            "Match the checkpoint's architecture: raw per-step outputs."
+            "Mutually exclusive with --bottleneck and --attention-pooling."
+        ),
     )
     hybrid_parser.add_argument(
         "--attention-pooling",
         action="store_true",
-        help="Match the checkpoint's architecture: attention pooling. Mutually exclusive with --bottleneck and --plain.",
+        help=(
+            "Match the checkpoint's architecture: attention pooling."
+            "Mutually exclusive with --bottleneck and --plain."
+        ),
     )
     hybrid_parser.add_argument(
         "--seed", type=int, default=42, help="Seed used when the checkpoint was trained (for its filename)."
@@ -144,17 +158,26 @@ def build_parser() -> argparse.ArgumentParser:
     eval_hybrid_parser.add_argument(
         "--bottleneck",
         action="store_true",
-        help="Match the checkpoints' architecture: bottleneck decoder. Mutually exclusive with --plain and --attention-pooling.",
+        help=(
+            "Match the checkpoints' architecture: bottleneck decoder."
+            "Mutually exclusive with --plain and --attention-pooling."
+        ),
     )
     eval_hybrid_parser.add_argument(
         "--plain",
         action="store_true",
-        help="Match the checkpoints' architecture: raw per-step outputs. Mutually exclusive with --bottleneck and --attention-pooling.",
+        help=(
+            "Match the checkpoints' architecture: raw per-step outputs."
+            "Mutually exclusive with --bottleneck and --attention-pooling."
+        ),
     )
     eval_hybrid_parser.add_argument(
         "--attention-pooling",
         action="store_true",
-        help="Match the checkpoints' architecture: attention pooling. Mutually exclusive with --bottleneck and --plain.",
+        help=(
+            "Match the checkpoints' architecture: attention pooling."
+            "Mutually exclusive with --bottleneck and --plain."
+        ),
     )
     eval_hybrid_parser.add_argument(
         "--seeds",
@@ -202,6 +225,41 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DenseAutoencoderConfig.hidden_dim,
         help="Dense AE hidden layer size.",
+    )
+
+    summarize_parser = subparsers.add_parser(
+        "summarize-results",
+        help=(
+            "Turn the existing JSON reports (training grid, baselines, hybrid classifier) into "
+            "markdown tables for the Results section. Reads reports only; nothing is trained."
+        ),
+    )
+    summarize_parser.add_argument(
+        "--project-root",
+        type=Path,
+        default=Path.cwd(),
+        help="Project root containing artifacts/.",
+    )
+    summarize_parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        help="Dataset folder name under artifacts/report (e.g., paysim_synthetic_financial).",
+    )
+    summarize_parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output markdown path. Defaults to artifacts/summary/results_summary.md.",
+    )
+    summarize_parser.add_argument(
+        "--legacy-since",
+        type=str,
+        default=DEFAULT_LEGACY_SINCE,
+        help=(
+            "Only list unverified training reports (no run_config block) with this "
+            "timestamp or later, e.g. 20261106_103302."
+        ),
     )
 
     _add_dataset_arguments(probe_parser)
@@ -295,6 +353,16 @@ def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
     return 0
 
 
+def _run_summarize_results(project_root: Path, dataset: str, out: Path | None, legacy_since: str) -> int:
+    """Summarize existing reports into markdown result tables."""
+    dataset_config = DatasetConfig(project_root=project_root, dataset_name=dataset)
+    ResultsSummarizer(
+        dataset_config=dataset_config,
+        summary_config=ResultsSummaryConfig(legacy_since=legacy_since, output_path=out),
+    ).run()
+    return 0
+
+
 def _run_train_model(
     project_root: Path,
     dataset: str,
@@ -321,6 +389,7 @@ def _run_train_model(
             attention_pooling=attention_pooling,
         ),
         train_config=TrainConfig(),
+        split_config=SplitConfig(),
     )
     if seeds:
         pipeline.run_with_seeds(seeds)
@@ -358,6 +427,7 @@ def _run_probe_hybrid_signal(
             attention=not plain and not bottleneck and not attention_pooling,
             attention_pooling=attention_pooling,
         ),
+        split_config=SplitConfig(),
         checkpoint_path=checkpoint,
         seed=seed,
     ).run()
@@ -466,6 +536,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.keep_account_code,
             arguments.latent_dim,
             arguments.hidden_dim,
+        ),
+        "summarize-results": lambda: _run_summarize_results(
+            project_root, arguments.dataset, arguments.out, arguments.legacy_since
         ),
         "probe-hybrid-signal": lambda: _run_probe_hybrid_signal(
             project_root,

@@ -284,4 +284,29 @@ Optional arguments:
 - `--seeds`: Comma-separated random seeds for repeated experiments (e.g., 42,123,2026). When set, trains and evaluates once per seed on the same data split and reports mean/std across runs. Default is single run with seed 42.
 - `--keep-account-code`: Retain the account_code feature in the feature set. By default, account_code is dropped to prevent data leakage.
 
+### 9. Summarize Results
+
+Turn the JSON reports that already exist under `artifacts/report/` into markdown tables for the Results section. This command only reads reports: nothing is trained and no dataset is loaded.
+
+```Shell
+uv run python -m lstm_autoencoder summarize-results --dataset paysim_synthetic_financial
+```
+
+The summarizer (ResultsSummarizer) writes three sections:
+
+- **LSTM-AE standalone**: test AUC (mean ± std over seeds) per window and architecture. Architecture is taken from the `run_config` block of the training report (verified). Reports without `run_config` are listed separately as legacy, with a label inferred from the typed command (unverified)
+- **Baselines**: the latest LR/GBM ablation report and the latest unsupervised baseline report
+- **Hybrid classifier**: the latest report per window and architecture, with AUC, AP and recall at FPR 1% for every variant plus the paired deltas
+
+The command saves the following artifact:
+
+- `artifacts/summary/results_summary.md` (or the path given by `--out`)
+
+Optional arguments:
+
+- `--project-root`: Project root containing artifacts/. Defaults to current working directory.
+- `--dataset`: Dataset folder name under `artifacts/report/` (e.g., paysim_synthetic_financial). Required.
+- `--out`: Output markdown path. Defaults to `artifacts/summary/results_summary.md`.
+- `--legacy-since`: Only list unverified training reports (no `run_config`) with this timestamp or later. Defaults to `20261106_103302`.
+
 _Last Updated 6 November 2026_

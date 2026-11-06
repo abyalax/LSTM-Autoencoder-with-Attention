@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
@@ -46,6 +47,7 @@ class HybridSignalProbe:
         dataset_config: DatasetConfig,
         sequence_config: SequenceConfig | None = None,
         model_config: ModelConfig | None = None,
+        split_config: SplitConfig | None = None,
         checkpoint_path: Path | None = None,
         seed: int = 42,
         reporter: ReportWritter | None = None,
@@ -54,6 +56,7 @@ class HybridSignalProbe:
         self._dataset_config = dataset_config
         self._sequence_config = sequence_config or SequenceConfig()
         self._model_config = model_config or ModelConfig()
+        self._split_config = split_config or SplitConfig()
         self._seed = seed
         self._checkpoint_path = checkpoint_path or self._default_checkpoint_path()
         self._reporter = reporter or ReportWritter(dataset_config)
@@ -89,6 +92,7 @@ class HybridSignalProbe:
             dataset_config=self._dataset_config,
             sequence_config=self._sequence_config,
             model_config=self._model_config,
+            split_config=self._split_config,
             # NOT self._seed: the receiver train/val/test split always used the
             # pipeline's default (42) during training, regardless of which torch
             # seed trained a given checkpoint -- only the checkpoint filename varies.

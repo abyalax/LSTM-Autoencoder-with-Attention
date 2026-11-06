@@ -17,6 +17,7 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     CausalFeatureBuilder,
 )
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
+from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
@@ -67,6 +68,7 @@ class PaySimModelTrainingPipeline:
         sequence_config: SequenceConfig | None = None,
         model_config: ModelConfig | None = None,
         train_config: TrainConfig | None = None,
+        split_config: SplitConfig | None = None,
         reporter: ReportWritter | None = None,
         random_seed: int = 42,
     ) -> None:
@@ -75,6 +77,7 @@ class PaySimModelTrainingPipeline:
         self._sequence_config = sequence_config or SequenceConfig()
         self._model_config = model_config or ModelConfig()
         self._train_config = train_config or TrainConfig()
+        self._split_config = split_config or SplitConfig()
         self._schema = PaySimSchema()
 
         self._reporter = reporter or ReportWritter(
@@ -295,7 +298,7 @@ class PaySimModelTrainingPipeline:
         }
 
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
-        """Split receivers 70/15/15, stratified by per-receiver fraud rate."""
+        """Split receivers by split_config fractions, stratified by per-receiver fraud rate."""
         receiver_column = self._schema.receiver_column
         target_column = self._schema.target_column
         stats = built.groupby(receiver_column).agg(
@@ -306,9 +309,15 @@ class PaySimModelTrainingPipeline:
             stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True
         ).fillna(FRAUD_RATE_LABELS[0])
 
-        train_ids, rest_ids = train_test_split(stats.index, test_size=0.30, random_state=self._seed, stratify=bins)
+        train_ids, rest_ids = train_test_split(
+            stats.index,
+            test_size=1 - self._split_config.train_fraction,
+            random_state=self._seed,
+            stratify=bins,
+        )
+        val_ratio = self._split_config.validation_fraction / (1 - self._split_config.train_fraction)
         val_ids, test_ids = train_test_split(
-            rest_ids, test_size=0.50, random_state=self._seed, stratify=bins.loc[rest_ids]
+            rest_ids, test_size=1 - val_ratio, random_state=self._seed, stratify=bins.loc[rest_ids]
         )
         return {"train": train_ids, "val": val_ids, "test": test_ids}
 
