@@ -1,45 +1,44 @@
-This scripts directory used for
-- script that run explicitly just for one method on huge class on some pipeline.
-- inject uv for capture command with system (powershell) and then delivere it to python
+This scripts directory is deprecated. All functionality has been moved to the main CLI commands.
 
-## Training Scripts
+## Migration Guide
 
-### train_all_configs
-Python script to train LSTM-Autoencoder for all window sizes, seeds, and architectures.
+The following scripts have been integrated into the main CLI:
 
-**Configurations:**
-- Windows: 1, 3, 5, 10
-- Seeds: 42, 123, 2026
-- Architectures: attention, bottleneck, plain, attention_pooling
-
-**Features:**
-- Resume mechanism: skips configurations where checkpoints already exist
-- Streaming output: real-time training progress
-- Error handling: continues on failure, reports summary at end
-- Colored output: easy to track progress
-
-**Options:**
-- `--architectures a,b`: which architectures to train (default: all). Choices: `attention`, `bottleneck`, `plain`, `attention_pooling`
-- `--windows 1,3,5,10`: window sizes (default: 1,3,5,10)
-- `--seeds 42,123,2026`: seeds (default: 42,123,2026)
-- `--force`: retrain even when checkpoints already exist (overwrites them)
-- `--dry-run`: print the commands that would run / be skipped, without training
-
-**Usage:**
+### train_all_configs.py → train-all-configs
+**Old:**
 ```bash
-# everything (resumes: skips configurations whose checkpoints all exist)
-uv run python scripts/train_all_configs.py
-
-# retrain only attention pooling for all windows (existing checkpoints are invalid -> --force)
-uv run python scripts/train_all_configs.py --architectures attention_pooling --force
-
-# preview first
-uv run python scripts/train_all_configs.py --architectures attention_pooling --force --dry-run
+uv run python scripts/train_all_configs.py --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
 ```
 
-The full grid is 48 model configurations (4 windows × 4 architectures × 3 seeds) with the optimized GPU settings (batch_size=16384, num_workers=8).
+**New:**
+```bash
+uv run python -m lstm_autoencoder train-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
 
-**Reports:** each training report JSON now contains a `run_config` block (architecture, window, seeds, model flags, checkpoint names) and each run records its `architecture` and `checkpoint_path`. The `architecture` comes from the model that was actually built; the trainer raises if it differs from the requested config. The free-text `command` field is only what was typed.
+### eval_hybrid_all_configs.py → eval-hybrid-all-configs
+**Old:**
+```bash
+uv run python scripts/eval_hybrid_all_configs.py --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+**New:**
+```bash
+uv run python -m lstm_autoencoder eval-hybrid-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+### run.ps1 → run-pipeline
+**Old:**
+```powershell
+.\scripts\run.ps1
+```
+
+**New:**
+```bash
+uv run python -m lstm_autoencoder run-pipeline --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+### capture-command-uv.ps1
+Removed - no longer needed. The reporter now has a fallback to `sys.argv` and the pipelines explicitly save structured `run_config` blocks in their JSON reports.
 
 ## Validation Scripts
 

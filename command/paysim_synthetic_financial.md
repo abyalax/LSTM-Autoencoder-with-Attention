@@ -284,7 +284,78 @@ Optional arguments:
 - `--seeds`: Comma-separated random seeds for repeated experiments (e.g., 42,123,2026). When set, trains and evaluates once per seed on the same data split and reports mean/std across runs. Default is single run with seed 42.
 - `--keep-account-code`: Retain the account_code feature in the feature set. By default, account_code is dropped to prevent data leakage.
 
-### 9. Summarize Results
+### 9. Train All Configurations
+
+Train LSTM-Autoencoder for a grid of window sizes, seeds, and architectures in a single command.
+
+```Shell
+uv run python -m lstm_autoencoder train-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+**Features:**
+- Resume mechanism: skips configurations where checkpoints already exist
+- Error handling: continues on failure, reports summary at end
+- Progress tracking: displays current configuration and overall progress
+
+**Options:**
+- `--project-root`: Project root containing data/raw/. Defaults to current working directory.
+- `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
+- `--nrows`: Read only the first N rows. Defaults to all rows.
+- `--windows`: Comma-separated window sizes (default: 1,3,5,10).
+- `--seeds`: Comma-separated seeds (default: 42,123,2026).
+- `--architectures`: Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.
+- `--force`: Retrain even if checkpoints already exist (overwrites them).
+- `--dry-run`: Print the commands that would run without training.
+
+The full grid is 48 model configurations (4 windows × 4 architectures × 3 seeds) with the optimized GPU settings (batch_size=16384, num_workers=8).
+
+### 10. Evaluate Hybrid All Configurations
+
+Evaluate hybrid classifier for a grid of window sizes, seeds, and architectures in a single command.
+
+```Shell
+uv run python -m lstm_autoencoder eval-hybrid-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+**Features:**
+- Resume mechanism: skips configurations where reports already exist
+- Error handling: continues on failure, reports summary at end
+- Progress tracking: displays current configuration and overall progress
+
+**Options:**
+- `--project-root`: Project root containing data/raw/. Defaults to current working directory.
+- `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
+- `--nrows`: Read only the first N rows. Defaults to all rows.
+- `--windows`: Comma-separated window sizes (default: 1,3,5,10).
+- `--seeds`: Comma-separated seeds (default: 42,123,2026).
+- `--architectures`: Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.
+- `--force`: Re-evaluate even if reports already exist (overwrites them).
+- `--dry-run`: Print the commands that would run without evaluating.
+- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 200).
+
+### 11. Run End-to-End Pipeline
+
+Run the complete evaluation pipeline: hybrid evaluation for all configurations, unsupervised evaluation, and results summarization.
+
+```Shell
+uv run python -m lstm_autoencoder run-pipeline --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures attention,bottleneck,plain,attention_pooling
+```
+
+**Pipeline steps:**
+1. Evaluate hybrid classifier for all window configurations
+2. Evaluate unsupervised baselines (Isolation Forest, Dense Autoencoder)
+3. Summarize all results into markdown tables
+
+**Options:**
+- `--project-root`: Project root containing data/raw/. Defaults to current working directory.
+- `--dataset`: Dataset folder name in data/raw/ (e.g., paysim_synthetic_financial). Required.
+- `--nrows`: Read only the first N rows. Defaults to all rows.
+- `--windows`: Comma-separated window sizes (default: 1,3,5,10).
+- `--seeds`: Comma-separated seeds (default: 42,123,2026).
+- `--architectures`: Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.
+- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 200).
+
+### 12. Summarize Results
 
 Turn the JSON reports that already exist under `artifacts/report/` into markdown tables for the Results section. This command only reads reports: nothing is trained and no dataset is loaded.
 

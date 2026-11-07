@@ -262,6 +262,110 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    train_all_parser = subparsers.add_parser(
+        "train-all-configs",
+        help="Train LSTM-AE for a grid of windows, seeds, and architectures.",
+    )
+    _add_dataset_arguments(train_all_parser)
+    train_all_parser.add_argument(
+        "--windows",
+        type=str,
+        default="1,3,5,10",
+        help="Comma-separated window sizes (default: 1,3,5,10).",
+    )
+    train_all_parser.add_argument(
+        "--seeds",
+        type=str,
+        default="42,123,2026",
+        help="Comma-separated seeds (default: 42,123,2026).",
+    )
+    train_all_parser.add_argument(
+        "--architectures",
+        type=str,
+        default="attention,bottleneck,plain,attention_pooling",
+        help="Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.",
+    )
+    train_all_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Retrain even if checkpoints already exist (overwrites them).",
+    )
+    train_all_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the commands that would run without training.",
+    )
+
+    eval_hybrid_all_parser = subparsers.add_parser(
+        "eval-hybrid-all-configs",
+        help="Evaluate hybrid classifier for a grid of windows, seeds, and architectures.",
+    )
+    _add_dataset_arguments(eval_hybrid_all_parser)
+    eval_hybrid_all_parser.add_argument(
+        "--windows",
+        type=str,
+        default="1,3,5,10",
+        help="Comma-separated window sizes (default: 1,3,5,10).",
+    )
+    eval_hybrid_all_parser.add_argument(
+        "--seeds",
+        type=str,
+        default="42,123,2026",
+        help="Comma-separated seeds (default: 42,123,2026).",
+    )
+    eval_hybrid_all_parser.add_argument(
+        "--architectures",
+        type=str,
+        default="attention,bottleneck,plain,attention_pooling",
+        help="Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.",
+    )
+    eval_hybrid_all_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-evaluate even if reports already exist (overwrites them).",
+    )
+    eval_hybrid_all_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the commands that would run without evaluating.",
+    )
+    eval_hybrid_all_parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=200,
+        help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
+    )
+
+    run_pipeline_parser = subparsers.add_parser(
+        "run-pipeline",
+        help="Run end-to-end pipeline: hybrid evaluation, unsupervised evaluation, summarize.",
+    )
+    _add_dataset_arguments(run_pipeline_parser)
+    run_pipeline_parser.add_argument(
+        "--windows",
+        type=str,
+        default="1,3,5,10",
+        help="Comma-separated window sizes (default: 1,3,5,10).",
+    )
+    run_pipeline_parser.add_argument(
+        "--seeds",
+        type=str,
+        default="42,123,2026",
+        help="Comma-separated seeds (default: 42,123,2026).",
+    )
+    run_pipeline_parser.add_argument(
+        "--architectures",
+        type=str,
+        default="attention,bottleneck,plain,attention_pooling",
+        help="Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.",
+    )
+    run_pipeline_parser.add_argument(
+        "--bootstrap",
+        type=int,
+        default=200,
+        help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
+    )
+
     _add_dataset_arguments(probe_parser)
     probe_parser.add_argument(
         "--max-train-rows",
@@ -487,6 +591,354 @@ def _run_eval_unsupervised(
     return 0
 
 
+def _run_train_all_configs(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    windows: str,
+    seeds: str,
+    architectures: str,
+    force: bool,
+    dry_run: bool,
+) -> int:
+    """Train LSTM-AE for a grid of windows, seeds, and architectures."""
+    import subprocess
+    from itertools import product
+
+    VALID_ARCHITECTURES = ["attention", "bottleneck", "plain", "attention_pooling"]
+
+    windows_list = [int(w.strip()) for w in windows.split(",")]
+    seeds_list = [int(s.strip()) for s in seeds.split(",")]
+    arch_list = [a.strip() for a in architectures.split(",")]
+
+    # Validate architectures
+    unknown = [a for a in arch_list if a not in VALID_ARCHITECTURES]
+    if unknown:
+        raise ValueError(f"Unknown architecture(s): {unknown}. Choose from: {VALID_ARCHITECTURES}")
+
+    seed_list_str = ",".join(map(str, seeds_list))
+    total_configs = len(windows_list) * len(arch_list)
+
+    print(f"Starting training for selected configurations")
+    print(f"Dataset: {dataset}")
+    print(f"Windows: {windows_list}")
+    print(f"Seeds: {seeds_list}")
+    print(f"Architectures: {arch_list}")
+    print(f"Force retrain: {force}")
+    if dry_run:
+        print("Dry run: nothing will be trained")
+    print(f"Total configurations: {total_configs} (x {len(seeds_list)} seeds each)")
+    print(f"Project root: {project_root}")
+    print()
+
+    current = 0
+    skipped = 0
+    completed = 0
+    failed = 0
+
+    for window, arch_name in product(windows_list, arch_list):
+        current += 1
+
+        # Get architecture flags
+        if arch_name == "attention":
+            arch_flags = []
+        elif arch_name == "bottleneck":
+            arch_flags = ["--bottleneck"]
+        elif arch_name == "plain":
+            arch_flags = ["--plain"]
+        elif arch_name == "attention_pooling":
+            arch_flags = ["--attention-pooling"]
+        else:
+            arch_flags = []
+
+        # Check if checkpoints exist
+        arch_tag = {
+            "attention": "attn",
+            "bottleneck": "bottleneck",
+            "plain": "plain",
+            "attention_pooling": "attn_pool",
+        }[arch_name]
+
+        all_exist = True
+        for seed in seeds_list:
+            checkpoint_name = f"lstm_ae_w{window}_{arch_tag}_seed{seed}_best.pt"
+            checkpoint_path = project_root / "artifacts" / "model" / "paysim_synthetic_financial" / checkpoint_name
+            if not checkpoint_path.exists():
+                all_exist = False
+                break
+
+        # Skip if all checkpoints exist and not forcing
+        if not force and all_exist:
+            print(f"[{current}/{total_configs}] Skipping: Window={window}, Architecture={arch_name}")
+            print("  Checkpoints already exist, skipping (use --force to retrain)...")
+            for seed in seeds_list:
+                checkpoint_name = f"lstm_ae_w{window}_{arch_tag}_seed{seed}_best.pt"
+                print(f"  - {checkpoint_name}")
+            print()
+            skipped += 1
+            continue
+
+        print(f"[{current}/{total_configs}] Training: Window={window}, Architecture={arch_name}, Seeds={seed_list_str}")
+        print()
+
+        cmd = [
+            "uv", "run", "python", "-m", "lstm_autoencoder", "train-model",
+            "--dataset", dataset,
+            "--window", str(window),
+        ] + arch_flags + ["--seeds", seed_list_str]
+
+        if nrows:
+            cmd.extend(["--nrows", str(nrows)])
+
+        if dry_run:
+            print(f"Would run: {' '.join(cmd)}")
+            print()
+            continue
+
+        try:
+            result = subprocess.run(cmd, check=True)
+            if result.returncode == 0:
+                print(f"Completed: Window={window}, Architecture={arch_name}")
+                print()
+                completed += 1
+            else:
+                print(f"Error: Command failed with exit code {result.returncode}")
+                print(f"Command: {' '.join(cmd)}")
+                print()
+                failed += 1
+        except Exception as e:
+            print(f"Error: Command failed with exception: {e}")
+            print(f"Command: {' '.join(cmd)}")
+            print()
+            failed += 1
+
+    print("Training Summary")
+    print(f"Total configurations: {total_configs}")
+    print(f"Completed: {completed}")
+    print(f"Skipped (already exists): {skipped}")
+    if failed > 0:
+        print(f"Failed: {failed}")
+    print()
+
+    if failed == 0:
+        print("Selected training runs completed successfully!")
+    else:
+        print(f"Training completed with {failed} failures.")
+
+    return 0 if failed == 0 else 1
+
+
+def _run_eval_hybrid_all_configs(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    windows: str,
+    seeds: str,
+    architectures: str,
+    force: bool,
+    dry_run: bool,
+    bootstrap: int,
+) -> int:
+    """Evaluate hybrid classifier for a grid of windows, seeds, and architectures."""
+    import subprocess
+    from itertools import product
+
+    VALID_ARCHITECTURES = ["attention", "bottleneck", "plain", "attention_pooling"]
+
+    windows_list = [int(w.strip()) for w in windows.split(",")]
+    seeds_list = [int(s.strip()) for s in seeds.split(",")]
+    arch_list = [a.strip() for a in architectures.split(",")]
+
+    # Validate architectures
+    unknown = [a for a in arch_list if a not in VALID_ARCHITECTURES]
+    if unknown:
+        raise ValueError(f"Unknown architecture(s): {unknown}. Choose from: {VALID_ARCHITECTURES}")
+
+    seed_list_str = ",".join(map(str, seeds_list))
+    total_configs = len(windows_list) * len(arch_list)
+
+    print(f"Starting hybrid classifier evaluation for selected configurations")
+    print(f"Dataset: {dataset}")
+    print(f"Windows: {windows_list}")
+    print(f"Seeds: {seeds_list}")
+    print(f"Architectures: {arch_list}")
+    print(f"Force re-evaluate: {force}")
+    print(f"Bootstrap samples: {bootstrap}")
+    if nrows:
+        print(f"Row limit: {nrows}")
+    if dry_run:
+        print("Dry run: nothing will be evaluated")
+    print(f"Total configurations: {total_configs}")
+    print(f"Project root: {project_root}")
+    print()
+
+    current = 0
+    skipped = 0
+    completed = 0
+    failed = 0
+
+    for window, arch_name in product(windows_list, arch_list):
+        current += 1
+
+        # Get architecture flags
+        if arch_name == "attention":
+            arch_flags = []
+        elif arch_name == "bottleneck":
+            arch_flags = ["--bottleneck"]
+        elif arch_name == "plain":
+            arch_flags = ["--plain"]
+        elif arch_name == "attention_pooling":
+            arch_flags = ["--attention-pooling"]
+        else:
+            arch_flags = []
+
+        # Check if report exists
+        report_dir = project_root / "artifacts" / "report" / "paysim_synthetic_financial" / "hybrid_classifier"
+        report_exists = False
+        if report_dir.exists():
+            for timestamp_dir in report_dir.iterdir():
+                if timestamp_dir.is_dir():
+                    for config_dir in timestamp_dir.iterdir():
+                        if config_dir.is_dir():
+                            expected_pattern = f"window={window}_architecture={arch_name}"
+                            if config_dir.name == expected_pattern:
+                                json_path = config_dir / "hybrid_classifier_report.json"
+                                if json_path.exists():
+                                    report_exists = True
+                                    break
+                if report_exists:
+                    break
+
+        # Skip if report exists and not forcing
+        if not force and report_exists:
+            print(f"[{current}/{total_configs}] Skipping: Window={window}, Architecture={arch_name}")
+            print("  Report already exists, skipping (use --force to re-evaluate)...")
+            print()
+            skipped += 1
+            continue
+
+        print(f"[{current}/{total_configs}] Evaluating: Window={window}, Architecture={arch_name}, Seeds={seed_list_str}")
+        print()
+
+        cmd = [
+            "uv", "run", "python", "-m", "lstm_autoencoder", "eval-hybrid",
+            "--dataset", dataset,
+            "--window", str(window),
+        ] + arch_flags + ["--seeds", seed_list_str, "--bootstrap", str(bootstrap)]
+
+        if nrows:
+            cmd.extend(["--nrows", str(nrows)])
+
+        if dry_run:
+            print(f"Would run: {' '.join(cmd)}")
+            print()
+            continue
+
+        try:
+            result = subprocess.run(cmd, check=True)
+            if result.returncode == 0:
+                print(f"Completed: Window={window}, Architecture={arch_name}")
+                print()
+                completed += 1
+            else:
+                print(f"Error: Command failed with exit code {result.returncode}")
+                print(f"Command: {' '.join(cmd)}")
+                print()
+                failed += 1
+        except Exception as e:
+            print(f"Error: Command failed with exception: {e}")
+            print(f"Command: {' '.join(cmd)}")
+            print()
+            failed += 1
+
+    print("Evaluation Summary")
+    print(f"Total configurations: {total_configs}")
+    print(f"Completed: {completed}")
+    print(f"Skipped (already exists): {skipped}")
+    if failed > 0:
+        print(f"Failed: {failed}")
+    print()
+
+    if failed == 0:
+        print("Selected evaluation runs completed successfully!")
+    else:
+        print(f"Evaluation completed with {failed} failures.")
+
+    return 0 if failed == 0 else 1
+
+
+def _run_pipeline(
+    project_root: Path,
+    dataset: str,
+    nrows: int | None,
+    windows: str,
+    seeds: str,
+    architectures: str,
+    bootstrap: int,
+) -> int:
+    """Run end-to-end pipeline: hybrid evaluation, unsupervised evaluation, summarize."""
+    import subprocess
+
+    windows_list = [int(w.strip()) for w in windows.split(",")]
+
+    print("Running end-to-end pipeline")
+    print(f"Dataset: {dataset}")
+    print(f"Windows: {windows_list}")
+    print(f"Seeds: {seeds}")
+    print(f"Architectures: {architectures}")
+    print(f"Bootstrap: {bootstrap}")
+    print()
+
+    # Step 1: Evaluate Hybrid Classifier for all configurations
+    for window in windows_list:
+        print(f"Evaluating hybrid for window {window}...")
+        cmd = [
+            "uv", "run", "python", "-m", "lstm_autoencoder", "eval-hybrid-all-configs",
+            "--dataset", dataset,
+            "--windows", str(window),
+            "--seeds", seeds,
+            "--architectures", architectures,
+            "--bootstrap", str(bootstrap),
+        ]
+        if nrows:
+            cmd.extend(["--nrows", str(nrows)])
+
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            print(f"Hybrid evaluation failed for window {window}")
+            return 1
+
+    # Step 2: Evaluate Unsupervised Baselines
+    print("Evaluating unsupervised baselines...")
+    cmd = [
+        "uv", "run", "python", "-m", "lstm_autoencoder", "eval-unsupervised",
+        "--dataset", dataset,
+        "--seeds", seeds,
+    ]
+    if nrows:
+        cmd.extend(["--nrows", str(nrows)])
+
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print("Unsupervised evaluation failed")
+        return 1
+
+    # Step 3: Summarize Results
+    print("Summarizing results...")
+    cmd = [
+        "uv", "run", "python", "-m", "lstm_autoencoder", "summarize-results",
+        "--dataset", dataset,
+    ]
+
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print("Summarization failed")
+        return 1
+
+    print("Pipeline completed successfully!")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Execute the selected CLI command."""
     parser = build_parser()
@@ -550,6 +1002,36 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.attention_pooling,
             arguments.seed,
             arguments.checkpoint,
+        ),
+        "train-all-configs": lambda: _run_train_all_configs(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.windows,
+            arguments.seeds,
+            arguments.architectures,
+            arguments.force,
+            arguments.dry_run,
+        ),
+        "eval-hybrid-all-configs": lambda: _run_eval_hybrid_all_configs(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.windows,
+            arguments.seeds,
+            arguments.architectures,
+            arguments.force,
+            arguments.dry_run,
+            arguments.bootstrap,
+        ),
+        "run-pipeline": lambda: _run_pipeline(
+            project_root,
+            arguments.dataset,
+            arguments.nrows,
+            arguments.windows,
+            arguments.seeds,
+            arguments.architectures,
+            arguments.bootstrap,
         ),
     }
 
