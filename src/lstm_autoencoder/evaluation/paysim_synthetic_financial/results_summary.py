@@ -142,6 +142,12 @@ class ResultsSummarizer:
             ]
             out.append(f"Supervised ablation (report {stamp}):\n")
             out.append(self._table(["model", "test AUC", "test AP"], rows))
+
+            # Add side-by-side per-bucket table for baseline variants
+            by_bucket_section = self._baseline_by_bucket_table(report["ablation"])
+            if by_bucket_section:
+                out.append("\n" + by_bucket_section)
+
         unsupervised = self._reports("unsupervised_baselines")
         if unsupervised:
             stamp, report = unsupervised[-1]
@@ -199,13 +205,54 @@ class ResultsSummarizer:
             )
             out.append(self._table(["comparison", "d AUC", "d AP", "CI>0"], rows))
 
-            # Add per-history_bucket results for the final model (hybrid_val)
+            # Add per-history_bucket results for the final model (hybrid_val) and AE error alone
             if hybrid["per_seed"]:
                 by_bucket_section = self._by_bucket_table(hybrid["per_seed"], "hybrid_val")
                 if by_bucket_section:
                     out.append("\n" + by_bucket_section)
 
+                # Add AE error-only per-bucket AUC
+                ae_by_bucket_section = self._by_bucket_table(hybrid["per_seed"], "ae_error_only")
+                if ae_by_bucket_section:
+                    out.append("\n" + ae_by_bucket_section)
+
             out.append("")
+        return "\n".join(out)
+
+    def _baseline_by_bucket_table(self, ablation: dict) -> str:
+        """Generate a side-by-side per-bucket table for all baseline variants."""
+        from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import HISTORY_STRATA_LABELS
+
+        # Collect all variant names
+        variant_names = list(ablation.keys())
+
+        # Build table with variants as columns
+        header = ["bucket"]
+        for variant in variant_names:
+            header.extend([f"{variant}_n", f"{variant}_n_fraud", f"{variant}_AUC", f"{variant}_AP"])
+
+        rows = []
+        for bucket_label in HISTORY_STRATA_LABELS:
+            row = [bucket_label]
+            for variant in variant_names:
+                by_bucket = ablation[variant].get("by_bucket", {}).get(bucket_label, {})
+                n = by_bucket.get("n", 0)
+                n_fraud = by_bucket.get("n_fraud", 0)
+                auc = by_bucket.get("auc", float("nan"))
+                ap = by_bucket.get("ap", float("nan"))
+                row.extend([
+                    str(n),
+                    str(n_fraud),
+                    self._format(auc) if not str(auc) == "nan" else "-",
+                    self._format(ap) if not str(ap) == "nan" else "-",
+                ])
+            rows.append(row)
+
+        if not rows:
+            return ""
+
+        out = ["### Baseline per history bucket (side-by-side)\n"]
+        out.append(self._table(header, rows))
         return "\n".join(out)
 
     def _by_bucket_table(self, per_seed: list[dict], variant_name: str) -> str:

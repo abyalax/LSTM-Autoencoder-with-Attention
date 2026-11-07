@@ -218,8 +218,18 @@ class HybridClassifierEvaluator:
         shared: _SeedIndependentScores,
     ) -> dict[str, object]:
         """Fit and score every variant for one AE seed."""
+        # Compute train-normal statistics for leak-free normalization
+        train_normal_mask = y["train"] == 0
+        train_normal_log_errors = np.log(errors["train"][train_normal_mask] + self._config.error_epsilon)
+        train_normal_stats: dict[str, tuple[float, float]] = {}
+        for label in HISTORY_STRATA_LABELS:
+            mask = (buckets["train"][train_normal_mask] == label)
+            if mask.sum() > 0:
+                bucket_log_errors = train_normal_log_errors[mask]
+                train_normal_stats[label] = (float(bucket_log_errors.mean()), float(bucket_log_errors.std()))
+
         feature = {name: self._error_feature(values) for name, values in errors.items()}
-        feature_norm = {name: self._error_feature(values, buckets[name]) for name, values in errors.items()}
+        feature_norm = {name: self._error_feature(values, buckets[name], train_normal_stats) for name, values in errors.items()}
         rng = np.random.default_rng(self._config.random_seed + seed)
         shuffled = {name: rng.permutation(feature[name]) for name in ("val", "test")}
 
@@ -269,33 +279,44 @@ class HybridClassifierEvaluator:
         model.fit(scaler.fit_transform(x), y)
         return _FittedLogistic(scaler, model)
 
-    def _error_feature(self, errors: np.ndarray, buckets: np.ndarray | None = None) -> np.ndarray:
+    def _error_feature(self, errors: np.ndarray, buckets: np.ndarray | None = None, train_normal_stats: dict[str, tuple[float, float]] | None = None) -> np.ndarray:
         """Log-transform the heavy-tailed reconstruction error (epsilon guards exact zeros).
 
-        If buckets are provided, normalizes error per history_bucket before log transform.
+        If buckets are provided, normalizes log-error per history bucket using train-normal statistics.
         This tests the hypothesis that AE error mimics non-linear history effects.
+
+        Args:
+            errors: Raw reconstruction errors
+            buckets: History bucket labels (same length as errors)
+            train_normal_stats: Pre-computed (mean, std) per bucket from train-normal rows.
+                                 If None and buckets provided, computes from current split (legacy behavior).
         """
         error_array = np.asarray(errors, dtype="float64")
+        # Log transform first (no clipping, allow negative log values)
+        log_errors = np.log(error_array + self._config.error_epsilon)
+
         if buckets is not None:
-            # Normalize error per history bucket
-            normalized = error_array.copy()
+            normalized = log_errors.copy()
             for label in HISTORY_STRATA_LABELS:
                 mask = buckets == label
                 if mask.sum() > 0:
-                    bucket_errors = error_array[mask]
-                    bucket_mean = bucket_errors.mean()
-                    bucket_std = bucket_errors.std()
-                    if bucket_std > 1e-8:  # Avoid division by very small numbers
-                        normalized[mask] = (bucket_errors - bucket_mean) / bucket_std
+                    if train_normal_stats is not None and label in train_normal_stats:
+                        # Use train-normal statistics (leak-free protocol)
+                        bucket_mean, bucket_std = train_normal_stats[label]
                     else:
-                        # If std is too small, use raw error minus mean
-                        normalized[mask] = bucket_errors - bucket_mean
-            error_array = normalized
-        # Handle any NaN or inf values before log transform
-        error_array = np.nan_to_num(error_array, nan=0.0, posinf=0.0, neginf=0.0)
-        # Ensure all values are non-negative before log transform
-        error_array = np.maximum(error_array, 0.0)
-        return np.log(error_array + self._config.error_epsilon)
+                        # Legacy: compute from current split (may cause leakage if used on train/val)
+                        bucket_log_errors = log_errors[mask]
+                        bucket_mean = bucket_log_errors.mean()
+                        bucket_std = bucket_log_errors.std()
+
+                    if bucket_std > 1e-8:  # Avoid division by very small numbers
+                        normalized[mask] = (log_errors[mask] - bucket_mean) / bucket_std
+                    else:
+                        # If std is too small, use log error minus mean
+                        normalized[mask] = log_errors[mask] - bucket_mean
+            log_errors = normalized
+
+        return log_errors
 
     def _metrics(self, scores: np.ndarray, labels: np.ndarray) -> dict[str, float]:
         """AUC, AP and recall at the configured FPR targets."""
@@ -317,7 +338,7 @@ class HybridClassifierEvaluator:
         return f"{candidate}_vs_{reference}"
 
     def _bootstrap(self, scores: dict[str, np.ndarray], labels: np.ndarray, seed: int) -> dict[str, dict[str, float]]:
-        """Paired, class-stratified bootstrap of delta AUC / delta AP for the primary comparisons.
+        """Paired, class-stratified bootstrap of delta AUC / delta AP / delta recall@FPR for the primary comparisons.
 
         Fraud and normal rows are resampled separately so every draw keeps the
         test prevalence; all variants are scored on the SAME draw (paired).
@@ -326,8 +347,10 @@ class HybridClassifierEvaluator:
         positives = np.flatnonzero(labels == 1)
         negatives = np.flatnonzero(labels == 0)
         names = sorted({name for pair in BOOTSTRAP_COMPARISONS for name in pair})
+        # Initialize storage for all metrics
+        metric_keys = ["auc", "ap"] + [f"recall_at_fpr_{fpr:g}" for fpr in self._config.fpr_targets]
         draws: dict[str, dict[str, list[float]]] = {
-            self._pair_name(*pair): {"auc": [], "ap": []} for pair in BOOTSTRAP_COMPARISONS
+            self._pair_name(*pair): {key: [] for key in metric_keys} for pair in BOOTSTRAP_COMPARISONS
         }
         for _ in range(self._config.n_bootstrap):
             index = np.concatenate(
@@ -336,9 +359,17 @@ class HybridClassifierEvaluator:
             resampled = labels[index]
             auc = {name: RankingMetrics.roc_auc(scores[name][index], resampled) for name in names}
             ap = {name: RankingMetrics.average_precision(scores[name][index], resampled) for name in names}
+            recall_at_fpr = {
+                fpr: {name: RankingMetrics.recall_at_fpr(scores[name][index], resampled, fpr) for name in names}
+                for fpr in self._config.fpr_targets
+            }
             for candidate, reference in BOOTSTRAP_COMPARISONS:
-                draws[self._pair_name(candidate, reference)]["auc"].append(auc[candidate] - auc[reference])
-                draws[self._pair_name(candidate, reference)]["ap"].append(ap[candidate] - ap[reference])
+                pair_name = self._pair_name(candidate, reference)
+                draws[pair_name]["auc"].append(auc[candidate] - auc[reference])
+                draws[pair_name]["ap"].append(ap[candidate] - ap[reference])
+                for fpr in self._config.fpr_targets:
+                    key = f"recall_at_fpr_{fpr:g}"
+                    draws[pair_name][key].append(recall_at_fpr[fpr][candidate] - recall_at_fpr[fpr][reference])
 
         summary: dict[str, dict[str, float]] = {}
         for pair_name, metrics in draws.items():
@@ -351,6 +382,13 @@ class HybridClassifierEvaluator:
                 "d_ap_ci_high": float(ap_high),
                 "p_d_auc_le_0": float(np.mean(np.asarray(metrics["auc"]) <= 0.0)),
             }
+            # Add recall@FPR CIs
+            for fpr in self._config.fpr_targets:
+                key = f"recall_at_fpr_{fpr:g}"
+                recall_low, recall_high = np.percentile(metrics[key], [2.5, 97.5])
+                summary[pair_name][f"d_{key}_ci_low"] = float(recall_low)
+                summary[pair_name][f"d_{key}_ci_high"] = float(recall_high)
+                summary[pair_name][f"p_d_{key}_le_0"] = float(np.mean(np.asarray(metrics[key]) <= 0.0))
         return summary
 
     def _by_bucket(
@@ -427,13 +465,21 @@ class HybridClassifierEvaluator:
         for candidate, reference in (*BOOTSTRAP_COMPARISONS, *DIAGNOSTIC_COMPARISONS):
             pair = self._pair_name(candidate, reference)
             row = {}
-            for metric in ("auc", "ap"):
+            # Aggregate point-estimate deltas (auc, ap, recall@FPR)
+            first_deltas: dict[str, float] = per_seed[0]["deltas"][pair]  # type: ignore[assignment]
+            for metric in first_deltas:
                 mean, std = self._mean_std([run["deltas"][pair][metric] for run in per_seed])  # type: ignore[index]
-                row[f"d_{metric}_mean"], row[f"d_{metric}_std"] = mean, std
+                row[f"{metric}_mean"], row[f"{metric}_std"] = mean, std
             if (candidate, reference) in BOOTSTRAP_COMPARISONS and per_seed[0]["bootstrap"]:
                 row["seeds_auc_ci_above_0"] = float(
                     sum(run["bootstrap"][pair]["d_auc_ci_low"] > 0.0 for run in per_seed)  # type: ignore[index]
                 )
+                # Add recall@FPR CI seed counts
+                for fpr in self._config.fpr_targets:
+                    key = f"recall_at_fpr_{fpr:g}"
+                    row[f"seeds_{key}_ci_above_0"] = float(
+                        sum(run["bootstrap"][pair][f"d_{key}_ci_low"] > 0.0 for run in per_seed)  # type: ignore[index]
+                    )
                 row["n_seeds"] = float(len(per_seed))
             deltas[pair] = row
         return {"n_seeds": len(per_seed), "variants": variants, "deltas": deltas}

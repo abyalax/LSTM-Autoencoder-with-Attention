@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -87,6 +89,10 @@ class PaySimModelTrainingPipeline:
         )
         self._reporter.set_path_info_from_module()
         self._seed = random_seed
+        # Allocate one immutable artifact directory per training invocation.
+        # This deliberately does not use timestamps: versions are easy to find,
+        # compare, and never overwrite an earlier experiment.
+        self._artifact_version_dir: Path | None = None
 
     def run(self) -> dict[str, object]:
         """Run the full pipeline once and return a JSON-friendly summary."""
@@ -113,7 +119,7 @@ class PaySimModelTrainingPipeline:
             per_seed.append(summary)
             self._reporter.display_text(
                 f"[seed {seed}] best_epoch {summary['best_epoch']} | "
-                f"val AUC {summary['best_val_auc']:.4f} | test AUC {summary['test_auc']:.4f} | "
+                f"val AUC {summary['best_val_loss']:.4f} | test AUC {summary['test_auc']:.4f} | "
                 f"test AP {summary['test_ap']:.4f}"
             )
 
@@ -139,8 +145,12 @@ class PaySimModelTrainingPipeline:
         what the pipeline is configured to train: architecture, window, seeds
         and the checkpoint file each seed will write.
         """
+        if self._artifact_version_dir is None:
+            self._artifact_version_dir = self._new_artifact_version_dir()
         config = self._model_config
         run_config = {
+            "artifact_version": self._artifact_version_dir.name,
+            "selection_metric": "val_loss",
             "architecture": config.architecture_tag,
             "window_length": self._sequence_config.window_length,
             "seeds": list(seeds),
@@ -152,12 +162,25 @@ class PaySimModelTrainingPipeline:
                 "num_layers": config.num_layers,
                 "dropout": config.dropout,
             },
+            "train_config": {
+                "batch_size": self._train_config.batch_size,
+                "max_epochs": self._train_config.max_epochs,
+                "learning_rate": self._train_config.learning_rate,
+                "weight_decay": self._train_config.weight_decay,
+                "patience": self._train_config.patience,
+                "device": self._train_config.device,
+            },
             "checkpoints": [self._checkpoint_name(seed) for seed in seeds],
         }
         self._reporter.update_summary({"run_config": run_config})
         self._reporter.display_text(
             f"Run config: architecture={config.architecture_tag} | "
             f"W={self._sequence_config.window_length} | seeds={list(seeds)}"
+        )
+        metadata_path = self._artifact_version_dir / "metadata.json"
+        metadata_path.write_text(json.dumps(run_config, indent=2), encoding="utf-8")
+        (self._artifact_version_dir.parent / "latest.json").write_text(
+            json.dumps({"version": self._artifact_version_dir.name}, indent=2), encoding="utf-8"
         )
 
     def prepared_test_data(self) -> tuple[TransactionSequenceDataset, np.ndarray, np.ndarray]:
@@ -186,8 +209,8 @@ class PaySimModelTrainingPipeline:
 
     def checkpoint_path(self, seed: int) -> Path:
         """Path of the checkpoint `_train_and_evaluate` writes for `seed` with this configuration."""
-        checkpoint_dir = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
-        return checkpoint_dir / self._checkpoint_name(seed)
+        directory = self._artifact_version_dir or self._latest_artifact_version_dir()
+        return directory / self._checkpoint_name(seed)
 
     def _prepare_data(self, with_train_scoring: bool = False) -> _PreparedData:
         """Load, scale, and window the dataset once; reused across seeds.
@@ -237,7 +260,9 @@ class PaySimModelTrainingPipeline:
         self, prepared: _PreparedData, train_config: TrainConfig
     ) -> dict[str, object]:
         """Fit one model on `prepared` with `train_config` and score it on test."""
-        checkpoint_dir = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
+        if self._artifact_version_dir is None:
+            raise RuntimeError("Training artifact directory has not been initialized")
+        checkpoint_dir = self._artifact_version_dir
         train_config = replace(train_config, checkpoint_name=self._checkpoint_name(train_config.seed))
         trainer = Trainer(self._model_config, train_config, checkpoint_dir)
         model, result = trainer.fit(prepared.train_subset, prepared.val_subset, prepared.val_labels)
@@ -251,7 +276,7 @@ class PaySimModelTrainingPipeline:
             "n_val": prepared.n_val,
             "n_test": prepared.n_test,
             "best_epoch": result.best_epoch,
-            "best_val_auc": result.best_val_auc,
+            "best_val_loss": result.best_val_loss,
             "test_auc": test_auc,
             "test_ap": test_ap,
             "history": result.history,
@@ -261,7 +286,7 @@ class PaySimModelTrainingPipeline:
         """Write the single-run console/JSON report (same format as before)."""
         self._reporter.display_section(f"LSTM-Autoencoder training (W={self._sequence_config.window_length})")
         self._reporter.display_text(
-            f"Best epoch {summary['best_epoch']} | val AUC {summary['best_val_auc']:.4f} | "
+            f"Best epoch {summary['best_epoch']} | val AUC {summary['best_val_loss']:.4f} | "
             f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f}"
         )
         self._reporter.update_summary({"training": summary})
@@ -275,6 +300,32 @@ class PaySimModelTrainingPipeline:
         so different configurations never overwrite each other's checkpoint."""
         return f"lstm_ae_w{self._sequence_config.window_length}_{self._architecture_tag()}_seed{seed}_best.pt"
 
+    def _new_artifact_version_dir(self) -> Path:
+        """Create the next numbered, metric-labelled model directory atomically."""
+        root = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
+        root.mkdir(parents=True, exist_ok=True)
+        pattern = re.compile(r"^version_(\d+)(?:_.*)?$")
+        numbers = [
+            int(match.group(1))
+            for child in root.iterdir()
+            if child.is_dir() and (match := pattern.match(child.name))
+        ]
+        next_number = max(numbers, default=0) + 1
+        version_dir = root / f"version_{next_number}_loss"
+        version_dir.mkdir()
+        return version_dir
+
+    def _latest_artifact_version_dir(self) -> Path:
+        root = self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial"
+        manifest = root / "latest.json"
+        if manifest.exists():
+            name = json.loads(manifest.read_text(encoding="utf-8"))["version"]
+            directory = root / name
+            if directory.is_dir():
+                return directory
+        # Compatibility with checkpoints produced before versioned artifacts.
+        return root
+
     def _architecture_tag(self) -> str:
         """Return a short label for the current model architecture."""
         config = self._model_config
@@ -283,7 +334,7 @@ class PaySimModelTrainingPipeline:
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:
         """Mean and std of val/test metrics across seeds (ddof=1 when n > 1)."""
-        val_aucs = np.array([run["best_val_auc"] for run in per_seed])
+        val_aucs = np.array([run["best_val_loss"] for run in per_seed])
         test_aucs = np.array([run["test_auc"] for run in per_seed])
         test_aps = np.array([run["test_ap"] for run in per_seed])
         ddof = 1 if len(per_seed) > 1 else 0

@@ -62,6 +62,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Train full/no-history/history-only baselines and compare per history bucket.",
     )
     _add_dataset_arguments(ablation_parser)
+    ablation_parser.add_argument(
+        "--no-account-code",
+        action="store_true",
+        help="Exclude account_code from features (it's a factorized ID, not behavioral).",
+    )
 
     train_parser = subparsers.add_parser(
         "train-model",
@@ -449,11 +454,15 @@ def _run_probe_signal(
         ).run()
     return 0
 
-def _run_ablation(project_root: Path, dataset: str, nrows: int | None) -> int:
+def _run_ablation(project_root: Path, dataset: str, nrows: int | None, no_account_code: bool) -> int:
     """Execute the full/no-history/history-only ablation baselines."""
     dataset_config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
     split_config = SplitConfig()
-    BaselineEvaluator(dataset_config=dataset_config, split_config=split_config).run()
+    BaselineEvaluator(
+        dataset_config=dataset_config,
+        split_config=split_config,
+        keep_account_code=not no_account_code,
+    ).run()
     return 0
 
 
@@ -619,7 +628,7 @@ def _run_train_all_configs(
     seed_list_str = ",".join(map(str, seeds_list))
     total_configs = len(windows_list) * len(arch_list)
 
-    print(f"Starting training for selected configurations")
+    print("Starting training for selected configurations")
     print(f"Dataset: {dataset}")
     print(f"Windows: {windows_list}")
     print(f"Seeds: {seeds_list}")
@@ -757,7 +766,7 @@ def _run_eval_hybrid_all_configs(
     seed_list_str = ",".join(map(str, seeds_list))
     total_configs = len(windows_list) * len(arch_list)
 
-    print(f"Starting hybrid classifier evaluation for selected configurations")
+    print("Starting hybrid classifier evaluation for selected configurations")
     print(f"Dataset: {dataset}")
     print(f"Windows: {windows_list}")
     print(f"Seeds: {seeds_list}")
@@ -817,7 +826,9 @@ def _run_eval_hybrid_all_configs(
             skipped += 1
             continue
 
-        print(f"[{current}/{total_configs}] Evaluating: Window={window}, Architecture={arch_name}, Seeds={seed_list_str}")
+        print(
+            f"[{current}/{total_configs}] Evaluating: Window={window}, Architecture={arch_name}, Seeds={seed_list_str}"
+        )
         print()
 
         cmd = [
@@ -957,7 +968,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             arguments.max_train_rows,
         ),
         "ablation": lambda: _run_ablation(
-            project_root, arguments.dataset, arguments.nrows
+            project_root, arguments.dataset, arguments.nrows, arguments.no_account_code
         ),
         "train-model": lambda: _run_train_model(
             project_root,

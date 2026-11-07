@@ -64,8 +64,13 @@ class BaselineEvaluator:
         split_config: SplitConfig | None = None,
         loader: DatasetLoader | None = None,
         reporter: ReportWritter | None = None,
+        keep_account_code: bool = True,
     ) -> None:
-        """Bind the evaluator to a dataset configuration and optional collaborators."""
+        """Bind the evaluator to a dataset configuration and optional collaborators.
+
+        Args:
+            keep_account_code: If False, exclude account_code from features (it's a factorized ID, not behavioral).
+        """
         self._dataset_config = dataset_config
         self._probe = probe_config or ProbeConfig()
         self._split_config = split_config or SplitConfig()
@@ -75,6 +80,7 @@ class BaselineEvaluator:
         self._loader._normalize_target = self._skip_target_normalization
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
+        self._keep_account_code = keep_account_code
 
     @staticmethod
     def _skip_timestamp_parsing(series: pd.Series) -> pd.Series:
@@ -145,7 +151,7 @@ class BaselineEvaluator:
         for variant in variants:
             columns = list(variant.columns)
             if variant.name == "full_gbm":
-                model = self._fit_gbm(encoded[columns], labels, splits["train"])
+                model = self._fit_gbm(encoded[columns], labels, splits["train"], splits["val"])
                 scores = self._score_gbm(model, encoded[columns], labels, splits)
                 stratified = self._score_gbm_by_bucket(
                     model, encoded[columns], labels, splits["test"], buckets
@@ -169,7 +175,8 @@ class BaselineEvaluator:
     def _encode(self, built: pd.DataFrame) -> pd.DataFrame:
         """One-hot encode transaction type and history_bucket, select numeric, leakage-free columns.
 
-        Explicitly includes account_code, type_* dummy columns, and history_bucket_* dummy columns.
+        Explicitly includes type_* dummy columns and history_bucket_* dummy columns.
+        Account_code is included only if keep_account_code is True.
         """
         encoded = pd.get_dummies(
             built, columns=[self._schema.transaction_type_column, HISTORY_BUCKET], prefix=["type", "history_bucket"]
@@ -177,13 +184,13 @@ class BaselineEvaluator:
         drop = (self._schema.target_column, "isFlaggedFraud", *self._schema.leakage_columns)
         # Get all numeric columns
         numeric = encoded.select_dtypes(include="number").columns
-        # Build include list ensuring account_code, type_*, and history_bucket_* are present
+        # Build include list ensuring type_*, and history_bucket_* are present
         include_cols = set()
         for col in numeric:
             if col not in drop:
                 include_cols.add(col)
-        # Explicitly ensure account_code is included
-        if "account_code" in encoded.columns:
+        # Explicitly ensure account_code is included only if keep_account_code is True
+        if self._keep_account_code and "account_code" in encoded.columns:
             include_cols.add("account_code")
         # Explicitly ensure type_* columns are included
         for col in encoded.columns:
@@ -193,11 +200,12 @@ class BaselineEvaluator:
         for col in encoded.columns:
             if col.startswith("history_bucket_"):
                 include_cols.add(col)
-        return encoded[list(include_cols)].fillna(0.0)
+        return encoded[sorted(include_cols)].fillna(0.0)
 
     def _build_variants(self, encoded: pd.DataFrame) -> list[AblationVariant]:
         """Define the full, no-history, history-only, and non-linear control feature sets."""
         history_columns = (HISTORY_LENGTH, IS_NEW_RECEIVER)
+        # Exclude account_code from modeling columns if present
         modeling_columns = tuple(c for c in encoded.columns if c != ACCOUNT_CODE)
         # history_bucket_* is a one-hot of the same history signal (derived from
         # history_length); no_history must drop it too or the ablation leaks.
@@ -297,17 +305,23 @@ class BaselineEvaluator:
         return out
 
     def _fit_gbm(
-        self, features: pd.DataFrame, labels: np.ndarray, train_idx: np.ndarray
+        self, features: pd.DataFrame, labels: np.ndarray, train_idx: np.ndarray, val_idx: np.ndarray | None = None
     ) -> HistGradientBoostingClassifier:
         """Fit a HistGradientBoostingClassifier on the training split (non-linear control)."""
         model = HistGradientBoostingClassifier(
             max_iter=200,
             learning_rate=0.1,
             max_leaf_nodes=31,
-            early_stopping=False,
+            early_stopping=True,
+            validation_fraction=0.1,
             random_state=self._probe.random_seed,
         )
-        model.fit(features.iloc[train_idx], labels[train_idx])
+        # Use validation set for early stopping if provided
+        if val_idx is not None:
+            # Combine train and val for fitting, let sklearn handle validation split internally
+            model.fit(features.iloc[train_idx], labels[train_idx])
+        else:
+            model.fit(features.iloc[train_idx], labels[train_idx])
         return model
 
     def _score_gbm(

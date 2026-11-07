@@ -1,4 +1,4 @@
-"""Training loop for the LSTM-Autoencoder, with early stopping on validation AUC."""
+"""Training loop for the LSTM-Autoencoder, with early stopping on validation reconstruction loss."""
 
 from __future__ import annotations
 
@@ -20,13 +20,13 @@ class TrainResult:
     """JSON-friendly outcome of one training run."""
 
     best_epoch: int
-    best_val_auc: float
+    best_val_loss: float
     history: list[dict[str, float]]
     checkpoint_path: str
 
 
 class Trainer:
-    """Fit an LSTMAutoencoder on normal-only windows, select by validation AUC."""
+    """Fit an LSTMAutoencoder on normal-only windows, select by validation reconstruction loss."""
 
     def __init__(self, model_config: ModelConfig, train_config: TrainConfig, checkpoint_dir: Path) -> None:
         """Bind the trainer to model and training hyperparameters."""
@@ -42,7 +42,7 @@ class Trainer:
         val_dataset: Dataset,
         val_labels: np.ndarray
     ) -> tuple[LSTMAutoencoder, TrainResult]:
-        """Train on normal-only windows; validate using reconstruction-error AUC."""
+        """Train on normal-only windows; validate using reconstruction loss on normal-only val rows."""
         torch.manual_seed(self._train_config.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(self._train_config.seed)
@@ -58,17 +58,19 @@ class Trainer:
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = self._checkpoint_dir / self._train_config.checkpoint_name
 
-        best_auc, best_epoch, stale_epochs = -1.0, -1, 0
+        best_loss, best_epoch, stale_epochs = float('inf'), -1, 0
         history: list[dict[str, float]] = []
 
         for epoch in range(1, self._train_config.max_epochs + 1):
             train_loss = self._train_epoch(model, train_loader, optimizer)
             val_errors = self._predict_errors(model, val_loader)
             val_auc = RankingMetrics.roc_auc(val_errors, val_labels)
-            history.append({"epoch": epoch, "train_loss": train_loss, "val_auc": val_auc})
+            # Use validation reconstruction loss on normal-only rows for early stopping
+            val_loss = val_errors[val_labels == 0].mean() if (val_labels == 0).any() else val_errors.mean()
+            history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss, "val_auc": val_auc})
 
-            if val_auc > best_auc:
-                best_auc, best_epoch, stale_epochs = val_auc, epoch, 0
+            if val_loss < best_loss:
+                best_loss, best_epoch, stale_epochs = val_loss, epoch, 0
                 torch.save(model.state_dict(), checkpoint_path)
             else:
                 stale_epochs += 1
@@ -78,7 +80,7 @@ class Trainer:
         model.load_state_dict(torch.load(checkpoint_path, map_location=self._device))
         result = TrainResult(
             best_epoch=best_epoch,
-            best_val_auc=best_auc,
+            best_val_loss=best_loss,
             history=history,
             checkpoint_path=str(checkpoint_path),
         )

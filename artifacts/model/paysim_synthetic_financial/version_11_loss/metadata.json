@@ -1,0 +1,32 @@
+{
+  "artifact_version": "version_11_loss",
+  "selection_metric": "val_loss",
+  "architecture": "bottleneck",
+  "window_length": 5,
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "model_config": {
+    "attention": false,
+    "bottleneck": true,
+    "attention_pooling": false,
+    "hidden_dim": 64,
+    "num_layers": 2,
+    "dropout": 0.1
+  },
+  "train_config": {
+    "batch_size": 16384,
+    "max_epochs": 50,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "patience": 5,
+    "device": "cuda"
+  },
+  "checkpoints": [
+    "lstm_ae_w5_bottleneck_seed42_best.pt",
+    "lstm_ae_w5_bottleneck_seed123_best.pt",
+    "lstm_ae_w5_bottleneck_seed2026_best.pt"
+  ]
+}

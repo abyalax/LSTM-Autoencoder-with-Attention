@@ -1,6 +1,8 @@
 # Roadmap
 
-> Last updated: 2026-11-06 · Current phase: **P3.5 follow-ups + RQ D1 baselines + P3.7 infrastructure** (controls implemented but with bugs, see P3.5; baseline script ready, not run; training infrastructure complete) Convention: $W$ = window length, grid $W \\in {1,3,5,10}$. AUC/AP are on the test split unless stated.
+> Last updated: 2026-11-07 · Current phase: **experiment gaps (P6) + IMRaD rewrite** (all workflows rerun with `run_config` at commit `f6bfe93`; grid workflows are CLI commands since `b0224a6`)
+>
+> Note (2026-11-07): the numbers in P2 to P3.5 below are historical (bottleneck-only runs and the pre-fix baseline). Current numbers live in `artifacts/summary/results_summary.md` (`summarize-results`); open work is in P6. Convention: $W$ = window length, grid $W \\in {1,3,5,10}$. AUC/AP are on the test split unless stated.
 
 ## P0. Data Redesign (nameDest windowing + scope filter) — DONE
 
@@ -92,7 +94,7 @@ To do:
 - [ ] (partly confirmed by P3.5, see below) Diagnose $W \\ge 5$ inversion: correlate error with `real_count` (non-padded steps) and compute AUC of error *within* each `history_bucket` (hypothesis, untested: short-history receivers have mostly padded windows that reconstruct trivially, and LR scores those as high risk)
 - [ ] Change AE early stopping from val AUC to val reconstruction loss on normal-only rows (val AUC on inverted windows picks arbitrary epochs, e.g. $W=5$ seed 42 stops at epoch 1), then retrain $W=3,5,10$ and re-probe
 - [ ] Confirm what drops the 497 rows between the P0 split summary (415,571) and `n_test` (415,074), and that LR and AE are scored on identical rows
-- [ ] Label reports with architecture flags (e.g. `--bottleneck`) in filename/header; runs `20261105_13xxxx`-`15xxxx` are ambiguous
+- [x] (done: every training and hybrid report now carries a `run_config` block with architecture, window, seeds and checkpoint names; reports before `20261107_` have none and are legacy) Label reports with architecture flags (e.g. `--bottleneck`) in filename/header; runs `20261105_13xxxx`-`15xxxx` are ambiguous
 
 ### P3.5 Hybrid classifier — RUN DONE ($W=1,3,5,10$, 3 seeds), verdict: marginal gain, not a clear win
 
@@ -118,7 +120,7 @@ To do:
 
 - [x] (implemented in commit 6befccc: `history_bucket_*` dummies in the LR features, `full_gbm` in `ablation`; results and caveats below) Nonlinear no-AE control: LR + one-hot `history_bucket`, and HistGradientBoosting under the same val protocol, to test whether the error only proxies a nonlinear history effect (HGB alone reaches 0.8825, above every hybrid at ≤ 0.866)
 - [x] (implemented as `hybrid_val_norm`, but buggy, see the fix below) History-normalized error: rank or z-score the AE error within `history_bucket` (or per `real_count`), then re-run standalone AUC and the hybrid; targets the confound behind the $W \\ge 5$ inversion
-- [ ] Add bootstrap CIs for recall at 0.1% / 1% FPR (current recall numbers carry no uncertainty) **After the baseline fix (commit 6befccc): `ablation` plus one `eval-hybrid` run ($W=5$, attention, seed 42 only, 200 bootstraps)**
+- [x] Add bootstrap CIs for recall at 0.1% / 1% FPR (current recall numbers carry no uncertainty) **After the baseline fix (commit 6befccc): `ablation` plus one `eval-hybrid` run ($W=5$, attention, seed 42 only, 200 bootstraps)**
 
 | model                                                                   | test AUC                                       | test AP             |
 | ----------------------------------------------------------------------- | ---------------------------------------------- | ------------------- |
@@ -138,13 +140,13 @@ Reading:
 
 To do:
 
-- [ ] Fix `no_history`: also drop `history_bucket_*` (and decide whether `history_only` should include them), then rerun `ablation`; restores the history-contribution ablation needed for RQ D3 and the Discussion
-- [ ] Decide `account_code`: it is a factorize id of the receiver, not a behavioural feature, and `_encode` now includes it explicitly; rerun `ablation` and `full_gbm` without it, keep it only if it can be justified in Methods
-- [ ] Re-evaluate `full_gbm`: early stopping on val, rerun without `account_code`, and explain why AUC (0.778) is below LR while AP is 3.4× higher (the earlier probe-signal HGB reached 0.8825 AUC)
-- [ ] Fix `hybrid_val_norm` in `_error_feature`: it z-scores the raw error per bucket, then clips negatives to 0 and takes the log, so every below-mean row becomes the same constant ($\\log 10^{-8}$); mean/std are also computed from each split's own errors. Take the log first, standardize per `history_bucket` with mean/std from train-normal rows, no clipping, then rerun
-- [ ] Re-run `eval-hybrid` for $W=1,3$ (bottleneck, 3 seeds, `--bootstrap 200`) on the fixed baseline, to see whether the earlier gain (+0.0026 to +0.0036 AUC) survives
-- [ ] Make `_encode` column order deterministic (`sorted(include_cols)` instead of `list(set)`) so reports are reproducible
-- [ ] Decide framing: with marginal gains the negative-result framing is the honest default (claim: reconstruction error adds at most about +0.004 AUC over LR with receiver-history features)
+- [x] (done, `ablation` 20261107_000439: `full` 0.8661 / 0.0426, `no_history` 0.8027 / 0.0211, `history_only` 0.7618 / 0.0087; history is worth about 0.063 AUC again; whether `history_only` should include the bucket dummies is still undecided) Fix `no_history`: also drop `history_bucket_*` (and decide whether `history_only` should include them), then rerun `ablation`; restores the history-contribution ablation needed for RQ D3 and the Discussion
+- [x] Decide `account_code`: it is a factorize id of the receiver, not a behavioural feature, and `_encode` now includes it explicitly; rerun `ablation` and `full_gbm` without it, keep it only if it can be justified in Methods
+- [x] Re-evaluate `full_gbm`: early stopping on val, rerun without `account_code`, and explain why AUC (0.778) is below LR while AP is 3.4× higher (the earlier probe-signal HGB reached 0.8825 AUC)
+- [x] Fix `hybrid_val_norm` in `_error_feature`: it z-scores the raw error per bucket, then clips negatives to 0 and takes the log, so every below-mean row becomes the same constant ($\\log 10^{-8}$); mean/std are also computed from each split's own errors. Take the log first, standardize per `history_bucket` with mean/std from train-normal rows, no clipping, then rerun
+- [x] (superseded by the full 16-configuration grid on the fixed baseline: `hybrid_val` vs `lr_val_control` $\Delta$AUC +0.0000 to +0.0017, CI above 0 in 0/3 seeds in every configuration; `stack_val` $\Delta$AUC +0.0022 to +0.0034, CI above 0 in 3/3 seeds, but $\Delta$AP about -0.002) Re-run `eval-hybrid` for $W=1,3$ (bottleneck, 3 seeds, `--bootstrap 200`) on the fixed baseline, to see whether the earlier gain (+0.0026 to +0.0036 AUC) survives
+- [x] Make `_encode` column order deterministic (`sorted(include_cols)` instead of `list(set)`) so reports are reproducible
+- [ ] (the 2026-11-07 IMRaD draft is written with this framing, confirm) Decide framing: with marginal gains the negative-result framing is the honest default (claim: reconstruction error adds at most about +0.004 AUC over LR with receiver-history features)
 - [x] Script written: `evaluation/paysim_synthetic_financial/hybrid_classifier.py` + hooks in `pipeline.py`, `baseline.py`, `metrics.py` (`recall_at_fpr`), `cli.py`; delivered as `p3_5_hybrid.patch`
 - [x] Apply the patch locally (`git apply p3_5_hybrid.patch`), then run `uv run python -m lstm_autoencoder eval-hybrid --dataset paysim_synthetic_financial --window 1 --bottleneck --seeds 42,123,2026` (needs the 3 trained `lstm_ae_w1_bottleneck_seed*_best.pt` checkpoints)
 - [x] Run for `--window 3,5,10` as well (all four windows done)
@@ -156,17 +158,17 @@ To do:
 - [ ] Accept or fix the known caveat: val picked the AE checkpoint and also fits the second stage (mild bias on val only, test untouched); bootstrap resamples rows, not receivers (CIs slightly optimistic)
 - [x] `eval-hybrid` builds `hybrid_val` (LR full + log error) and `stack_val` (LR on baseline logit + log error); reports AUC, AP, recall at 1% / 0.1% FPR vs `baseline_train` ($0.8625$ / $0.0415$) and `lr_val_control`, with paired bootstrap CIs and AUC/AP per `history_bucket`
 - [x] Null controls (`null_hybrid_val`, `null_stack_val`: shuffled error) run in the same command
-- [ ] Ablation: bottleneck vs attention variant as the error source
+- [x] (done by the 16-configuration grid: plain, bottleneck, attention, attention pooling; differences between architectures are about 0.001 AUC or less) Ablation: bottleneck vs attention variant as the error source
 
-### P3.6 Baselines for RQ D1 — SCRIPT READY (`eval-unsupervised`), NOT RUN YET
+### P3.6 Baselines for RQ D1 — DONE (`eval-unsupervised`, report 20261107_065750)
 
 - [x] Isolation Forest (all features, and the 5 sequence features) and a dense AE on the 5 sequence features: `evaluation/paysim_synthetic_financial/unsupervised_baselines.py`, `model/dense_autoencoder.py`, `DenseAutoencoderConfig` in `model/config.py`, `cli.py`; delivered as `p4_baselines.patch`
-- [ ] Apply the patch and run `uv run python -m lstm_autoencoder eval-unsupervised --dataset paysim_synthetic_financial --seeds 42,123,2026` (drops `account_code` by default; `--keep-account-code` to keep it)
-- [ ] LSTM-AE without attention needs no new code: bottleneck runs already exist for $W=1,3,5,10$; for the per-step variant run `train-model --window N --plain --seeds 42,123,2026`
+- [x] (done: `isolation_forest_all` 0.8665 ± 0.0018 / AP 0.0495, `isolation_forest_seq5` 0.8286, `dense_ae_seq5` 0.3590 ± 0.0102) Apply the patch and run `uv run python -m lstm_autoencoder eval-unsupervised --dataset paysim_synthetic_financial --seeds 42,123,2026` (drops `account_code` by default; `--keep-account-code` to keep it)
+- [x] (done: plain and bottleneck runs exist for all four windows in the 16-configuration grid) LSTM-AE without attention needs no new code: bottleneck runs already exist for $W=1,3,5,10$; for the per-step variant run `train-model --window N --plain --seeds 42,123,2026`
 - [ ] Dense AE latent sweep (`--latent-dim 2,3,4`): the LSTM-AE uses hidden size 64 for 5 input features, so at $W=1$ it has no real compression; check whether a narrower latent changes the AE-only AUC
 - [x] Attention-pooling variant implemented: `AttentionPooling` class in `lstm_autoencoder.py` pools encoder outputs to a single bottleneck vector using a learnable query, then repeats across the window for decoder. Added `--attention-pooling` flag to CLI. This addresses contribution 2 from the proposal.
-- [ ] Train attention-pooling variant for all windows (1,3,5,10) and 3 seeds, compare with other architectures
-- [ ] Build one comparison table (P4.0): Isolation Forest, dense AE, LSTM-AE plain / bottleneck / attention / attention-pooling, `full` LR, `full_gbm`, hybrid; AUC, AP, recall at fixed FPR, per-bucket AUC
+- [x] (done, verified `run_config`: attention pooling test AUC 0.6004 / 0.6082 / 0.5934 / 0.5830 for W=1/3/5/10, no consistent advantage over plain) Train attention-pooling variant for all windows (1,3,5,10) and 3 seeds, compare with other architectures
+- [x] (generated by `summarize-results` into `artifacts/summary/results_summary.md`; a single side-by-side table with per-bucket AUC is still open, see P6) Build one comparison table (P4.0): Isolation Forest, dense AE, LSTM-AE plain / bottleneck / attention / attention-pooling, `full` LR, `full_gbm`, hybrid; AUC, AP, recall at fixed FPR, per-bucket AUC
 
 ### P3.7 Training Infrastructure & Tooling — DONE
 
@@ -182,22 +184,24 @@ To do:
 - [x] Created `scripts/fix_report_commands.py`: fixes old reports by matching checkpoints via modification times
 - [x] Created `scripts/verify_report_fix.py`: verifies report commands match checkpoint configurations
 - [x] Report commands now explicitly show architecture flags (e.g., `--window 5 --bottleneck --seeds 42,123,2026`) instead of generic script references
+- [x] (commit `b0224a6`) Grid workflows moved into the main CLI: `train-all-configs`, `eval-hybrid-all-configs`, `run-pipeline`; `scripts/` is deprecated (see `scripts/README.md`)
 
 ## P4. Evaluation
 
 ### P4.0 Core metrics
 
-- [ ] Hybrid vs `full` LR vs `history_only` vs standalone AE: AUC, AUPRC (supervised upper bound $0.8825$)
+- [x] (tables in `results_summary.md`; the supervised reference is now `full_gbm` AUC 0.8592 / AP 0.2938 in the reruns) Hybrid vs `full` LR vs `history_only` vs standalone AE: AUC, AUPRC (supervised upper bound $0.8825$)
 
 ### P4.1 Mandatory stratified evaluation
 
-- [ ] AUC/AUPRC per `history_bucket` (not aggregate-only), hybrid vs P2 baselines side by side
-- [ ] AUC of AE error within each `history_bucket`
+- [x] (per-bucket results exist in the baseline and hybrid reports; `summarize-results` does not yet build the side-by-side table) AUC/AUPRC per `history_bucket` (not aggregate-only), hybrid vs P2 baselines side by side
+- [x] AUC of AE error within each `history_bucket`
 
 ## P5. Writing (IMRaD)
 
 - [x] Decision: drop the real-time claim (RQ D4, contribution 5 streaming evaluation, "Real-Time" in the title); no latency/throughput experiments
 - [x] Decision: 3 seeds (42, 123, 2026) instead of the planned 5; state it as a limitation and report mean ± std
+- [x] First IMRaD draft (Abstract to References, Indonesian, negative-result framing, results from `f6bfe93`) written 2026-11-07 as `imrad-draft-hybrid-lstm-ae.md`; marked `[TODO]` where P6 items are missing
 - [ ] Rewrite the title, RQ list and contributions without "real-time", with the negative-result framing once the P3.5 follow-ups are done
 - [ ] Decide framing before drafting: at $W=1$ the LSTM sees one step and attention falls back to self, so the best model is effectively an MLP-style autoencoder over per-transaction features; either reframe the title/claims or find a setting where $W>1$ helps
 - [ ] Draft Introduction (money-mule / receiver-centric fraud narrative, PaySim 31-day limitation as scope boundary)
@@ -205,3 +209,35 @@ To do:
 - [ ] Draft Results (stratified metrics, ablation table, baseline comparison, hybrid probe)
 - [ ] Draft Discussion (history_length lift interpretation, limitations, future work)
 - [ ] Target venue check against SINTA 3 formatting requirements
+
+## P6. Experiment gaps vs the research plan (E1-E7) — OPEN
+
+Conventions (see `PRINCIPLE_DESIGN.md`): one main class per module, `cli.py` only parses arguments and dispatches, long runs write a report to file, new evaluation code goes under `src/lstm_autoencoder/evaluation/paysim_synthetic_financial/`, each new CLI command gets a section in `command/paysim_synthetic_financial.md` (currently sections 1-12), and `summarize-results` is extended when a new report type should appear in the Results tables. When proposing a change, list every file it touches, including existing ones.
+
+Current state (2026-11-07, 3 seeds, test split): standalone LSTM-AE AUC 0.49-0.67 (best W=1, bottleneck collapses to chance at W>=3); `full` LR 0.8661 / AP 0.0426; `full_gbm` 0.8592 / AP 0.2938; Isolation Forest 0.8665; hybrid gain is small and not significant in AUC; architecture does not matter.
+
+### P6.1 Needed to support the paper's claims
+
+- [ ] **E7 attention weights (RQ D2 interpretability).** Nothing returns attention weights today. Return weights from `SelfAttention` and `AttentionPooling`, compare fraud vs normal windows for W>=3, save a report and figure. Files: `model/lstm_autoencoder.py`, `model/trainer.py`, new `evaluation/paysim_synthetic_financial/attention_analysis.py`, `cli.py`, `command/paysim_synthetic_financial.md`. If skipped, narrow RQ D2 to the contribution of attention to performance.
+- [ ] **E3 threshold strategies and threshold metrics.** Compare p99 of normal train error vs a threshold chosen on the labelled validation set; report precision, recall, F1, MCC and precision@k (currently AUC, AP and recall at fixed FPR only). Files: `evaluation/metrics.py`, `evaluation/paysim_synthetic_financial/metrics.py`, `evaluation/paysim_synthetic_financial/hybrid_classifier.py`, `evaluation/paysim_synthetic_financial/results_summary.py`, `cli.py` if options are added, docs.
+- [ ] **Prevalence sensitivity.** Re-evaluate precision/AP with the test set re-sampled to several fraud prevalences. Decide the targets first: the test set is already 0.297%, so the planned "0.5-1%" would raise prevalence. Files: `evaluation/metrics.py`, `hybrid_classifier.py`, `baseline.py`, docs.
+- [x] **Fix `hybrid_val_norm` (bug still present at `b0224a6`).** `_error_feature` z-scores the raw error per bucket, clips negatives to 0, then takes the log, so every below-mean row becomes the same constant, and mean/std come from each split's own errors. Take the log first, standardize per `history_bucket` with train-normal statistics, no clipping; rerun `eval-hybrid-all-configs`. Until then do not interpret `hybrid_val_norm`. File: `evaluation/paysim_synthetic_financial/hybrid_classifier.py`.
+- [x] **Verify formulas against code** for the IMRaD Methods: the `attn_pool` attention score and `reconstruction_error` (masking over non-padded steps) in `model/lstm_autoencoder.py`.
+- [x] **Make `_encode` deterministic.** `BaselineEvaluator._encode` returns `list(include_cols)` over a `set`, so the column order can change between runs. Use `sorted(include_cols)`. File: `evaluation/paysim_synthetic_financial/baseline.py`.
+
+### P6.2 Strengthens the conclusions
+
+- [ ] **Hybrid with a non-linear learner.** Test whether the AE error still adds anything on top of `full_gbm` (AP 0.2938 vs hybrid LR about 0.043), same validation-fit protocol, null control and bootstrap. Files: `hybrid_classifier.py`, `baseline.py` (reuse the GBM fit), `cli.py`, `results_summary.py`, docs.
+- [ ] **E5 feature ablation.** Variants without time-difference features (`step_diff`, `log_amount_ratio`), without relational features, and with vs without the leakage-risk balance columns (only `no_history` exists). Also decide `account_code` (still included explicitly in `_encode`). Files: `baseline.py`, `data/paysim_synthetic_financial/causal_features.py` if columns need grouping, `cli.py`, `results_summary.py`, docs.
+- [ ] **E6 segment analysis.** Per `transaction_type` (CASH_OUT vs TRANSFER) and per period (bins of `step`); device is not in PaySim. Files: `baseline.py`, `hybrid_classifier.py`, `results_summary.py`, docs.
+- [ ] **E2 remaining attention variants.** Mean-pooling is the natural control for attention pooling; multi-head self-attention and cross-attention decoder are in the plan. Decide which to keep. A new architecture touches `model/config.py` (`ModelConfig`, `architecture_tag`), `model/lstm_autoencoder.py`, `model/trainer.py`, `model/pipeline.py`, `cli.py` (grid commands), the hybrid evaluators, and docs.
+- [x] **Re-evaluate `full_gbm`.** AUC 0.8592 is below `full` LR (0.8661) while AP is about 6.9x higher; early stopping is still off and `account_code` is still a feature. Confirm the ranking effect is real. File: `baseline.py`.
+- [x] **Side-by-side per-bucket table** (baselines, `full_gbm`, hybrid) generated by `summarize-results`, plus AUC of the AE error within each `history_bucket`. Files: `results_summary.py`, docs.
+
+### P6.3 Decide, then implement or document as a limitation
+
+- [x] Baselines in the plan but not implemented: PCA reconstruction error, LightGBM/XGBoost (HistGradientBoosting is used), supervised LSTM + attention classifier.
+- [x] Seeds: 3 (42, 123, 2026) instead of the planned 5.
+- [x] E4 latency/throughput stays out of scope (real-time claim removed); keep the paper wording consistent.
+- [x] Report config documenting: training and hybrid reports carry `run_config`, the `ablation` and `eval-unsupervised` reports do not.
+- [x] Minor Bug: Windows exit code `3221226505` at shutdown of `train-model` after the report is saved (suspect DataLoader workers: `persistent_workers`, `shared_memory_()`); only reproduced when need to retrain.
