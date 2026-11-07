@@ -6,54 +6,33 @@ Verified reports (architecture recorded in `run_config`):
 
 | architecture | W=1             | W=3             | W=5             | W=10            |
 | ------------ | --------------- | --------------- | --------------- | --------------- |
-| attn         | -               | -               | -               | -               |
-| bottleneck   | -               | -               | -               | -               |
-| plain        | -               | -               | -               | -               |
-| attn_pool    | 0.5995 ± 0.0251 | 0.6055 ± 0.0026 | 0.5899 ± 0.0014 | 0.5795 ± 0.0070 |
-
-Legacy reports WITHOUT `run_config` (label inferred from the typed command, UNVERIFIED; identical numbers under different labels indicate a mislabeled or duplicated run):
-
-| report          | window | label (unverified) | test AUC        | best epochs |
-| --------------- | ------ | ------------------ | --------------- | ----------- |
-| 20261106_103302 | W=1    | attn               | 0.6578 ± 0.0350 | 1,1,1       |
-| 20261106_104507 | W=1    | bottleneck         | 0.6722 ± 0.0110 | 1,1,1       |
-| 20261106_105209 | W=1    | plain              | 0.6722 ± 0.0110 | 1,1,1       |
-| 20261106_110029 | W=1    | attn               | 0.6722 ± 0.0110 | 1,1,1       |
-| 20261106_110734 | W=3    | attn               | 0.5971 ± 0.0034 | 1,1,1       |
-| 20261106_111609 | W=3    | bottleneck         | 0.4938 ± 0.0759 | 12,1,1      |
-| 20261106_112244 | W=3    | plain              | 0.6150 ± 0.0195 | 1,1,1       |
-| 20261106_112916 | W=3    | attn               | 0.6150 ± 0.0195 | 1,1,1       |
-| 20261106_113643 | W=5    | attn               | 0.5957 ± 0.0029 | 1,1,1       |
-| 20261106_114348 | W=5    | bottleneck         | 0.4819 ± 0.0801 | 1,1,1       |
-| 20261106_115050 | W=5    | plain              | 0.5745 ± 0.0094 | 1,1,1       |
-| 20261106_115747 | W=5    | attn               | 0.5745 ± 0.0094 | 1,1,1       |
-| 20261106_120715 | W=10   | bottleneck         | 0.5876 ± 0.0173 | 1,2,1       |
-| 20261106_121533 | W=10   | plain              | 0.4894 ± 0.0619 | 1,1,1       |
-| 20261106_122407 | W=10   | attn               | 0.5866 ± 0.0019 | 1,1,1       |
-| 20261106_123239 | W=10   | attn               | 0.5866 ± 0.0019 | 1,1,1       |
+| attn         | 0.6567 ± 0.0347 | 0.6000 ± 0.0033 | 0.5991 ± 0.0028 | 0.5916 ± 0.0177 |
+| bottleneck   | 0.6710 ± 0.0104 | 0.5017 ± 0.0730 | 0.4905 ± 0.0766 | 0.4981 ± 0.0582 |
+| plain        | 0.6710 ± 0.0104 | 0.6176 ± 0.0191 | 0.5780 ± 0.0090 | 0.5897 ± 0.0019 |
+| attn_pool    | 0.6004 ± 0.0247 | 0.6082 ± 0.0025 | 0.5934 ± 0.0014 | 0.5830 ± 0.0068 |
 
 ## 2. Baselines (test split)
 
-Supervised ablation (report 20261106_075253):
+Supervised ablation (report 20261107_000439):
 
 | model        | test AUC | test AP |
 | ------------ | -------- | ------- |
-| full         | 0.8693   | 0.0426  |
-| no_history   | 0.8685   | 0.0422  |
-| history_only | 0.7648   | 0.0088  |
-| full_gbm     | 0.7779   | 0.1452  |
+| full         | 0.8661   | 0.0426  |
+| no_history   | 0.8027   | 0.0211  |
+| history_only | 0.7618   | 0.0087  |
+| full_gbm     | 0.8592   | 0.2938  |
 
-Unsupervised baselines (report 20261106_094241, 3 seeds):
+Unsupervised baselines (report 20261107_065750, 3 seeds):
 
 | model                 | test AUC        | test AP         | recall@FPR 1% |
 | --------------------- | --------------- | --------------- | ------------- |
-| isolation_forest_all  | 0.8668 ± 0.0031 | 0.0456 ± 0.0048 | 0.228         |
+| isolation_forest_all  | 0.8665 ± 0.0018 | 0.0495 ± 0.0054 | 0.207         |
 | isolation_forest_seq5 | 0.8286 ± 0.0024 | 0.0384 ± 0.0016 | 0.208         |
-| dense_ae_seq5         | 0.4097 ± 0.0216 | 0.0048 ± 0.0009 | 0.033         |
+| dense_ae_seq5         | 0.3590 ± 0.0102 | 0.0048 ± 0.0001 | 0.015         |
 
 ## 3. Hybrid classifier (LR features + LSTM-AE reconstruction error)
 
-### W=1, attn (report 20261106_205155, seeds=[42, 123, 2026])
+### W=1, attn (report 20261107_043555, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -86,7 +65,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7564 ± 0.0060 | 0.0070 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7152 ± 0.0013 | 0.0040 ± 0.0000 |
 
-### W=1, bottleneck (report 20261106_210259, seeds=[42, 123, 2026])
+### W=1, bottleneck (report 20261107_044416, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -119,7 +98,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7517 ± 0.0016 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7119 ± 0.0016 | 0.0040 ± 0.0000 |
 
-### W=1, plain (report 20261106_211204, seeds=[42, 123, 2026])
+### W=1, plain (report 20261107_045225, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -152,7 +131,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7517 ± 0.0016 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7119 ± 0.0016 | 0.0040 ± 0.0000 |
 
-### W=1, attn_pool (report 20261106_212018, seeds=[42, 123, 2026])
+### W=1, attn_pool (report 20261107_050034, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -185,7 +164,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7515 ± 0.0066 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7136 ± 0.0015 | 0.0040 ± 0.0000 |
 
-### W=3, attn (report 20261106_212837, seeds=[42, 123, 2026])
+### W=3, attn (report 20261107_050848, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -218,7 +197,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7608 ± 0.0001 | 0.0070 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7190 ± 0.0004 | 0.0041 ± 0.0000 |
 
-### W=3, bottleneck (report 20261106_213653, seeds=[42, 123, 2026])
+### W=3, bottleneck (report 20261107_051702, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -251,7 +230,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7558 ± 0.0012 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7148 ± 0.0010 | 0.0041 ± 0.0000 |
 
-### W=3, plain (report 20261106_214509, seeds=[42, 123, 2026])
+### W=3, plain (report 20261107_052515, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -284,7 +263,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7588 ± 0.0027 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7181 ± 0.0011 | 0.0041 ± 0.0000 |
 
-### W=3, attn_pool (report 20261106_215325, seeds=[42, 123, 2026])
+### W=3, attn_pool (report 20261107_053330, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -317,7 +296,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7606 ± 0.0001 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7191 ± 0.0007 | 0.0041 ± 0.0000 |
 
-### W=5, attn (report 20261106_220146, seeds=[42, 123, 2026])
+### W=5, attn (report 20261107_054147, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -350,7 +329,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7570 ± 0.0005 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7151 ± 0.0002 | 0.0041 ± 0.0000 |
 
-### W=5, bottleneck (report 20261106_221005, seeds=[42, 123, 2026])
+### W=5, bottleneck (report 20261107_055209, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -383,7 +362,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7585 ± 0.0007 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7108 ± 0.0036 | 0.0041 ± 0.0000 |
 
-### W=5, plain (report 20261106_221823, seeds=[42, 123, 2026])
+### W=5, plain (report 20261107_060226, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -416,7 +395,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7569 ± 0.0006 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7160 ± 0.0001 | 0.0041 ± 0.0000 |
 
-### W=5, attn_pool (report 20261106_222732, seeds=[42, 123, 2026])
+### W=5, attn_pool (report 20261107_061244, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -449,7 +428,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7599 ± 0.0002 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7153 ± 0.0002 | 0.0041 ± 0.0000 |
 
-### W=10, attn (report 20261106_223949, seeds=[42, 123, 2026])
+### W=10, attn (report 20261107_062314, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -482,7 +461,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7541 ± 0.0023 | 0.0068 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7132 ± 0.0005 | 0.0040 ± 0.0000 |
 
-### W=10, bottleneck (report 20261106_225219, seeds=[42, 123, 2026])
+### W=10, bottleneck (report 20261107_063341, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -515,7 +494,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7545 ± 0.0015 | 0.0068 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7129 ± 0.0011 | 0.0040 ± 0.0001 |
 
-### W=10, plain (report 20261106_230514, seeds=[42, 123, 2026])
+### W=10, plain (report 20261107_064404, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |
@@ -548,7 +527,7 @@ Paired deltas (candidate - reference); last column = number of seeds whose boots
 | 5-9    | 110007 | 109     | 0.7563 ± 0.0004 | 0.0069 ± 0.0000 |
 | >=10   | 89161  | 76      | 0.7135 ± 0.0003 | 0.0040 ± 0.0000 |
 
-### W=10, attn_pool (report 20261106_232443, seeds=[42, 123, 2026])
+### W=10, attn_pool (report 20261107_065432, seeds=[42, 123, 2026])
 
 | variant            | test AUC        | test AP         | recall@FPR 1% |
 | ------------------ | --------------- | --------------- | ------------- |

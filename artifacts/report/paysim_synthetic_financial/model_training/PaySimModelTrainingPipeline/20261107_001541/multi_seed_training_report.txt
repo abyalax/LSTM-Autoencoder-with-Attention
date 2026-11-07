@@ -1,0 +1,9 @@
+Run config: architecture=bottleneck | W=1 | seeds=[42, 123, 2026]
+[seed 42] best_epoch 1 | val AUC 0.6657 | test AUC 0.6741 | test AP 0.0129
+[seed 123] best_epoch 1 | val AUC 0.6495 | test AUC 0.6594 | test AP 0.0124
+[seed 2026] best_epoch 1 | val AUC 0.6716 | test AUC 0.6797 | test AP 0.0134
+
+--------------------------------------------------------------------------------
+LSTM-Autoencoder multi-seed summary (W=1, seeds=[42, 123, 2026])
+--------------------------------------------------------------------------------
+test AUC 0.6710 +/- 0.0104 | test AP 0.0129 +/- 0.0005

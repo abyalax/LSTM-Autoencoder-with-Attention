@@ -129,8 +129,6 @@ class HybridClassifierEvaluator:
         self._config = config or HybridClassifierConfig()
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
-        # Override class_name to include window and architecture
-        self._reporter._class_name = f"window={self._sequence_config.window_length}_architecture={self._architecture_tag()}"
 
     def run(self) -> dict[str, object]:
         """Score every split with each seed's checkpoint, fit all variants, report, and return the aggregate."""
@@ -158,10 +156,6 @@ class HybridClassifierEvaluator:
             control_test=control_fit.score(x["test"]),
         )
 
-        self._reporter.display_section(
-            f"Hybrid Classifier (W={self._sequence_config.window_length}, "
-            f"{self._architecture_tag()}, seeds={list(self._config.seeds)})"
-        )
         self._reporter.display_text(
             f"train {len(y['train']):,} | val {len(y['val']):,} ({int(y['val'].sum()):,} fraud) | "
             f"test {len(y['test']):,} ({int(y['test'].sum()):,} fraud) | features {base.shape[1]}"
@@ -174,6 +168,7 @@ class HybridClassifierEvaluator:
             per_seed.append(result)
             self._report_seed(result)
 
+        self._record_run_config()
         aggregate = self._aggregate(per_seed)
         self._report_aggregate(aggregate)
         self._reporter.update_summary(
@@ -204,7 +199,7 @@ class HybridClassifierEvaluator:
         checkpoint = pipeline.checkpoint_path(seed)
         if not checkpoint.exists():
             raise ValueError(
-                f"Checkpoint not found: {checkpoint}. Train it first with "
+                f"Checkpoint not found: {checkpoint} ({self._checkpoint_name(seed)}). Train it first with "
                 f"`train-model --window {self._sequence_config.window_length} --seeds {seed}` "
                 "(add --bottleneck if that is the architecture you want)."
             )
@@ -385,6 +380,38 @@ class HybridClassifierEvaluator:
         array = np.asarray(values, dtype="float64")
         return float(array.mean()), float(array.std(ddof=1 if len(array) > 1 else 0))
 
+    def _record_run_config(self) -> None:
+        """Write the resolved run configuration into the report (JSON + transcript).
+
+        Unlike the free-text `command` field (what was typed), this records
+        what the evaluator is configured to run: architecture, window, seeds
+        and the checkpoint file each seed will use.
+        """
+        config = self._model_config
+        run_config = {
+            "architecture": config.architecture_tag,
+            "window_length": self._sequence_config.window_length,
+            "seeds": list(self._config.seeds),
+            "model_config": {
+                "attention": config.attention,
+                "bottleneck": config.bottleneck,
+                "attention_pooling": config.attention_pooling,
+                "hidden_dim": config.hidden_dim,
+                "num_layers": config.num_layers,
+                "dropout": config.dropout,
+            },
+            "checkpoints": [self._checkpoint_name(seed) for seed in self._config.seeds],
+        }
+        self._reporter.update_summary({"run_config": run_config})
+        self._reporter.display_text(
+            f"Run config: architecture={config.architecture_tag} | "
+            f"W={self._sequence_config.window_length} | seeds={list(self._config.seeds)}"
+        )
+
+    def _checkpoint_name(self, seed: int) -> str:
+        """Generate the checkpoint filename for a given seed."""
+        return f"lstm_ae_w{self._sequence_config.window_length}_{self._architecture_tag()}_seed{seed}_best.pt"
+
     def _aggregate(self, per_seed: list[dict[str, object]]) -> dict[str, object]:
         """Mean/std across seeds for every variant metric and every delta."""
         first_variants: dict[str, dict[str, float]] = per_seed[0]["variants"]  # type: ignore[assignment]
@@ -443,6 +470,10 @@ class HybridClassifierEvaluator:
         self._show(pd.DataFrame(aggregate["variants"]).T)
         self._reporter.display_section("Aggregate across seeds: deltas (mean / std)")
         self._show(pd.DataFrame(aggregate["deltas"]).T)
+        self._reporter.display_section(
+            f"Hybrid Classifier (W={self._sequence_config.window_length}, "
+            f"{self._architecture_tag()}, seeds={list(self._config.seeds)})"
+        )
         self._reporter.display_text(
             "How to read: the error feature helps only if hybrid_val beats lr_val_control "
             "(same fit data) AND the paired CI of its delta AUC stays above 0 (seeds_auc_ci_above_0 == n_seeds), "

@@ -1,0 +1,9 @@
+Run config: architecture=attn_pool | W=10 | seeds=[42, 123, 2026]
+[seed 42] best_epoch 2 | val AUC 0.5734 | test AUC 0.5857 | test AP 0.0108
+[seed 123] best_epoch 2 | val AUC 0.5759 | test AUC 0.5879 | test AP 0.0109
+[seed 2026] best_epoch 1 | val AUC 0.5629 | test AUC 0.5752 | test AP 0.0108
+
+--------------------------------------------------------------------------------
+LSTM-Autoencoder multi-seed summary (W=10, seeds=[42, 123, 2026])
+--------------------------------------------------------------------------------
+test AUC 0.5830 +/- 0.0068 | test AP 0.0108 +/- 0.0001
