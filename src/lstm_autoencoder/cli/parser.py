@@ -255,6 +255,17 @@ class ParserArgs:
             default=HybridClassifierConfig.n_bootstrap,
             help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
         )
+        eval_hybrid_parser.add_argument(
+            "--bootstrap-mode",
+            type=str,
+            choices=["row", "receiver"],
+            default=HybridClassifierConfig.bootstrap_mode,
+            help=(
+                "'receiver' (default): resample whole receivers, so correlated rows from the "
+                "same receiver move together (P5.1 cluster bootstrap). 'row': legacy class-"
+                "stratified row resampling, ignores within-receiver correlation."
+            ),
+        )
 
         eval_unsupervised_parser = subparsers.add_parser(
             "eval-unsupervised",
@@ -453,8 +464,15 @@ class ParserArgs:
         eval_hybrid_all_parser.add_argument(
             "--bootstrap",
             type=int,
-            default=200,
+            default=HybridClassifierConfig.n_bootstrap,
             help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
+        )
+        eval_hybrid_all_parser.add_argument(
+            "--bootstrap-mode",
+            type=str,
+            choices=["row", "receiver"],
+            default=HybridClassifierConfig.bootstrap_mode,
+            help="'receiver' (default) or 'row' -- see `eval-hybrid --bootstrap-mode`.",
         )
 
         run_pipeline_parser = subparsers.add_parser(
@@ -486,8 +504,15 @@ class ParserArgs:
         run_pipeline_parser.add_argument(
             "--bootstrap",
             type=int,
-            default=200,
+            default=HybridClassifierConfig.n_bootstrap,
             help="Paired bootstrap resamples per seed for the delta CIs (0 to skip).",
+        )
+        run_pipeline_parser.add_argument(
+            "--bootstrap-mode",
+            type=str,
+            choices=["row", "receiver"],
+            default=HybridClassifierConfig.bootstrap_mode,
+            help="'receiver' (default) or 'row' -- see `eval-hybrid --bootstrap-mode`.",
         )
 
         ParserArgs._add_dataset_arguments(probe_parser)

@@ -1,8 +1,41 @@
 # Research Roadmap
 
-> Last updated: 2026-11-08  
+> Last updated: 2026-11-09  
 > Active focus: pipeline integrity, reconstruction-score diagnostics, and final evaluation gaps.  
 > Convention: `W` is the sequence window length; current grid is `W ∈ {1,3,5,10}`. Unless stated otherwise, AUC/AP refer to the held-out test split.
+
+## 2026-11-09 session (pre-submit P0/P1 pass, see `0001-*.patch`)
+
+Checked off above are the items this session actually verified with new
+automated tests (`tests/test_methodology_audit.py`, 14 tests, run locally
+against synthetic fixtures -- not yet re-run on the full PaySim CSV on the
+training machine). Also done this session, with no single pre-existing
+checkbox to tick, so noted here instead:
+
+- [x] Standalone LSTM-AE reports now include Recall@FPR 1%/0.1% for every
+  config (`Trainer.score` returns a dict, not a bare `(auc, ap)` tuple).
+- [x] `run_config` (both training and hybrid-classifier reports) now records
+  optimizer (Adam), decoder type, and trainable parameter count.
+- [x] Per-bucket table now reports `fraud_rate`; `baseline_train`/`hybrid_val`
+  per-bucket AUC/AP now carry a bootstrap CI (other variants intentionally
+  left without one -- see P5.1 cost note below).
+- [x] Extended the hybrid classifier's bootstrap CI (incl. `p_d_ap_le_0`) to
+  the null-control comparisons, not only the primary ones.
+- [x] Receiver-cluster bootstrap implemented as the new default
+  (`bootstrap_mode="receiver"`), `--bootstrap-mode` exposed on the CLI
+  (`eval-hybrid`, `eval-hybrid-all-configs`, `run-pipeline`); row-wise kept
+  as `bootstrap_mode="row"` for comparison. **Not yet actually compared
+  side-by-side on real data** -- P5.1's "Compare row-wise bootstrap with
+  receiver-cluster bootstrap" stays unchecked until that run happens.
+- [x] Fixed a dead/misleading `val_idx` parameter on the GBM baseline fit;
+  confirmed GBM AP/AUC use the identical scoring path as LR (P4.0-adjacent,
+  no bug found, just cleanup -- not a checkbox item above).
+
+Still open from this list: exhaustive left-padding-mask coverage for every
+length 1..W (P1.3 -- only one length was covered this session); the
+row-vs-receiver bootstrap comparison itself (P5.1); GBM+AE-error hybrid
+(P4.2); everything in P2-P4 not mentioned above; and the full P6 manuscript
+pass (IMRAD narrative + editorial still queued separately).
 
 ## P1 Data Pipeline dan Sequence Integrity
 
@@ -15,9 +48,9 @@
 
 ### P1.1 Validate transaction ordering and causal history
 
-- [ ] - Audit sorting by account identifier and PaySim `step` [AC - Every account sequence is monotonically ordered by the documented key]
+- [x] - Audit sorting by account identifier and PaySim `step` [AC - Every account sequence is monotonically ordered by the documented key]
 - [ ] - Investigate transactions sharing the same `step`; define deterministic tie handling without claiming unavailable within-hour chronology [AC - Tie policy is deterministic and documented]
-- [ ] - Verify that `history_length`, `step_diff`, and `log_amount_ratio` use only information available at the current transaction [AC - No feature for row t reads a later row or post-transaction value]
+- [x] - Verify that `history_length`, `step_diff`, and `log_amount_ratio` use only information available at the current transaction [AC - No feature for row t reads a later row or post-transaction value]
 - [ ] - Verify that the sequence label is the `isFraud` value of the final/current transaction [AC - Hand-constructed tests confirm exact label alignment]
 
 ### P1.2 Validate sequence eligibility and row alignment
@@ -36,9 +69,9 @@
 
 ### P1.4 Audit split, scaling, and training eligibility
 
-- [ ] - Assert that receiver IDs are disjoint across train, validation, and test [AC - Automated overlap checks return zero]
+- [x] - Assert that receiver IDs are disjoint across train, validation, and test [AC - Automated overlap checks return zero]
 - [ ] - Document label-informed receiver fraud-rate stratification and compare with a split strategy that does not use receiver fraud rates [AC - Split protocol and sensitivity results are reported]
-- [ ] - Verify that the scaler is fitted only on normal training rows and reused unchanged for validation/test [AC - Tests confirm fit-row membership and stable scaler parameters]
+- [x] - Verify that the scaler is fitted only on normal training rows and reused unchanged for validation/test [AC - Tests confirm fit-row membership and stable scaler parameters]
 - [ ] - Verify that the autoencoder optimizer receives only normal training windows [AC - Training dataset labels contain no fraud rows]
 - [ ] - Confirm that checkpoint selection uses normal-only validation reconstruction loss [AC - Selection metric and implementation agree]
 
@@ -129,7 +162,7 @@
 
 ### P5.1 Improve uncertainty estimation
 
-- [ ] - Increase paired bootstrap replicates from 200 to at least 2000 for final results [AC - Final tables use the larger bootstrap run]
+- [x] - Increase paired bootstrap replicates from 200 to at least 2000 for final results [AC - Final tables use the larger bootstrap run]
 - [ ] - Compare row-wise bootstrap with receiver-cluster bootstrap [AC - Dependence-aware uncertainty is discussed and justified]
 - [ ] - Retain per-seed metrics alongside aggregate mean and standard deviation [AC - No aggregate hides a materially divergent seed]
 

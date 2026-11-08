@@ -184,6 +184,7 @@ class RunnerCLI:
         model_config: ModelConfig,
         seeds: list[int],
         n_bootstrap: int,
+        bootstrap_mode: str = HybridClassifierConfig.bootstrap_mode,
     ) -> int:
         """Execute the P3.5 hybrid classifier evaluation on already-trained checkpoints."""
         config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
@@ -191,7 +192,9 @@ class RunnerCLI:
             dataset_config=config,
             sequence_config=SequenceConfig(window_length=window),
             model_config=model_config,
-            config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap),
+            config=HybridClassifierConfig(
+                seeds=tuple(seeds), n_bootstrap=n_bootstrap, bootstrap_mode=bootstrap_mode
+            ),
         ).run()
         return 0
 
@@ -391,6 +394,7 @@ class RunnerCLI:
         force: bool,
         dry_run: bool,
         bootstrap: int,
+        bootstrap_mode: str = HybridClassifierConfig.bootstrap_mode,
     ) -> int:
         """Evaluate hybrid classifier for a grid of windows, seeds, and architectures."""
         import subprocess
@@ -416,7 +420,7 @@ class RunnerCLI:
         print(f"Seeds: {seeds_list}")
         print(f"Architectures: {arch_list}")
         print(f"Force re-evaluate: {force}")
-        print(f"Bootstrap samples: {bootstrap}")
+        print(f"Bootstrap samples: {bootstrap} (mode={bootstrap_mode})")
         if nrows:
             print(f"Row limit: {nrows}")
         if dry_run:
@@ -479,7 +483,11 @@ class RunnerCLI:
                 "uv", "run", "python", "-m", "lstm_autoencoder", "eval-hybrid",
                 "--dataset", dataset,
                 "--window", str(window),
-            ] + arch_flags + ["--seeds", seed_list_str, "--bootstrap", str(bootstrap)]
+            ] + arch_flags + [
+                "--seeds", seed_list_str,
+                "--bootstrap", str(bootstrap),
+                "--bootstrap-mode", bootstrap_mode,
+            ]
 
             if nrows:
                 cmd.extend(["--nrows", str(nrows)])
@@ -531,6 +539,7 @@ class RunnerCLI:
         seeds: str,
         architectures: str,
         bootstrap: int,
+        bootstrap_mode: str = HybridClassifierConfig.bootstrap_mode,
     ) -> int:
         """Run end-to-end pipeline: hybrid evaluation, unsupervised evaluation, summarize."""
         import subprocess
@@ -542,7 +551,7 @@ class RunnerCLI:
         print(f"Windows: {windows_list}")
         print(f"Seeds: {seeds}")
         print(f"Architectures: {architectures}")
-        print(f"Bootstrap: {bootstrap}")
+        print(f"Bootstrap: {bootstrap} (mode={bootstrap_mode})")
         print()
 
         # Step 1: Evaluate Hybrid Classifier for all configurations
@@ -555,6 +564,7 @@ class RunnerCLI:
                 "--seeds", seeds,
                 "--architectures", architectures,
                 "--bootstrap", str(bootstrap),
+                "--bootstrap-mode", bootstrap_mode,
             ]
             if nrows:
                 cmd.extend(["--nrows", str(nrows)])

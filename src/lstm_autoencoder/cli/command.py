@@ -90,6 +90,7 @@ class CommandCLI:
                 ),
                 [int(seed) for seed in arguments.seeds.split(",")],
                 arguments.bootstrap,
+                arguments.bootstrap_mode,
             ),
             "diagnose-scores": lambda: RunnerCLI.run_diagnose_scores(
                 project_root,
@@ -153,6 +154,7 @@ class CommandCLI:
                 arguments.force,
                 arguments.dry_run,
                 arguments.bootstrap,
+                arguments.bootstrap_mode,
             ),
             "run-pipeline": lambda: RunnerCLI.run_pipeline(
                 project_root,
@@ -162,6 +164,7 @@ class CommandCLI:
                 arguments.seeds,
                 arguments.architectures,
                 arguments.bootstrap,
+                arguments.bootstrap_mode,
             ),
         }
 

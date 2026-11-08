@@ -1,3 +1,19 @@
+### 0. Pre-submit methodology audits (P0)
+
+Run before touching the dataset. These are the automated, runnable version of
+TODO.md's P0 checklist (causal feature construction, sequence windowing,
+receiver-disjoint splits, scaler fit-on-train-normal-only). All fixtures are
+tiny synthetic frames built in the test file itself -- **no PaySim CSV
+download needed** for this step.
+
+```Shell
+uv run pytest tests/test_methodology_audit.py -v
+```
+
+All 14 tests should pass before relying on any downstream metric. A failure
+here means re-verify the corresponding P0 TODO.md item before trusting
+anything built on top of it (splits, scores, the IMRAD draft).
+
 ### 1. Download the Dataset
 
 Download [Synthetic Financial Datasets For Fraud Detection](https://www.kaggle.com/datasets/ealaxi/paysim1/data) from Kaggle and place it under `data/raw/` with a domain-specific folder:
@@ -218,10 +234,11 @@ The evaluator (HybridClassifierEvaluator) tests whether the AE's reconstruction 
 - `stack_val` vs `baseline_train`: 2-parameter stack on top of baseline score
 
 **Bootstrap analysis:**
-- Paired, class-stratified bootstrap of delta AUC / delta AP for primary comparisons
-- Fraud and normal rows resampled separately to maintain test prevalence
+- Paired bootstrap of delta AUC / delta AP / delta recall@FPR for primary AND null comparisons
+- Default `--bootstrap-mode receiver`: resamples whole receivers with replacement (a drawn receiver's test rows all travel together), so the CI reflects that same-receiver rows are correlated, not independent draws. `--bootstrap-mode row` restores the old class-stratified row resampling (fraud/normal rows resampled separately, prevalence-preserving) -- kept for comparison, not yet run side-by-side against `receiver` on real data.
+- `--bootstrap` default raised from 200 to 2000 resamples (P5.1)
 - All variants scored on the same draw (paired)
-- Reports 95% confidence intervals and proportion of seeds where CI stays above 0
+- Reports 95% confidence intervals and proportion of seeds where CI stays above 0 -- now for AP too (`p_d_ap_le_0`, `seeds_ap_ci_above_0`), not just AUC
 
 **Interpretation:**
 The error feature helps only if:
@@ -351,7 +368,8 @@ uv run python -m lstm_autoencoder eval-hybrid-all-configs --dataset paysim_synth
 - `--architectures`: Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.
 - `--force`: Re-evaluate even if reports already exist (overwrites them).
 - `--dry-run`: Print the commands that would run without evaluating.
-- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 200).
+- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 2000, raised from 200 -- see P5.1 in `TODO.md`).
+- `--bootstrap-mode`: `receiver` (default) resamples whole receivers so correlated rows travel together; `row` is the legacy class-stratified row resampling. See section 7.
 
 ### 11. Run End-to-End Pipeline
 
@@ -373,7 +391,8 @@ uv run python -m lstm_autoencoder run-pipeline --dataset paysim_synthetic_financ
 - `--windows`: Comma-separated window sizes (default: 1,3,5,10).
 - `--seeds`: Comma-separated seeds (default: 42,123,2026).
 - `--architectures`: Comma-separated architectures (default: all). Choices: attention, bottleneck, plain, attention_pooling.
-- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 200).
+- `--bootstrap`: Paired bootstrap resamples per seed for the delta CIs (default: 2000, raised from 200 -- see P5.1 in `TODO.md`).
+- `--bootstrap-mode`: `receiver` (default) resamples whole receivers so correlated rows travel together; `row` is the legacy class-stratified row resampling. See section 7.
 
 ### 12. Summarize Results
 
