@@ -18,6 +18,7 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
     FullFeatureData,
 )
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
+from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
 from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
@@ -51,10 +52,18 @@ class HybridClassifierConfig:
     """Settings for the hybrid classifier evaluation."""
 
     seeds: tuple[int, ...] = (42,)
-    n_bootstrap: int = 200
+    # P5.1 ("Perkuat bootstrap"): 2000 resamples is the floor for a stable 95% CI;
+    # 200 was a development-time shortcut.
+    n_bootstrap: int = 2000
     error_epsilon: float = 1e-8
     random_seed: int = 42
     fpr_targets: tuple[float, ...] = (0.01, 0.001)
+    # "row": resample individual rows (old behaviour, ignores that rows from the
+    #   same receiver are correlated -- optimistic CIs).
+    # "receiver": resample whole receivers with replacement (all of a drawn
+    #   receiver's test rows travel together). Default, per P5.1 "Bandingkan
+    #   row-wise bootstrap dengan receiver-cluster bootstrap".
+    bootstrap_mode: str = "receiver"
 
 
 @dataclass(frozen=True)
@@ -148,6 +157,7 @@ class HybridClassifierEvaluator:
         y = {name: data.labels[index] for name, index in data.splits.items()}
         buckets = {name: data.buckets[index] for name, index in data.splits.items()}
         buckets_test = data.buckets[data.splits["test"]]
+        receivers_test = data.account_code[data.splits["test"]]
 
         baseline_fit = self._fit(x["train"], y["train"])
         control_fit = self._fit(x["val"], y["val"])
@@ -165,7 +175,7 @@ class HybridClassifierEvaluator:
         per_seed: list[dict[str, object]] = []
         for seed in self._config.seeds:
             errors = self._score_errors(pipeline, scoring, seed)
-            result = self._run_seed(seed, x, y, buckets, buckets_test, errors, shared)
+            result = self._run_seed(seed, x, y, buckets, buckets_test, errors, shared, receivers_test)
             per_seed.append(result)
             self._report_seed(result)
 
@@ -217,6 +227,7 @@ class HybridClassifierEvaluator:
         buckets_test: np.ndarray,
         errors: dict[str, np.ndarray],
         shared: _SeedIndependentScores,
+        receivers_test: np.ndarray,
     ) -> dict[str, object]:
         """Fit and score every variant for one AE seed."""
         # Compute train-normal statistics for leak-free normalization
@@ -258,7 +269,9 @@ class HybridClassifierEvaluator:
             self._pair_name(candidate, reference): self._delta(variants[candidate], variants[reference])
             for candidate, reference in (*BOOTSTRAP_COMPARISONS, *DIAGNOSTIC_COMPARISONS)
         }
-        bootstrap = self._bootstrap(test_scores, labels, seed) if self._config.n_bootstrap > 0 else {}
+        bootstrap = (
+            self._bootstrap(test_scores, labels, seed, receivers_test) if self._config.n_bootstrap > 0 else {}
+        )
         return {
             "seed": seed,
             "variants": variants,
@@ -270,7 +283,7 @@ class HybridClassifierEvaluator:
                 STACK_VAL: stack_fit.last_coefficient,
                 HYBRID_TRAIN_NAIVE: naive_fit.last_coefficient,
             },
-            "by_bucket": self._by_bucket(test_scores, labels, buckets_test),
+            "by_bucket": self._by_bucket(test_scores, labels, buckets_test, seed),
         }
 
     def _fit(self, x: np.ndarray, y: np.ndarray) -> _FittedLogistic:
@@ -338,25 +351,34 @@ class HybridClassifierEvaluator:
     def _pair_name(candidate: str, reference: str) -> str:
         return f"{candidate}_vs_{reference}"
 
-    def _bootstrap(self, scores: dict[str, np.ndarray], labels: np.ndarray, seed: int) -> dict[str, dict[str, float]]:
-        """Paired, class-stratified bootstrap of delta AUC / delta AP / delta recall@FPR for the primary comparisons.
+    # Pairs that get a paired-bootstrap CI. P0 "Audit hybrid metrics" extends this
+    # from BOOTSTRAP_COMPARISONS-only to also cover the null-control comparisons,
+    # so the noise floor (how far from 0 a null delta AUC/AP can drift) is reported
+    # with the same uncertainty as the real comparisons, not just as a point estimate.
+    _ALL_BOOTSTRAP_COMPARISONS: tuple[tuple[str, str], ...] = (*BOOTSTRAP_COMPARISONS, *DIAGNOSTIC_COMPARISONS)
 
-        Fraud and normal rows are resampled separately so every draw keeps the
-        test prevalence; all variants are scored on the SAME draw (paired).
+    def _bootstrap(
+        self, scores: dict[str, np.ndarray], labels: np.ndarray, seed: int, receivers: np.ndarray
+    ) -> dict[str, dict[str, float]]:
+        """Paired bootstrap of delta AUC / delta AP / delta recall@FPR, including the null controls.
+
+        `bootstrap_mode="receiver"` (default) resamples whole receivers with
+        replacement -- every row of a drawn receiver travels together -- so the
+        CI reflects that rows from the same receiver are not independent draws
+        (P5.1 "cluster bootstrap"). `bootstrap_mode="row"` restores the previous
+        class-stratified row resampling (kept for comparison, see P5.1). All
+        variants are scored on the SAME draw (paired).
         """
         rng = np.random.default_rng(self._config.random_seed + 1_000 + seed)
-        positives = np.flatnonzero(labels == 1)
-        negatives = np.flatnonzero(labels == 0)
-        names = sorted({name for pair in BOOTSTRAP_COMPARISONS for name in pair})
-        # Initialize storage for all metrics
+        names = sorted({name for pair in self._ALL_BOOTSTRAP_COMPARISONS for name in pair})
         metric_keys = ["auc", "ap"] + [f"recall_at_fpr_{fpr:g}" for fpr in self._config.fpr_targets]
         draws: dict[str, dict[str, list[float]]] = {
-            self._pair_name(*pair): {key: [] for key in metric_keys} for pair in BOOTSTRAP_COMPARISONS
+            self._pair_name(*pair): {key: [] for key in metric_keys} for pair in self._ALL_BOOTSTRAP_COMPARISONS
         }
+
+        draw_index = self._bootstrap_draw_fn(labels, receivers, rng)
         for _ in range(self._config.n_bootstrap):
-            index = np.concatenate(
-                [rng.choice(positives, size=len(positives)), rng.choice(negatives, size=len(negatives))]
-            )
+            index = draw_index()
             resampled = labels[index]
             auc = {name: RankingMetrics.roc_auc(scores[name][index], resampled) for name in names}
             ap = {name: RankingMetrics.average_precision(scores[name][index], resampled) for name in names}
@@ -364,7 +386,7 @@ class HybridClassifierEvaluator:
                 fpr: {name: RankingMetrics.recall_at_fpr(scores[name][index], resampled, fpr) for name in names}
                 for fpr in self._config.fpr_targets
             }
-            for candidate, reference in BOOTSTRAP_COMPARISONS:
+            for candidate, reference in self._ALL_BOOTSTRAP_COMPARISONS:
                 pair_name = self._pair_name(candidate, reference)
                 draws[pair_name]["auc"].append(auc[candidate] - auc[reference])
                 draws[pair_name]["ap"].append(ap[candidate] - ap[reference])
@@ -382,6 +404,7 @@ class HybridClassifierEvaluator:
                 "d_ap_ci_low": float(ap_low),
                 "d_ap_ci_high": float(ap_high),
                 "p_d_auc_le_0": float(np.mean(np.asarray(metrics["auc"]) <= 0.0)),
+                "p_d_ap_le_0": float(np.mean(np.asarray(metrics["ap"]) <= 0.0)),
             }
             # Add recall@FPR CIs
             for fpr in self._config.fpr_targets:
@@ -392,11 +415,52 @@ class HybridClassifierEvaluator:
                 summary[pair_name][f"p_d_{key}_le_0"] = float(np.mean(np.asarray(metrics[key]) <= 0.0))
         return summary
 
+    def _bootstrap_draw_fn(self, labels: np.ndarray, receivers: np.ndarray, rng: np.random.Generator):
+        """Return a zero-arg callable that draws one resampled row-index array.
+
+        "row": class-stratified resampling of individual rows (legacy).
+        "receiver": resample receivers with replacement; a drawn receiver
+        contributes ALL of its test rows for that draw (block/cluster bootstrap).
+        """
+        mode = self._config.bootstrap_mode
+        if mode == "row":
+            positives = np.flatnonzero(labels == 1)
+            negatives = np.flatnonzero(labels == 0)
+
+            def _draw_row() -> np.ndarray:
+                return np.concatenate(
+                    [rng.choice(positives, size=len(positives)), rng.choice(negatives, size=len(negatives))]
+                )
+
+            return _draw_row
+
+        if mode != "receiver":
+            raise ValueError(f"bootstrap_mode must be 'row' or 'receiver', got {mode!r}.")
+
+        unique_receivers, inverse = np.unique(receivers, return_inverse=True)
+        rows_by_receiver = [np.flatnonzero(inverse == i) for i in range(len(unique_receivers))]
+        n_receivers = len(unique_receivers)
+
+        def _draw_receiver() -> np.ndarray:
+            drawn = rng.integers(0, n_receivers, size=n_receivers)
+            return np.concatenate([rows_by_receiver[i] for i in drawn])
+
+        return _draw_receiver
+
+    # Per-bucket bootstrap CI is reported only for these (the headline comparison);
+    # adding it for every variant would multiply an already O(n_bootstrap x n_rows)
+    # cost by len(HISTORY_STRATA_LABELS). Uses its own smaller resample count
+    # (`_BUCKET_N_BOOTSTRAP`) since per-bucket fraud counts are small (tens to
+    # low hundreds), so 500 draws already gives a stable percentile CI.
+    _BUCKET_CI_VARIANTS: tuple[str, ...] = (BASELINE, HYBRID_VAL)
+    _BUCKET_N_BOOTSTRAP: int = 500
+
     def _by_bucket(
-        self, scores: dict[str, np.ndarray], labels: np.ndarray, buckets: np.ndarray
+        self, scores: dict[str, np.ndarray], labels: np.ndarray, buckets: np.ndarray, seed: int
     ) -> dict[str, dict[str, dict[str, float]]]:
-        """Test AUC/AP per receiver history bucket for the main variants and the AE error alone."""
+        """Test AUC/AP (+ fraud rate, + CI for the headline variants) per receiver history bucket."""
         wanted = (BASELINE, LR_VAL_CONTROL, HYBRID_VAL, HYBRID_VAL_NORM, STACK_VAL, AE_ONLY)
+        rng = np.random.default_rng(self._config.random_seed + 2_000 + seed)
         out: dict[str, dict[str, dict[str, float]]] = {}
         for name in wanted:
             rows: dict[str, dict[str, float]] = {}
@@ -404,14 +468,49 @@ class HybridClassifierEvaluator:
                 mask = buckets == label
                 if not mask.any():
                     continue
-                rows[label] = {
-                    "n": int(mask.sum()),
-                    "n_fraud": int(labels[mask].sum()),
+                n = int(mask.sum())
+                n_fraud = int(labels[mask].sum())
+                entry: dict[str, float] = {
+                    "n": n,
+                    "n_fraud": n_fraud,
+                    "fraud_rate": n_fraud / n if n > 0 else float("nan"),
                     "auc": RankingMetrics.roc_auc(scores[name][mask], labels[mask]),
                     "ap": RankingMetrics.average_precision(scores[name][mask], labels[mask]),
                 }
+                if name in self._BUCKET_CI_VARIANTS and n_fraud > 1 and (n - n_fraud) > 1:
+                    auc_low, auc_high, ap_low, ap_high = self._bucket_ci(
+                        scores[name][mask], labels[mask], rng
+                    )
+                    entry["auc_ci_low"] = auc_low
+                    entry["auc_ci_high"] = auc_high
+                    entry["ap_ci_low"] = ap_low
+                    entry["ap_ci_high"] = ap_high
+                rows[label] = entry
             out[name] = rows
         return out
+
+    def _bucket_ci(
+        self, scores: np.ndarray, labels: np.ndarray, rng: np.random.Generator
+    ) -> tuple[float, float, float, float]:
+        """Class-stratified row-level bootstrap 95% CI for AUC and AP within one bucket.
+
+        Row-level (not receiver-clustered): per-bucket fraud counts are small
+        enough (see `_by_bucket`) that further splitting by receiver would
+        leave too few distinct receivers per draw to resample meaningfully.
+        """
+        positives = np.flatnonzero(labels == 1)
+        negatives = np.flatnonzero(labels == 0)
+        aucs = np.empty(self._BUCKET_N_BOOTSTRAP)
+        aps = np.empty(self._BUCKET_N_BOOTSTRAP)
+        for i in range(self._BUCKET_N_BOOTSTRAP):
+            index = np.concatenate(
+                [rng.choice(positives, size=len(positives)), rng.choice(negatives, size=len(negatives))]
+            )
+            aucs[i] = RankingMetrics.roc_auc(scores[index], labels[index])
+            aps[i] = RankingMetrics.average_precision(scores[index], labels[index])
+        auc_low, auc_high = np.nanpercentile(aucs, [2.5, 97.5])
+        ap_low, ap_high = np.nanpercentile(aps, [2.5, 97.5])
+        return float(auc_low), float(auc_high), float(ap_low), float(ap_high)
 
     @staticmethod
     def _mean_std(values: list[float]) -> tuple[float, float]:
@@ -439,7 +538,20 @@ class HybridClassifierEvaluator:
                 "bottleneck_dim": config.bottleneck_dim,
                 "num_layers": config.num_layers,
                 "dropout": config.dropout,
+                "decoder": "lstm",
+                "parameter_count": LSTMAutoencoder(
+                    input_dim=config.input_dim,
+                    hidden_dim=config.hidden_dim,
+                    num_layers=config.num_layers,
+                    attention=config.attention,
+                    bottleneck=config.bottleneck,
+                    attention_pooling=config.attention_pooling,
+                    dropout=config.dropout,
+                    bottleneck_dim=config.bottleneck_dim,
+                ).parameter_count,
             },
+            "bootstrap_mode": self._config.bootstrap_mode,
+            "n_bootstrap": self._config.n_bootstrap,
             "checkpoints": [self._checkpoint_name(seed) for seed in self._config.seeds],
         }
         self._reporter.update_summary({"run_config": run_config})
@@ -472,9 +584,14 @@ class HybridClassifierEvaluator:
             for metric in first_deltas:
                 mean, std = self._mean_std([run["deltas"][pair][metric] for run in per_seed])  # type: ignore[index]
                 row[f"{metric}_mean"], row[f"{metric}_std"] = mean, std
-            if (candidate, reference) in BOOTSTRAP_COMPARISONS and per_seed[0]["bootstrap"]:
+            if (candidate, reference) in self._ALL_BOOTSTRAP_COMPARISONS and per_seed[0]["bootstrap"]:
                 row["seeds_auc_ci_above_0"] = float(
                     sum(run["bootstrap"][pair]["d_auc_ci_low"] > 0.0 for run in per_seed)  # type: ignore[index]
+                )
+                # AP CI seed count (P0 "Audit hybrid metrics": AP now gets the same
+                # across-seed CI tally AUC already had).
+                row["seeds_ap_ci_above_0"] = float(
+                    sum(run["bootstrap"][pair]["d_ap_ci_low"] > 0.0 for run in per_seed)  # type: ignore[index]
                 )
                 # Add recall@FPR CI seed counts
                 for fpr in self._config.fpr_targets:

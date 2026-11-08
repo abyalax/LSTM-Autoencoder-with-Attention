@@ -114,8 +114,14 @@ class Trainer:
 
         return model, result
 
-    def score(self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray) -> tuple[float, float]:
-        """Return (AUC, average precision) of reconstruction error against labels."""
+    def score(self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray) -> dict[str, float]:
+        """Return AUC, average precision, and recall@FPR (per `TrainConfig.fpr_targets`)
+        of reconstruction error against labels.
+
+        Was a bare `(auc, ap)` tuple; P1 "Lengkapi metrik LSTM-AE" extends every
+        standalone test-set report with the same Recall@FPR targets the hybrid
+        classifier already reports, so the two are comparable metric-for-metric.
+        """
         return self._score_errors(self.predict_errors(model, dataset), labels)
 
     def predict_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
@@ -144,10 +150,15 @@ class Trainer:
         model.eval()
         return model
 
-    @staticmethod
-    def _score_errors(errors: np.ndarray, labels: np.ndarray) -> tuple[float, float]:
-        """AUC and average precision of a reconstruction-error array against labels."""
-        return RankingMetrics.roc_auc(errors, labels), RankingMetrics.average_precision(errors, labels)
+    def _score_errors(self, errors: np.ndarray, labels: np.ndarray) -> dict[str, float]:
+        """AUC, AP and recall@FPR of a reconstruction-error array against labels."""
+        out = {
+            "auc": float(RankingMetrics.roc_auc(errors, labels)),
+            "ap": float(RankingMetrics.average_precision(errors, labels)),
+        }
+        for fpr in self._train_config.fpr_targets:
+            out[f"recall_at_fpr_{fpr:g}"] = float(RankingMetrics.recall_at_fpr(errors, labels, fpr))
+        return out
     
     def _make_loader(self, dataset: Dataset, shuffle: bool) -> DataLoader:
         """Build a DataLoader with worker/pinning settings tuned for an under-used GPU."""

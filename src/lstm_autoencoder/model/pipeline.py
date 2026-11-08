@@ -23,6 +23,7 @@ from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
+from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
 from lstm_autoencoder.model.sequence_builder import SequenceBatch, SequenceBuilder
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
@@ -125,7 +126,8 @@ class PaySimModelTrainingPipeline:
                 f"[seed {seed}] best_epoch {summary['best_epoch']} ({summary['selection_metric']}) | "
                 f"val loss {summary['best_val_loss']:.5f} | val AUC {summary['best_val_auc']:.4f} "
                 f"(peak {summary['peak_val_auc']:.4f} @ep{summary['peak_val_auc_epoch']}) | "
-                f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f}"
+                f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f} | "
+                + self._recall_text(summary, prefix="test_recall_at_fpr_")
             )
 
         aggregate = self._aggregate_seeds(per_seed)
@@ -139,7 +141,8 @@ class PaySimModelTrainingPipeline:
         )
         self._reporter.display_text(
             f"test AUC {aggregate['test_auc_mean']:.4f} +/- {aggregate['test_auc_std']:.4f} | "
-            f"test AP {aggregate['test_ap_mean']:.4f} +/- {aggregate['test_ap_std']:.4f}"
+            f"test AP {aggregate['test_ap_mean']:.4f} +/- {aggregate['test_ap_std']:.4f} | "
+            + self._recall_text(aggregate, prefix="test_recall_at_fpr_", mean_std=True)
         )
         self._reporter.update_summary({"multi_seed_training": {"runs": per_seed, "aggregate": aggregate}})
         self._reporter.save_reports(
@@ -172,8 +175,14 @@ class PaySimModelTrainingPipeline:
                 "bottleneck_dim": config.bottleneck_dim,
                 "num_layers": config.num_layers,
                 "dropout": config.dropout,
+                # Decoder is always a single-stack LSTM (see `Decoder` in
+                # lstm_autoencoder.py); recorded explicitly per P1 "Lengkapi
+                # parameter model" rather than left implicit.
+                "decoder": "lstm",
+                "parameter_count": self._parameter_count(),
             },
             "train_config": {
+                "optimizer": "adam",
                 "batch_size": self._train_config.batch_size,
                 "max_epochs": self._train_config.max_epochs,
                 "learning_rate": self._train_config.learning_rate,
@@ -332,9 +341,9 @@ class PaySimModelTrainingPipeline:
         train_config = replace(train_config, checkpoint_name=self._checkpoint_name(train_config.seed))
         trainer = Trainer(self._model_config, train_config, checkpoint_dir)
         model, result = trainer.fit(prepared.train_subset, prepared.val_subset, prepared.val_labels)
-        test_auc, test_ap = trainer.score(model, prepared.test_subset, prepared.test_labels)
+        test_metrics = trainer.score(model, prepared.test_subset, prepared.test_labels)
 
-        return {
+        summary = {
             "architecture": model.architecture_tag,
             "checkpoint_path": result.checkpoint_path,
             "window_length": self._sequence_config.window_length,
@@ -347,10 +356,16 @@ class PaySimModelTrainingPipeline:
             "best_val_auc": result.best_val_auc,
             "peak_val_auc": result.peak_val_auc,
             "peak_val_auc_epoch": result.peak_val_auc_epoch,
-            "test_auc": test_auc,
-            "test_ap": test_ap,
+            "test_auc": test_metrics["auc"],
+            "test_ap": test_metrics["ap"],
             "history": result.history,
         }
+        # P1 "Lengkapi metrik LSTM-AE": fold recall@FPR_x into the summary as
+        # top-level `test_recall_at_fpr_x` fields alongside test_auc/test_ap.
+        for key, value in test_metrics.items():
+            if key.startswith("recall_at_fpr_"):
+                summary[f"test_{key}"] = value
+        return summary
 
     def _report_single(self, summary: dict[str, object]) -> None:
         """Write the single-run console/JSON report (same format as before)."""
@@ -359,8 +374,32 @@ class PaySimModelTrainingPipeline:
             f"Best epoch {summary['best_epoch']} ({summary['selection_metric']}) | "
             f"val loss {summary['best_val_loss']:.5f} | val AUC {summary['best_val_auc']:.4f} "
             f"(peak {summary['peak_val_auc']:.4f} @ep{summary['peak_val_auc_epoch']}) | "
-            f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f}"
+            f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f} | "
+            + self._recall_text(summary, prefix="test_recall_at_fpr_")
         )
+
+    @staticmethod
+    def _recall_text(source: dict[str, object], prefix: str, mean_std: bool = False) -> str:
+        """Format every `{prefix}{fpr}[_mean/_std]` field as `recall@1%=0.1234` (or `0.1234 +/- 0.0056`).
+
+        Keeps the FPR target itself out of the format string: whatever
+        `TrainConfig.fpr_targets` a run used, its recall fields show up here
+        without the console text needing to hardcode 1%/0.1% (P1 "Lengkapi
+        metrik LSTM-AE").
+        """
+        if mean_std:
+            keys = sorted({k[: -len("_mean")] for k in source if k.startswith(prefix) and k.endswith("_mean")})
+            parts = []
+            for key in keys:
+                fpr_pct = float(key[len(prefix):]) * 100
+                parts.append(f"recall@{fpr_pct:g}%={source[f'{key}_mean']:.4f}+/-{source[f'{key}_std']:.4f}")
+            return " | ".join(parts)
+        keys = sorted(k for k in source if k.startswith(prefix))
+        parts = []
+        for key in keys:
+            fpr_pct = float(key[len(prefix):]) * 100
+            parts.append(f"recall@{fpr_pct:g}%={source[key]:.4f}")
+        return " | ".join(parts)
         self._reporter.update_summary({"training": summary})
         self._reporter.save_reports(
             text_filename="training_report.txt",
@@ -404,6 +443,26 @@ class PaySimModelTrainingPipeline:
         config = self._model_config
         return config.architecture_tag
 
+    def _parameter_count(self) -> int:
+        """Trainable parameter count of the configured architecture, CPU-only, for the run-config report.
+
+        Builds a throwaway (never-moved-to-device, never-trained) instance
+        purely to read `LSTMAutoencoder.parameter_count`; cheap relative to
+        training and avoids duplicating the parameter-counting formula here.
+        """
+        config = self._model_config
+        model = LSTMAutoencoder(
+            input_dim=config.input_dim,
+            hidden_dim=config.hidden_dim,
+            num_layers=config.num_layers,
+            attention=config.attention,
+            bottleneck=config.bottleneck,
+            attention_pooling=config.attention_pooling,
+            dropout=config.dropout,
+            bottleneck_dim=config.bottleneck_dim,
+        )
+        return model.parameter_count
+
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:
         """Mean and std of val/test metrics across seeds (ddof=1 when n > 1)."""
@@ -413,7 +472,7 @@ class PaySimModelTrainingPipeline:
         test_aucs = np.array([run["test_auc"] for run in per_seed])
         test_aps = np.array([run["test_ap"] for run in per_seed])
         ddof = 1 if len(per_seed) > 1 else 0
-        return {
+        aggregate: dict[str, object] = {
             "n_seeds": len(per_seed),
             "val_loss_mean": float(val_losses.mean()),
             "val_loss_std": float(val_losses.std(ddof=ddof)),
@@ -425,6 +484,14 @@ class PaySimModelTrainingPipeline:
             "test_ap_mean": float(test_aps.mean()),
             "test_ap_std": float(test_aps.std(ddof=ddof)),
         }
+        # P1 "Lengkapi metrik LSTM-AE": aggregate every `test_recall_at_fpr_*`
+        # field the same way, whatever `fpr_targets` happened to be configured.
+        recall_keys = sorted({key for run in per_seed for key in run if key.startswith("test_recall_at_fpr_")})
+        for key in recall_keys:
+            values = np.array([run[key] for run in per_seed])
+            aggregate[f"{key}_mean"] = float(values.mean())
+            aggregate[f"{key}_std"] = float(values.std(ddof=ddof))
+        return aggregate
 
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
         """Split receivers by split_config fractions, stratified by per-receiver fraud rate."""

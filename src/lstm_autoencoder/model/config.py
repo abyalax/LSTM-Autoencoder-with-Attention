@@ -107,6 +107,10 @@ class TrainConfig:
     seed: int = 42
     selection_metric: str = "val_loss"
     min_delta: float = 0.01
+    # P1 "Lengkapi metrik LSTM-AE": standalone test-set reports now carry
+    # Recall@FPR alongside AUC/AP for every architecture x window configuration,
+    # not only for the hybrid classifier (same targets as `HybridClassifierConfig`).
+    fpr_targets: tuple[float, ...] = (0.01, 0.001)
 
     def __post_init__(self) -> None:
         """Validate the checkpoint-selection settings."""

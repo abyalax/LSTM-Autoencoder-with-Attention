@@ -46,6 +46,10 @@ class FullFeatureData:
     labels: np.ndarray
     buckets: np.ndarray
     splits: dict[str, np.ndarray]
+    # Factorized receiver id per row, aligned with `features`/`labels`/`buckets`.
+    # Exposed so downstream evaluators (e.g. the hybrid classifier) can run a
+    # receiver-clustered bootstrap instead of resampling individual rows.
+    account_code: np.ndarray
 
 
 class BaselineEvaluator:
@@ -129,6 +133,7 @@ class BaselineEvaluator:
             labels=built[self._schema.target_column].to_numpy(),
             buckets=built[HISTORY_BUCKET].to_numpy(),
             splits=self._stratified_receiver_split(built),
+            account_code=built[ACCOUNT_CODE].to_numpy(),
         )
 
     def run(self) -> dict[str, object]:
@@ -151,7 +156,7 @@ class BaselineEvaluator:
         for variant in variants:
             columns = list(variant.columns)
             if variant.name == "full_gbm":
-                model = self._fit_gbm(encoded[columns], labels, splits["train"], splits["val"])
+                model = self._fit_gbm(encoded[columns], labels, splits["train"])
                 scores = self._score_gbm(model, encoded[columns], labels, splits)
                 stratified = self._score_gbm_by_bucket(
                     model, encoded[columns], labels, splits["test"], buckets
@@ -305,9 +310,20 @@ class BaselineEvaluator:
         return out
 
     def _fit_gbm(
-        self, features: pd.DataFrame, labels: np.ndarray, train_idx: np.ndarray, val_idx: np.ndarray | None = None
+        self, features: pd.DataFrame, labels: np.ndarray, train_idx: np.ndarray
     ) -> HistGradientBoostingClassifier:
-        """Fit a HistGradientBoostingClassifier on the training split (non-linear control)."""
+        """Fit a HistGradientBoostingClassifier on the training split (non-linear control).
+
+        `early_stopping=True` carves `validation_fraction` off of `train_idx`
+        internally (sklearn's own holdout), so this never touches our own
+        `val`/`test` receivers -- same train-only fit contract as `_fit` (LR).
+        A previous version accepted an unused `val_idx` argument and an
+        inaccurate comment implying `val_idx` rows were used; both are removed
+        here (P1 "Validasi baseline GBM"). Scoring (`_score_gbm`) already uses
+        the same `RankingMetrics.roc_auc` / `average_precision` and the same
+        `predict_proba[:, 1]` convention as the LR path (`_score`), so AUC/AP
+        are computed identically for both models.
+        """
         model = HistGradientBoostingClassifier(
             max_iter=200,
             learning_rate=0.1,
@@ -316,12 +332,7 @@ class BaselineEvaluator:
             validation_fraction=0.1,
             random_state=self._probe.random_seed,
         )
-        # Use validation set for early stopping if provided
-        if val_idx is not None:
-            # Combine train and val for fitting, let sklearn handle validation split internally
-            model.fit(features.iloc[train_idx], labels[train_idx])
-        else:
-            model.fit(features.iloc[train_idx], labels[train_idx])
+        model.fit(features.iloc[train_idx], labels[train_idx])
         return model
 
     def _score_gbm(

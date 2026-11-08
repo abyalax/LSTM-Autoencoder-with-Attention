@@ -183,6 +183,11 @@ class LSTMAutoencoder(nn.Module):
             base = "attn" if self.attention_enabled else "plain"
         return compose_architecture_tag(base, self.hidden_dim, self.bottleneck_dim)
 
+    @property
+    def parameter_count(self) -> int:
+        """Total trainable parameter count, for the P1 "Lengkapi parameter model" report."""
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Return the reconstructed sequence, same shape as `x`."""
         encoded, (hidden, _) = self.encoder(x)
