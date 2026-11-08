@@ -1,0 +1,31 @@
+{
+  "artifact_version": "version_18_loss",
+  "selection_metric": "val_loss",
+  "architecture": "bottleneck_z2_h16",
+  "window_length": 1,
+  "seeds": [
+    42
+  ],
+  "model_config": {
+    "attention": false,
+    "bottleneck": true,
+    "attention_pooling": false,
+    "hidden_dim": 16,
+    "bottleneck_dim": 2,
+    "num_layers": 2,
+    "dropout": 0.1
+  },
+  "train_config": {
+    "batch_size": 16384,
+    "max_epochs": 15,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "patience": 5,
+    "min_delta": 0.01,
+    "selection_metric": "val_loss",
+    "device": "cuda"
+  },
+  "checkpoints": [
+    "lstm_ae_w1_bottleneck_z2_h16_seed42_best.pt"
+  ]
+}

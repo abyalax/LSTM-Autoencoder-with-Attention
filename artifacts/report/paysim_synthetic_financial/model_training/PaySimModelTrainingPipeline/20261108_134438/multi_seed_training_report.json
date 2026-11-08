@@ -1,0 +1,159 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder train-model --dataset paysim_synthetic_financial --window 1 --bottleneck --bottleneck-dim 2 --hidden-dim 16 --max-epochs 15 --seeds 42",
+  "run_config": {
+    "artifact_version": "version_18_loss",
+    "selection_metric": "val_loss",
+    "architecture": "bottleneck_z2_h16",
+    "window_length": 1,
+    "seeds": [
+      42
+    ],
+    "model_config": {
+      "attention": false,
+      "bottleneck": true,
+      "attention_pooling": false,
+      "hidden_dim": 16,
+      "bottleneck_dim": 2,
+      "num_layers": 2,
+      "dropout": 0.1
+    },
+    "train_config": {
+      "batch_size": 16384,
+      "max_epochs": 15,
+      "learning_rate": 0.001,
+      "weight_decay": 1e-05,
+      "patience": 5,
+      "min_delta": 0.01,
+      "selection_metric": "val_loss",
+      "device": "cuda"
+    },
+    "checkpoints": [
+      "lstm_ae_w1_bottleneck_z2_h16_seed42_best.pt"
+    ]
+  },
+  "multi_seed_training": {
+    "runs": [
+      {
+        "architecture": "bottleneck_z2_h16",
+        "checkpoint_path": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_18_loss\\lstm_ae_w1_bottleneck_z2_h16_seed42_best.pt",
+        "window_length": 1,
+        "n_train_normal": 1935179,
+        "n_val": 414442,
+        "n_test": 415043,
+        "best_epoch": 15,
+        "selection_metric": "val_loss",
+        "best_val_loss": 0.08343824744224548,
+        "best_val_auc": 0.4929640648289431,
+        "peak_val_auc": 0.8162746450534,
+        "peak_val_auc_epoch": 1,
+        "test_auc": 0.5006638900141972,
+        "test_ap": 0.008774926343771267,
+        "history": [
+          {
+            "epoch": 1,
+            "train_loss": 0.9990570008386386,
+            "val_loss": 0.9379386901855469,
+            "val_auc": 0.8162746450534
+          },
+          {
+            "epoch": 2,
+            "train_loss": 0.6973745120082735,
+            "val_loss": 0.4620778262615204,
+            "val_auc": 0.6140572641067792
+          },
+          {
+            "epoch": 3,
+            "train_loss": 0.4134056357716619,
+            "val_loss": 0.3720701038837433,
+            "val_auc": 0.6365635857157126
+          },
+          {
+            "epoch": 4,
+            "train_loss": 0.3756789751456545,
+            "val_loss": 0.3564772605895996,
+            "val_auc": 0.6251535295232148
+          },
+          {
+            "epoch": 5,
+            "train_loss": 0.35616250024110224,
+            "val_loss": 0.29663145542144775,
+            "val_auc": 0.5903819759310924
+          },
+          {
+            "epoch": 6,
+            "train_loss": 0.23115052914491704,
+            "val_loss": 0.17752796411514282,
+            "val_auc": 0.5971673015065236
+          },
+          {
+            "epoch": 7,
+            "train_loss": 0.18612573564341553,
+            "val_loss": 0.15217366814613342,
+            "val_auc": 0.5416215900636823
+          },
+          {
+            "epoch": 8,
+            "train_loss": 0.16448534183007155,
+            "val_loss": 0.13358409702777863,
+            "val_auc": 0.5207228525592238
+          },
+          {
+            "epoch": 9,
+            "train_loss": 0.1444960196812619,
+            "val_loss": 0.11106293648481369,
+            "val_auc": 0.5221938408970792
+          },
+          {
+            "epoch": 10,
+            "train_loss": 0.12707901982200415,
+            "val_loss": 0.10008053481578827,
+            "val_auc": 0.5231693043122889
+          },
+          {
+            "epoch": 11,
+            "train_loss": 0.11883909394163351,
+            "val_loss": 0.09464093297719955,
+            "val_auc": 0.5157904519900377
+          },
+          {
+            "epoch": 12,
+            "train_loss": 0.11376102659817441,
+            "val_loss": 0.091217540204525,
+            "val_auc": 0.512080440366395
+          },
+          {
+            "epoch": 13,
+            "train_loss": 0.11020995116824275,
+            "val_loss": 0.0882296934723854,
+            "val_auc": 0.5034005795567164
+          },
+          {
+            "epoch": 14,
+            "train_loss": 0.1071612347331368,
+            "val_loss": 0.08601033687591553,
+            "val_auc": 0.5022766601753378
+          },
+          {
+            "epoch": 15,
+            "train_loss": 0.10422246723181688,
+            "val_loss": 0.08343824744224548,
+            "val_auc": 0.4929640648289431
+          }
+        ],
+        "seed": 42
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 1,
+      "val_loss_mean": 0.08343824744224548,
+      "val_loss_std": 0.0,
+      "val_auc_mean": 0.4929640648289431,
+      "val_auc_std": 0.0,
+      "peak_val_auc_mean": 0.8162746450534,
+      "test_auc_mean": 0.5006638900141972,
+      "test_auc_std": 0.0,
+      "test_ap_mean": 0.008774926343771267,
+      "test_ap_std": 0.0
+    }
+  }
+}

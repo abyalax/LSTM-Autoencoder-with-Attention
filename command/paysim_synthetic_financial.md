@@ -110,7 +110,7 @@ The pipeline (PaySimModelTrainingPipeline) performs the following operations:
 
 - **Sequence building**: left-pads each receiver's last `--window` transactions into fixed-length windows (`amount`, `step_diff`, `log_amount_ratio`, `history_length`, `is_new_receiver`)
 - **Receiver-stratified split**: 70/15/15 split by `nameDest`, stratified by per-receiver fraud rate; the training set is further restricted to normal (non-fraud) windows only
-- **Training**: fits the LSTM-Autoencoder via Adam, with early stopping on validation reconstruction-error AUC
+- **Training**: fits the LSTM-Autoencoder via Adam. The checkpoint is chosen by `--selection-metric` (default `val_loss`: mean reconstruction error of normal validation rows; `val_auc` uses labelled validation AUC and is a selection bias to state in the paper). Reports show val loss, val AUC at the selected epoch, and the peak val AUC over all epochs
 - **Evaluation**: scores the held-out test set (fraud included) by reconstruction-error AUC and average precision
 
 The model architecture supports four variants:
@@ -135,6 +135,26 @@ Optional arguments:
 - `--bottleneck` : Use a single-vector bottleneck decoder (final encoder hidden state, repeated across the window). Mutually exclusive with `--plain` and `--attention-pooling`. Default is False.
 - `--plain` : Use raw per-step encoder outputs (can copy directly). Mutually exclusive with `--bottleneck` and `--attention-pooling`. Default is False.
 - `--attention-pooling` : Use attention to pool encoder outputs to a single bottleneck vector, then repeat across the window. Mutually exclusive with `--bottleneck` and `--plain`. Default is False.
+- `--hidden-dim` : LSTM hidden size (default 64). A non-default value adds `_h{N}` to the architecture tag and checkpoint name.
+- `--bottleneck-dim` : Size of the latent code the single-vector context is squeezed through (`tanh(Linear)` down, `Linear` back up). Needs `--bottleneck` or `--attention-pooling`; adds `_z{N}` to the tag. Keep it far below `5 x window`, otherwise the model can learn the identity. Every command that loads a checkpoint (`probe-hybrid-signal`, `eval-hybrid`, `diagnose-scores`) must receive the same `--hidden-dim` and `--bottleneck-dim`.
+- `--selection-metric` : `val_loss` (default, label-free) or `val_auc` (uses labels).
+- `--max-epochs`, `--patience` : Epoch budget and patience (defaults 50 and 5).
+- `--min-delta` : Relative improvement that counts as progress (default 0.01 = 1%). Stops creeping gains from keeping an identity-like model training.
+
+Evaluation commands resolve checkpoints by searching `artifacts/model/paysim_synthetic_financial/version_N_*`, newest first, so evaluate a configuration before retraining another one with the same name.
+
+### 6. Diagnose reconstruction scores
+
+Compare the `mean`, `last` and `max` reconstruction scores on already-trained checkpoints and test whether the error tracks history length instead of fraud (AE-only AUC inside each history bucket, Spearman with real-step count and bucket, error distribution per group). Defaults to the validation split so design decisions never look at test; use `--split test` for final numbers (adds the LR-outcome groups).
+
+```Shell
+uv run python -m lstm_autoencoder diagnose-scores --dataset paysim_synthetic_financial --window 3 --seeds 42
+uv run python -m lstm_autoencoder diagnose-scores --dataset paysim_synthetic_financial --window 3 --bottleneck --bottleneck-dim 3 --seeds 42
+```
+
+Optional arguments: the architecture flags, `--hidden-dim`, `--bottleneck-dim`, `--seeds` (default 42), `--split` (`val` or `test`, default `val`), `--window`, `--nrows`.
+
+Saves `score_diagnostics_report.txt` and `.json` under `artifacts/report/paysim_synthetic_financial/score_diagnostics/ScoreDiagnostics/`.
 
 ### 6. Probe hybrid signal
 

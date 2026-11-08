@@ -28,6 +28,11 @@ class TransactionSequenceDataset(Dataset):
         """Number of examples in this subset."""
         return len(self._indices)
 
+    def valid_steps(self) -> np.ndarray:
+        """Number of real (non-padded) steps of every example in this subset, in dataset order."""
+        rows = torch.from_numpy(np.asarray(self._indices, dtype="int64"))
+        return self._mask[rows].sum(dim=1).numpy().astype("int64")
+
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return (sequence, mask, label) for one example."""
         row = self._indices[index]

@@ -1,4 +1,4 @@
-"""Training loop for the LSTM-Autoencoder, with early stopping on validation reconstruction loss."""
+"""Training loop for the LSTM-Autoencoder, with a configurable checkpoint-selection metric."""
 
 from __future__ import annotations
 
@@ -21,12 +21,21 @@ class TrainResult:
 
     best_epoch: int
     best_val_loss: float
+    best_val_auc: float
+    peak_val_auc: float
+    peak_val_auc_epoch: int
+    selection_metric: str
     history: list[dict[str, float]]
     checkpoint_path: str
 
 
 class Trainer:
-    """Fit an LSTMAutoencoder on normal-only windows, select by validation reconstruction loss."""
+    """Fit an LSTMAutoencoder on normal-only windows and keep the best checkpoint.
+
+    The checkpoint is chosen by `TrainConfig.selection_metric`; the validation
+    AUC at that checkpoint and the best AUC seen at ANY epoch are both recorded,
+    so a gap between "selected" and "peak" is visible in every report.
+    """
 
     def __init__(self, model_config: ModelConfig, train_config: TrainConfig, checkpoint_dir: Path) -> None:
         """Bind the trainer to model and training hyperparameters."""
@@ -42,7 +51,7 @@ class Trainer:
         val_dataset: Dataset,
         val_labels: np.ndarray
     ) -> tuple[LSTMAutoencoder, TrainResult]:
-        """Train on normal-only windows; validate using reconstruction loss on normal-only val rows."""
+        """Train on normal-only windows; select the checkpoint by `selection_metric`."""
         torch.manual_seed(self._train_config.seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(self._train_config.seed)
@@ -58,19 +67,25 @@ class Trainer:
         self._checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_path = self._checkpoint_dir / self._train_config.checkpoint_name
 
-        best_loss, best_epoch, stale_epochs = float('inf'), -1, 0
+        selection = self._train_config.selection_metric
+        best_score, best_epoch, stale_epochs = float("inf"), -1, 0
         history: list[dict[str, float]] = []
 
         for epoch in range(1, self._train_config.max_epochs + 1):
             train_loss = self._train_epoch(model, train_loader, optimizer)
             val_errors = self._predict_errors(model, val_loader)
-            val_auc = RankingMetrics.roc_auc(val_errors, val_labels)
-            # Use validation reconstruction loss on normal-only rows for early stopping
-            val_loss = val_errors[val_labels == 0].mean() if (val_labels == 0).any() else val_errors.mean()
-            history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss, "val_auc": val_auc})
+            val_auc = float(RankingMetrics.roc_auc(val_errors, val_labels))
+            normal = val_labels == 0
+            val_loss = float(val_errors[normal].mean() if normal.any() else val_errors.mean())
+            history.append({"epoch": epoch, "train_loss": float(train_loss), "val_loss": val_loss, "val_auc": val_auc})
 
-            if val_loss < best_loss:
-                best_loss, best_epoch, stale_epochs = val_loss, epoch, 0
+            # Both metrics are minimised: AUC is negated so "higher is better" works too.
+            score = val_loss if selection == "val_loss" else -val_auc
+            if not np.isfinite(score):
+                raise ValueError(f"Selection metric '{selection}' is not finite at epoch {epoch}: {score}")
+
+            if self._improved(score, best_score):
+                best_score, best_epoch, stale_epochs = score, epoch, 0
                 torch.save(model.state_dict(), checkpoint_path)
             else:
                 stale_epochs += 1
@@ -78,9 +93,15 @@ class Trainer:
                     break
 
         model.load_state_dict(torch.load(checkpoint_path, map_location=self._device))
+        selected = history[best_epoch - 1]  # epochs are 1-based and consecutive
+        peak = max(history, key=lambda entry: -1.0 if np.isnan(entry["val_auc"]) else entry["val_auc"])
         result = TrainResult(
             best_epoch=best_epoch,
-            best_val_loss=best_loss,
+            best_val_loss=selected["val_loss"],
+            best_val_auc=selected["val_auc"],
+            peak_val_auc=peak["val_auc"],
+            peak_val_auc_epoch=int(peak["epoch"]),
+            selection_metric=selection,
             history=history,
             checkpoint_path=str(checkpoint_path),
         )
@@ -100,6 +121,20 @@ class Trainer:
     def predict_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
         """Run inference and return per-example reconstruction error, in dataset order."""
         return self._predict_errors(model, self._make_loader(dataset, shuffle=False))
+
+    def predict_step_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
+        """Return the per-step reconstruction error, shape (n, window), in dataset order.
+
+        Padded steps are 0. Windows are left-padded, so the LAST column is always the
+        current transaction; the mean over real steps equals `predict_errors`.
+        """
+        return self._predict_step_errors(model, self._make_loader(dataset, shuffle=False))
+
+    def _improved(self, score: float, best: float) -> bool:
+        """True when `score` beats `best` by at least the relative `min_delta` (first epoch always counts)."""
+        if not np.isfinite(best):
+            return True
+        return score < best - abs(best) * self._train_config.min_delta
 
     def build_eval_model(self, checkpoint_path: Path) -> LSTMAutoencoder:
         """Build the configured architecture and load trained weights, for
@@ -140,6 +175,7 @@ class Trainer:
             bottleneck=self._model_config.bottleneck,
             attention_pooling=self._model_config.attention_pooling,
             dropout=self._model_config.dropout,
+            bottleneck_dim=self._model_config.bottleneck_dim,
         )
         if model.architecture_tag != self._model_config.architecture_tag:
             raise RuntimeError(
@@ -163,6 +199,18 @@ class Trainer:
             total_loss += loss.detach().item() * len(sequence)
             total_examples += len(sequence)
         return total_loss / max(total_examples, 1)
+
+    @torch.no_grad()
+    def _predict_step_errors(self, model: LSTMAutoencoder, loader: DataLoader) -> np.ndarray:
+        """Run inference and return per-step reconstruction error for every example."""
+        model.eval()
+        chunks = []
+        for sequence, mask, _ in loader:
+            sequence = sequence.to(self._device, non_blocking=True)
+            mask = mask.to(self._device, non_blocking=True)
+            reconstructed = model(sequence, mask)
+            chunks.append(model.stepwise_error(sequence, reconstructed, mask).cpu().numpy())
+        return np.concatenate(chunks)
 
     @torch.no_grad()
     def _predict_errors(self, model: LSTMAutoencoder, loader: DataLoader) -> np.ndarray:

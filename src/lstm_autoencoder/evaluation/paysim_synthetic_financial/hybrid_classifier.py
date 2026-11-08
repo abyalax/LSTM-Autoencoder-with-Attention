@@ -106,8 +106,9 @@ class HybridClassifierEvaluator:
     Read hybrid_val against lr_val_control (identical fit data, only the error
     feature differs) and stack_val / hybrid_val against baseline_train.
 
-    Caveat: `val` also picked the AE checkpoint (early stopping on val AUC),
-    which mildly favours the error feature on val. `test` is untouched, so the
+    Caveat: `val` also picked the AE checkpoint (by validation reconstruction loss or,
+    with `--selection-metric val_auc`, by labelled validation AUC -- the latter
+    mildly favours the error feature on val). `test` is untouched, so the
     reported test numbers remain valid. Bootstrap resamples rows, not
     receivers, so its CIs are somewhat optimistic.
     """
@@ -435,6 +436,7 @@ class HybridClassifierEvaluator:
                 "bottleneck": config.bottleneck,
                 "attention_pooling": config.attention_pooling,
                 "hidden_dim": config.hidden_dim,
+                "bottleneck_dim": config.bottleneck_dim,
                 "num_layers": config.num_layers,
                 "dropout": config.dropout,
             },

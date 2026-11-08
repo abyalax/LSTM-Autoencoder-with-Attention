@@ -50,6 +50,9 @@ class _PreparedData:
     train_all_labels: np.ndarray | None = None
     train_row_index: np.ndarray | None = None
     val_row_index: np.ndarray | None = None
+    train_history_bucket: np.ndarray | None = None
+    val_history_bucket: np.ndarray | None = None
+    test_history_bucket: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,7 @@ class SplitScoringData:
     dataset: TransactionSequenceDataset
     labels: np.ndarray
     row_index: np.ndarray
+    history_bucket: np.ndarray | None = None
 
 
 class PaySimModelTrainingPipeline:
@@ -118,14 +122,20 @@ class PaySimModelTrainingPipeline:
             summary["seed"] = seed
             per_seed.append(summary)
             self._reporter.display_text(
-                f"[seed {seed}] best_epoch {summary['best_epoch']} | "
-                f"val AUC {summary['best_val_loss']:.4f} | test AUC {summary['test_auc']:.4f} | "
-                f"test AP {summary['test_ap']:.4f}"
+                f"[seed {seed}] best_epoch {summary['best_epoch']} ({summary['selection_metric']}) | "
+                f"val loss {summary['best_val_loss']:.5f} | val AUC {summary['best_val_auc']:.4f} "
+                f"(peak {summary['peak_val_auc']:.4f} @ep{summary['peak_val_auc_epoch']}) | "
+                f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f}"
             )
 
         aggregate = self._aggregate_seeds(per_seed)
         self._reporter.display_section(
             f"LSTM-Autoencoder multi-seed summary (W={self._sequence_config.window_length}, seeds={list(seeds)})"
+        )
+        self._reporter.display_text(
+            f"val loss {aggregate['val_loss_mean']:.5f} +/- {aggregate['val_loss_std']:.5f} | "
+            f"val AUC {aggregate['val_auc_mean']:.4f} +/- {aggregate['val_auc_std']:.4f} "
+            f"(peak {aggregate['peak_val_auc_mean']:.4f})"
         )
         self._reporter.display_text(
             f"test AUC {aggregate['test_auc_mean']:.4f} +/- {aggregate['test_auc_std']:.4f} | "
@@ -150,7 +160,7 @@ class PaySimModelTrainingPipeline:
         config = self._model_config
         run_config = {
             "artifact_version": self._artifact_version_dir.name,
-            "selection_metric": "val_loss",
+            "selection_metric": self._train_config.selection_metric,
             "architecture": config.architecture_tag,
             "window_length": self._sequence_config.window_length,
             "seeds": list(seeds),
@@ -159,6 +169,7 @@ class PaySimModelTrainingPipeline:
                 "bottleneck": config.bottleneck,
                 "attention_pooling": config.attention_pooling,
                 "hidden_dim": config.hidden_dim,
+                "bottleneck_dim": config.bottleneck_dim,
                 "num_layers": config.num_layers,
                 "dropout": config.dropout,
             },
@@ -168,6 +179,8 @@ class PaySimModelTrainingPipeline:
                 "learning_rate": self._train_config.learning_rate,
                 "weight_decay": self._train_config.weight_decay,
                 "patience": self._train_config.patience,
+                "min_delta": self._train_config.min_delta,
+                "selection_metric": self._train_config.selection_metric,
                 "device": self._train_config.device,
             },
             "checkpoints": [self._checkpoint_name(seed) for seed in seeds],
@@ -202,15 +215,65 @@ class PaySimModelTrainingPipeline:
         """
         prepared = self._prepare_data(with_train_scoring=True)
         return {
-            "train": SplitScoringData(prepared.train_all_subset, prepared.train_all_labels, prepared.train_row_index),
-            "val": SplitScoringData(prepared.val_subset, prepared.val_labels, prepared.val_row_index),
-            "test": SplitScoringData(prepared.test_subset, prepared.test_labels, prepared.test_row_index),
+            "train": SplitScoringData(
+                prepared.train_all_subset, prepared.train_all_labels, prepared.train_row_index,
+                prepared.train_history_bucket,
+            ),
+            "val": SplitScoringData(
+                prepared.val_subset, prepared.val_labels, prepared.val_row_index, prepared.val_history_bucket
+            ),
+            "test": SplitScoringData(
+                prepared.test_subset, prepared.test_labels, prepared.test_row_index, prepared.test_history_bucket
+            ),
+        }
+
+    def prepared_eval_splits(self) -> dict[str, SplitScoringData]:
+        """Return validation and test windows with labels, row positions and history buckets.
+
+        Lighter than `prepared_scoring_splits` (no copy of the train rows), for
+        diagnostics that only score a trained checkpoint on held-out data.
+        """
+        prepared = self._prepare_data()
+        return {
+            "val": SplitScoringData(
+                prepared.val_subset, prepared.val_labels, prepared.val_row_index, prepared.val_history_bucket
+            ),
+            "test": SplitScoringData(
+                prepared.test_subset, prepared.test_labels, prepared.test_row_index, prepared.test_history_bucket
+            ),
         }
 
     def checkpoint_path(self, seed: int) -> Path:
-        """Path of the checkpoint `_train_and_evaluate` writes for `seed` with this configuration."""
-        directory = self._artifact_version_dir or self._latest_artifact_version_dir()
-        return directory / self._checkpoint_name(seed)
+        """Path of the checkpoint `_train_and_evaluate` writes for `seed` with this configuration.
+
+        While training, that is inside this run's own version directory. For
+        evaluation-only use, the NEWEST version directory that holds a checkpoint of
+        this exact name wins, because each training run gets its own version
+        directory and `latest.json` only points at the last one trained.
+        """
+        name = self._checkpoint_name(seed)
+        if self._artifact_version_dir is not None:
+            return self._artifact_version_dir / name
+        found = self.find_checkpoint(self._dataset_config.artifacts_dir, name)
+        return found if found is not None else self._latest_artifact_version_dir() / name
+
+    @staticmethod
+    def find_checkpoint(artifacts_dir: Path, name: str) -> Path | None:
+        """Newest `version_N_*` directory containing checkpoint `name`, else the legacy flat folder, else None."""
+        root = artifacts_dir / "model" / "paysim_synthetic_financial"
+        if not root.exists():
+            return None
+        pattern = re.compile(r"^version_(\d+)(?:_.*)?$")
+        versions = sorted(
+            ((int(match.group(1)), child) for child in root.iterdir() if child.is_dir() and (match := pattern.match(child.name))),
+            key=lambda item: item[0],
+            reverse=True,
+        )
+        for _, directory in versions:
+            if (directory / name).exists():
+                return directory / name
+        legacy = root / name
+        return legacy if legacy.exists() else None
 
     def _prepare_data(self, with_train_scoring: bool = False) -> _PreparedData:
         """Load, scale, and window the dataset once; reused across seeds.
@@ -254,6 +317,9 @@ class PaySimModelTrainingPipeline:
             train_all_labels=batch.labels[splits["train"]] if with_train_scoring else None,
             train_row_index=splits["train"] if with_train_scoring else None,
             val_row_index=splits["val"] if with_train_scoring else None,
+            train_history_bucket=batch.history_bucket[splits["train"]] if with_train_scoring else None,
+            val_history_bucket=batch.history_bucket[splits["val"]],
+            test_history_bucket=batch.history_bucket[splits["test"]],
         )
 
     def _train_and_evaluate(
@@ -276,7 +342,11 @@ class PaySimModelTrainingPipeline:
             "n_val": prepared.n_val,
             "n_test": prepared.n_test,
             "best_epoch": result.best_epoch,
+            "selection_metric": result.selection_metric,
             "best_val_loss": result.best_val_loss,
+            "best_val_auc": result.best_val_auc,
+            "peak_val_auc": result.peak_val_auc,
+            "peak_val_auc_epoch": result.peak_val_auc_epoch,
             "test_auc": test_auc,
             "test_ap": test_ap,
             "history": result.history,
@@ -286,7 +356,9 @@ class PaySimModelTrainingPipeline:
         """Write the single-run console/JSON report (same format as before)."""
         self._reporter.display_section(f"LSTM-Autoencoder training (W={self._sequence_config.window_length})")
         self._reporter.display_text(
-            f"Best epoch {summary['best_epoch']} | val AUC {summary['best_val_loss']:.4f} | "
+            f"Best epoch {summary['best_epoch']} ({summary['selection_metric']}) | "
+            f"val loss {summary['best_val_loss']:.5f} | val AUC {summary['best_val_auc']:.4f} "
+            f"(peak {summary['peak_val_auc']:.4f} @ep{summary['peak_val_auc_epoch']}) | "
             f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f}"
         )
         self._reporter.update_summary({"training": summary})
@@ -311,7 +383,8 @@ class PaySimModelTrainingPipeline:
             if child.is_dir() and (match := pattern.match(child.name))
         ]
         next_number = max(numbers, default=0) + 1
-        version_dir = root / f"version_{next_number}_loss"
+        suffix = "auc" if self._train_config.selection_metric == "val_auc" else "loss"
+        version_dir = root / f"version_{next_number}_{suffix}"
         version_dir.mkdir()
         return version_dir
 
@@ -334,14 +407,19 @@ class PaySimModelTrainingPipeline:
     @staticmethod
     def _aggregate_seeds(per_seed: list[dict[str, object]]) -> dict[str, object]:
         """Mean and std of val/test metrics across seeds (ddof=1 when n > 1)."""
-        val_aucs = np.array([run["best_val_loss"] for run in per_seed])
+        val_losses = np.array([run["best_val_loss"] for run in per_seed])
+        val_aucs = np.array([run["best_val_auc"] for run in per_seed])
+        peak_aucs = np.array([run["peak_val_auc"] for run in per_seed])
         test_aucs = np.array([run["test_auc"] for run in per_seed])
         test_aps = np.array([run["test_ap"] for run in per_seed])
         ddof = 1 if len(per_seed) > 1 else 0
         return {
             "n_seeds": len(per_seed),
+            "val_loss_mean": float(val_losses.mean()),
+            "val_loss_std": float(val_losses.std(ddof=ddof)),
             "val_auc_mean": float(val_aucs.mean()),
             "val_auc_std": float(val_aucs.std(ddof=ddof)),
+            "peak_val_auc_mean": float(peak_aucs.mean()),
             "test_auc_mean": float(test_aucs.mean()),
             "test_auc_std": float(test_aucs.std(ddof=ddof)),
             "test_ap_mean": float(test_aps.mean()),

@@ -97,7 +97,9 @@ class ResultsSummarizer:
         if verified:
             windows = sorted({window for window, _ in verified})
             rows = []
-            for architecture in ARCHITECTURE_ORDER:
+            # Capacity variants (e.g. `bottleneck_z3`, `attn_pool_z4_h16`) are not in the canonical order.
+            extras = sorted({architecture for _, architecture in verified} - set(ARCHITECTURE_ORDER))
+            for architecture in (*ARCHITECTURE_ORDER, *extras):
                 row = [architecture]
                 for window in windows:
                     multi = verified.get((window, architecture))

@@ -106,14 +106,18 @@ class HybridSignalProbe:
 
     def _score_baseline(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Fit the LR 'full' baseline fresh and score the test rows."""
-        return BaselineEvaluator(config=self._dataset_config).fit_full_variant()
+        return BaselineEvaluator(dataset_config=self._dataset_config).fit_full_variant()
 
     def _default_checkpoint_path(self) -> Path:
         """Checkpoint path matching PaySimModelTrainingPipeline's naming
-        convention for the current window, architecture, and seed."""
+        convention for the current window, architecture, and seed.
+
+        Training writes into per-run `version_N_*` folders, so the newest folder that
+        holds this exact checkpoint name is used (the flat legacy folder as fallback)."""
         tag = self._model_config.architecture_tag
         name = f"lstm_ae_w{self._sequence_config.window_length}_{tag}_seed{self._seed}_best.pt"
-        return self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial" / name
+        found = PaySimModelTrainingPipeline.find_checkpoint(self._dataset_config.artifacts_dir, name)
+        return found or self._dataset_config.artifacts_dir / "model" / "paysim_synthetic_financial" / name
 
     @staticmethod
     def _assert_aligned(

@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-lstm-autoencoder = "lstm_autoencoder.cli:main"
+lstm-autoencoder = "lstm_autoencoder:main"
 
 [project.urls]
 Homepage = "https://github.com/abyalax/LSTM-Autoencoder-with-Attention"

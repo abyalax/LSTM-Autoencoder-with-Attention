@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+from lstm_autoencoder.model.config import compose_architecture_tag
+
 
 class Encoder(nn.Module):
     """LSTM encoder producing per-step hidden states."""
@@ -134,11 +136,18 @@ class LSTMAutoencoder(nn.Module):
         bottleneck: bool = False,
         attention_pooling: bool = False,
         dropout: float = 0.1,
+        bottleneck_dim: int | None = None,
     ) -> None:
         """Create the encoder, decoder, and the context strategy between them.
 
         `attention_pooling=True` uses attention to pool encoder outputs to a single
         bottleneck vector, then repeats it across the window.
+
+        `bottleneck_dim` squeezes that single vector through a code of this many
+        dimensions (`tanh(Linear(hidden -> bottleneck_dim))`, then back up to
+        `hidden_dim`). Without it the "bottleneck" is still `hidden_dim` wide, which
+        is larger than the input itself, so the model can learn the identity.
+        Only valid together with `bottleneck` or `attention_pooling`.
         
         `bottleneck=True` takes priority over `attention` and `attention_pooling`:
         the decoder is fed only the encoder's final hidden state, repeated across
@@ -148,10 +157,16 @@ class LSTMAutoencoder(nn.Module):
         bottleneck on its own.
         """
         super().__init__()
+        if bottleneck_dim is not None and not (bottleneck or attention_pooling):
+            raise ValueError("bottleneck_dim requires bottleneck=True or attention_pooling=True.")
+        self.hidden_dim = hidden_dim
+        self.bottleneck_dim = bottleneck_dim
         self.attention_enabled = attention and not bottleneck and not attention_pooling
         self.bottleneck_enabled = bottleneck
         self.attention_pooling_enabled = attention_pooling and not bottleneck
         self.encoder = Encoder(input_dim, hidden_dim, num_layers, dropout)
+        self.to_latent = nn.Linear(hidden_dim, bottleneck_dim) if bottleneck_dim is not None else None
+        self.from_latent = nn.Linear(bottleneck_dim, hidden_dim) if bottleneck_dim is not None else None
         self.attention = SelfAttention(hidden_dim) if self.attention_enabled else None
         self.attention_pooling = AttentionPooling(hidden_dim) if self.attention_pooling_enabled else None
         self.decoder = Decoder(hidden_dim, input_dim, num_layers, dropout)
@@ -161,37 +176,49 @@ class LSTMAutoencoder(nn.Module):
         """Architecture this instance ACTUALLY implements (from its enabled flags,
         not from the requested config). Same labels as `ModelConfig.architecture_tag`."""
         if self.bottleneck_enabled:
-            return "bottleneck"
-        if self.attention_pooling_enabled:
-            return "attn_pool"
-        return "attn" if self.attention_enabled else "plain"
+            base = "bottleneck"
+        elif self.attention_pooling_enabled:
+            base = "attn_pool"
+        else:
+            base = "attn" if self.attention_enabled else "plain"
+        return compose_architecture_tag(base, self.hidden_dim, self.bottleneck_dim)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Return the reconstructed sequence, same shape as `x`."""
         encoded, (hidden, _) = self.encoder(x)
         if self.bottleneck_enabled:
-            context = self._repeat_last_hidden(hidden, window=x.size(1))
+            context = self._single_vector_context(hidden[-1], window=x.size(1))
         elif self.attention_pooling_enabled:
             pooled = self.attention_pooling(encoded, mask)  # (batch, hidden_dim)
-            context = pooled.unsqueeze(1).repeat(1, x.size(1), 1)  # (batch, window, hidden_dim)
+            context = self._single_vector_context(pooled, window=x.size(1))  # (batch, window, hidden_dim)
         elif self.attention_enabled:
             context = self.attention(encoded, mask)
         else:
             context = encoded
         return self.decoder(context)
 
+    def _single_vector_context(self, vector: torch.Tensor, window: int) -> torch.Tensor:
+        """Turn one (batch, hidden_dim) vector into the decoder context.
+
+        The vector is optionally squeezed through the `bottleneck_dim` code, then
+        repeated across all `window` decode steps, so the decoder cannot copy
+        per-step input. Returns (batch, window, hidden_dim).
+        """
+        if self.to_latent is not None and self.from_latent is not None:
+            vector = self.from_latent(torch.tanh(self.to_latent(vector)))
+        return vector.unsqueeze(1).repeat(1, window, 1)
+
     @staticmethod
-    def _repeat_last_hidden(hidden: torch.Tensor, window: int) -> torch.Tensor:
-        """Repeat the encoder's final-layer hidden state across all `window`
-        decode steps. This is the single-vector bottleneck a classic
-        seq2seq autoencoder uses, so the decoder cannot copy per-step input."""
-        return hidden[-1].unsqueeze(1).repeat(1, window, 1)
+    def stepwise_error(
+        x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Per-step mean squared error over features, zero on padded steps: (batch, window)."""
+        return ((x - reconstructed) ** 2).mean(dim=-1) * mask
 
     @staticmethod
     def reconstruction_error(
         x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor
     ) -> torch.Tensor:
         """Per-example mean squared error over real (non-padded) steps only."""
-        squared_error = (x - reconstructed) ** 2
-        squared_error = squared_error.mean(dim=-1) * mask
-        return squared_error.sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
+        step_error = LSTMAutoencoder.stepwise_error(x, reconstructed, mask)
+        return step_error.sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
