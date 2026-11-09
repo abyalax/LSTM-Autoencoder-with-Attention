@@ -50,8 +50,6 @@ TODO.md item before trusting downstream splits, scores, or manuscript claims.
 
 ### 0b. Audit the real pipeline (P0, needs the PaySim CSV)
 
-### 0b. Audit the real pipeline (P0, needs the PaySim CSV)
-
 The unit tests above prove the *code* on tiny fixtures. `audit-pipeline` checks the *data run*: it
 reimplements the history features with a slow per-receiver loop, perturbs every transaction after a random
 cut point of each sampled receiver and verifies the earlier features do not move (the operational test of
