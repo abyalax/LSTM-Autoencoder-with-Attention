@@ -47,7 +47,9 @@ class FinancialFraudDetectionExplorer:
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
         self._builder = CausalFeatureBuilder(dataset_config, self._schema)
-        self._profiler = SequenceProfiler(dataset_config, self._exploratory_config, self._schema, self._reporter.reporter)
+        self._profiler = SequenceProfiler(
+            dataset_config, self._exploratory_config, self._schema, self._reporter.reporter
+        )
 
     def run(self) -> dict[str, object]:
         """Execute every check, save the reports, and return the numeric summary."""
@@ -73,17 +75,12 @@ class FinancialFraudDetectionExplorer:
         reporter.display_section("1. STRUKTUR DATA")
         reporter.display_text(f"Sumber: {loaded.source}")
         reporter.display_text(
-            f"Baris dibaca: {loaded.n_raw_rows:,} | dipakai: {len(frame):,} "
-            f"| Kolom: {frame.shape[1]}"
+            f"Baris dibaca: {loaded.n_raw_rows:,} | dipakai: {len(frame):,} | Kolom: {frame.shape[1]}"
         )
         if loaded.n_unreadable_timestamp:
-            reporter.display_warning(
-                f"{loaded.n_unreadable_timestamp} timestamp tidak terbaca (dibuang)."
-            )
+            reporter.display_warning(f"{loaded.n_unreadable_timestamp} timestamp tidak terbaca (dibuang).")
         if loaded.n_unreadable_target:
-            reporter.display_warning(
-                f"{loaded.n_unreadable_target} nilai target tidak terbaca (dibuang)."
-            )
+            reporter.display_warning(f"{loaded.n_unreadable_target} nilai target tidak terbaca (dibuang).")
 
         missing = [c for c in self._schema.expected_columns if c not in frame.columns]
         extra = [c for c in frame.columns if c not in self._schema.expected_columns]
@@ -92,8 +89,7 @@ class FinancialFraudDetectionExplorer:
         if extra:
             reporter.display_text(f"Kolom tambahan di luar catatan main.txt: {extra}")
             reporter.display_text(
-                "  -> tinjau satu per satu: tersedia saat transaksi terjadi "
-                "(real-time) atau turunan label?"
+                "  -> tinjau satu per satu: tersedia saat transaksi terjadi (real-time) atau turunan label?"
             )
         info = pd.DataFrame(
             {
@@ -118,9 +114,7 @@ class FinancialFraudDetectionExplorer:
     def _display_duplicates(self, frame: pd.DataFrame) -> None:
         if self._schema.id_column in frame.columns:
             duplicated_ids = int(frame[self._schema.id_column].duplicated().sum())
-            self._reporter.display_text(
-                f"\n{self._schema.id_column} duplikat: {duplicated_ids:,}"
-            )
+            self._reporter.display_text(f"\n{self._schema.id_column} duplikat: {duplicated_ids:,}")
             if duplicated_ids:
                 self._reporter.display_warning(f"{self._schema.id_column} tidak unik.")
         without_id = frame.drop(columns=[self._schema.id_column], errors="ignore")
@@ -130,8 +124,7 @@ class FinancialFraudDetectionExplorer:
     def _display_time_range(self, frame: pd.DataFrame) -> None:
         stamps = frame[self._schema.timestamp_column]
         self._reporter.display_text(
-            f"\nTimestamp: {stamps.min()}  ->  {stamps.max()}  "
-            f"(rentang {stamps.max() - stamps.min()})"
+            f"\nTimestamp: {stamps.min()}  ->  {stamps.max()}  (rentang {stamps.max() - stamps.min()})"
         )
         ordered = bool(stamps.is_monotonic_increasing)
         self._reporter.display_text(f"Urut menurut waktu di file asli: {ordered}")
@@ -178,9 +171,7 @@ class FinancialFraudDetectionExplorer:
                 columns.append(column)
         return columns
 
-    def _display_category_rates(
-        self, frame: pd.DataFrame, column: str, prevalence: float
-    ) -> None:
+    def _display_category_rates(self, frame: pd.DataFrame, column: str, prevalence: float) -> None:
         target_name = self._schema.target_column
         grouped = frame.groupby(column, observed=True)[target_name]
         rates = grouped.agg(["size", "sum", "mean"])
@@ -195,8 +186,7 @@ class FinancialFraudDetectionExplorer:
         self._reporter.display_table(shown.head(MAX_LISTED_CATEGORIES).round(4))
         if bool((supported["fraud_rate"] >= 0.999).any()):
             self._reporter.display_warning(
-                f"Kolom '{column}' punya kategori dengan 100% fraud "
-                f"(dukungan>={support}), cek leakage."
+                f"Kolom '{column}' punya kategori dengan 100% fraud (dukungan>={support}), cek leakage."
             )
 
     def _display_temporal_rates(self, frame: pd.DataFrame) -> None:
@@ -215,8 +205,7 @@ class FinancialFraudDetectionExplorer:
         if len(usable) >= 2 and usable.min() > 0:  # noqa: SIM102
             if usable.max() / usable.min() > DRIFT_RATIO:
                 self._reporter.display_warning(
-                    f"Fraud rate antar periode berbeda >{DRIFT_RATIO:.0f}x, "
-                    "ada indikasi drift temporal."
+                    f"Fraud rate antar periode berbeda >{DRIFT_RATIO:.0f}x, ada indikasi drift temporal."
                 )
         by_hour = frame.groupby(stamps.dt.hour)[self._schema.target_column].mean()
         self._reporter.display_text(
@@ -224,9 +213,9 @@ class FinancialFraudDetectionExplorer:
             f"(jam {int(by_hour.idxmin())}), max {by_hour.max():.4f} "
             f"(jam {int(by_hour.idxmax())})"
         )
-        self._reporter.update_summary({"fraud_rate_by_period": {
-            str(period): float(rate) for period, rate in rates["fraud_rate"].items()
-        }})
+        self._reporter.update_summary(
+            {"fraud_rate_by_period": {str(period): float(rate) for period, rate in rates["fraud_rate"].items()}}
+        )
 
     def _report_amount(self, frame: pd.DataFrame) -> None:
         reporter = self._reporter.reporter
@@ -245,9 +234,7 @@ class FinancialFraudDetectionExplorer:
         if bool((amount < 0).any()):
             reporter.display_warning("Ada amount negatif.")
 
-    def _report_signal(
-        self, frame: pd.DataFrame, built: pd.DataFrame
-    ) -> dict[str, float]:
+    def _report_signal(self, frame: pd.DataFrame, built: pd.DataFrame) -> dict[str, float]:
         reporter = self._reporter.reporter
         reporter.display_section("5. SINYAL ANOMALI (AUC univariat, 0.5 = acak)")
         original = [
@@ -280,10 +267,13 @@ class FinancialFraudDetectionExplorer:
                 "Semua fitur numerik hampir tanpa sinyal univariat. Anomali mungkin "
                 "hanya terlihat lewat kombinasi fitur atau sekuens."
             )
-        self._reporter.update_summary({"univariate_auc": {
-            name: (round(value, 4) if np.isfinite(value) else None)
-            for name, value in aucs.items()
-        }})
+        self._reporter.update_summary(
+            {
+                "univariate_auc": {
+                    name: (round(value, 4) if np.isfinite(value) else None) for name, value in aucs.items()
+                }
+            }
+        )
         return aucs
 
     def _report_leakage(self, frame: pd.DataFrame, aucs: dict[str, float]) -> None:
@@ -317,9 +307,9 @@ class FinancialFraudDetectionExplorer:
             )
         else:
             reporter.display_text("Tidak ada kolom mencurigakan menurut heuristik.")
-        self._reporter.update_summary({"leakage_flags": [
-            {"column": column, "reason": reason} for column, reason in flags
-        ]})
+        self._reporter.update_summary(
+            {"leakage_flags": [{"column": column, "reason": reason} for column, reason in flags]}
+        )
 
     def _report_split(self, frame: pd.DataFrame) -> None:
         reporter = self._reporter.reporter
@@ -348,13 +338,9 @@ class FinancialFraudDetectionExplorer:
         reporter.display_table(table)
         seen = set(parts["train"][self._schema.sender_column].unique())
         cold = float((~parts["test"][self._schema.sender_column].isin(seen)).mean())
-        reporter.display_text(
-            f"\nTransaksi test dari akun yang tidak ada di train: {cold:.2%}"
-        )
+        reporter.display_text(f"\nTransaksi test dari akun yang tidak ada di train: {cold:.2%}")
         if int(table["n_fraud"].min()) < MIN_SPLIT_FRAUD:
-            reporter.display_warning(
-                f"Ada split dengan <{MIN_SPLIT_FRAUD} fraud, metrik tidak stabil."
-            )
+            reporter.display_warning(f"Ada split dengan <{MIN_SPLIT_FRAUD} fraud, metrik tidak stabil.")
         self._reporter.update_summary({"test_cold_start_share": round(cold, 4)})
 
     def _report_summary(self) -> None:

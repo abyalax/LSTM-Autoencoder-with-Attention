@@ -75,9 +75,7 @@ class RankingMetrics:
         return float((positives > threshold).mean())
 
     @staticmethod
-    def _finite_pairs(
-        scores: np.ndarray, labels: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _finite_pairs(scores: np.ndarray, labels: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         values = np.asarray(scores, dtype="float64")
         truth = np.asarray(labels)
         mask = np.isfinite(values)

@@ -26,7 +26,7 @@ def compose_architecture_tag(base: str, hidden_dim: int, bottleneck_dim: int | N
 @dataclass(frozen=True)
 class SequenceConfig:
     """Settings for turning per-receiver transactions into fixed-length windows.
-    
+
     These properties are determined during exploratory data analysis and
     should be configured based on exploration results.
     """

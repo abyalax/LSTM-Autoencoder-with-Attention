@@ -18,12 +18,8 @@ class DenseAutoencoder(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, latent_dim: int) -> None:
         """Create the encoder and decoder stacks."""
         super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, latent_dim)
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, input_dim)
-        )
+        self.encoder = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, latent_dim))
+        self.decoder = nn.Sequential(nn.Linear(latent_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, input_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruct `x` through the latent bottleneck."""
@@ -52,18 +48,14 @@ class DenseAutoencoderTrainer:
         self._config = config
         self._device = torch.device(config.device if torch.cuda.is_available() else "cpu")
 
-    def fit(
-        self, train_x: np.ndarray, val_x: np.ndarray, seed: int
-    ) -> tuple[DenseAutoencoder, DenseTrainResult]:
+    def fit(self, train_x: np.ndarray, val_x: np.ndarray, seed: int) -> tuple[DenseAutoencoder, DenseTrainResult]:
         """Train on normal-only `train_x`; early-stop on the mean loss over normal-only `val_x`."""
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
         config = self._config
         model = DenseAutoencoder(train_x.shape[1], config.hidden_dim, config.latent_dim).to(self._device)
-        optimizer = torch.optim.Adam(
-            model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay
-        )
+        optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
         train = torch.as_tensor(train_x, dtype=torch.float32).to(self._device)
         generator = torch.Generator().manual_seed(seed)
 

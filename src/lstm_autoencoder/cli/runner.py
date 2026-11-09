@@ -18,6 +18,10 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier im
     HybridClassifierEvaluator,
 )
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_signal_probe import HybridSignalProbe
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.pipeline_audit import (
+    PipelineAudit,
+    PipelineAuditConfig,
+)
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.results_summary import (
     ResultsSummarizer,
     ResultsSummaryConfig,
@@ -28,6 +32,13 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_diagnostics im
 )
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
+)
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.standalone_evaluator import (
+    ARCHITECTURES as STANDALONE_ARCHITECTURES,
+)
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.standalone_evaluator import (
+    StandaloneConfig,
+    StandaloneEvaluator,
 )
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.unsupervised_baselines import (
     UnsupervisedBaselineConfig,
@@ -40,15 +51,14 @@ from lstm_autoencoder.model.config import (
     TrainConfig,
 )
 from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
+from lstm_autoencoder.reporting.figures import FigureBuilder
 
 
 class RunnerCLI:
     """Runner for CLI commands."""
 
     @staticmethod
-    def run_inspect_data(
-        project_root: Path, dataset: str, nrows: int | None
-    ) -> int:
+    def run_inspect_data(project_root: Path, dataset: str, nrows: int | None) -> int:
         """Execute dataset exploration."""
         dataset_config = DatasetConfig(
             project_root=project_root,
@@ -71,11 +81,8 @@ class RunnerCLI:
         ).run()
         return 0
 
-
     @staticmethod
-    def run_probe_signal(
-        project_root: Path, dataset: str, nrows: int | None, max_train_rows: int
-    ) -> int:
+    def run_probe_signal(project_root: Path, dataset: str, nrows: int | None, max_train_rows: int) -> int:
         """Execute the signal learnability probe."""
         dataset_config = DatasetConfig(
             project_root=project_root,
@@ -111,7 +118,6 @@ class RunnerCLI:
         ).run()
         return 0
 
-
     @staticmethod
     def run_summarize_results(project_root: Path, dataset: str, out: Path | None, legacy_since: str) -> int:
         """Summarize existing reports into markdown result tables."""
@@ -121,7 +127,6 @@ class RunnerCLI:
             summary_config=ResultsSummaryConfig(legacy_since=legacy_since, output_path=out),
         ).run()
         return 0
-
 
     @staticmethod
     def run_train_model(
@@ -137,7 +142,8 @@ class RunnerCLI:
         config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
         sequence_config = SequenceConfig(window_length=window)
         pipeline = PaySimModelTrainingPipeline(
-            dataset_config=config, sequence_config=sequence_config,
+            dataset_config=config,
+            sequence_config=sequence_config,
             model_config=model_config,
             train_config=train_config,
             split_config=SplitConfig(),
@@ -149,7 +155,6 @@ class RunnerCLI:
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(0)
-
 
     @staticmethod
     def run_probe_hybrid_signal(
@@ -174,7 +179,6 @@ class RunnerCLI:
         ).run()
         return 0
 
-
     @staticmethod
     def run_eval_hybrid(
         project_root: Path,
@@ -192,12 +196,71 @@ class RunnerCLI:
             dataset_config=config,
             sequence_config=SequenceConfig(window_length=window),
             model_config=model_config,
-            config=HybridClassifierConfig(
-                seeds=tuple(seeds), n_bootstrap=n_bootstrap, bootstrap_mode=bootstrap_mode
-            ),
+            config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap, bootstrap_mode=bootstrap_mode),
         ).run()
         return 0
 
+    @staticmethod
+    def run_make_figures(
+        project_root: Path, dataset: str, window: int, architecture: str, output_dir: Path | None
+    ) -> int:
+        """Draw the paper figures from the existing reports (no training, no data loading)."""
+        config = DatasetConfig(project_root=project_root, dataset_name=dataset)
+        written = FigureBuilder(config, output_dir).build_all(window=window, architecture=architecture)
+        print(f"{len(written)} figure(s) written")
+        return 0
+
+    @staticmethod
+    def run_audit_pipeline(
+        project_root: Path,
+        dataset: str,
+        nrows: int | None,
+        windows: str,
+        sample_receivers: int,
+        seed: int,
+    ) -> int:
+        """Execute the P0 pipeline audit; the exit code is 1 when any hard check fails."""
+        config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+        result = PipelineAudit(
+            dataset_config=config,
+            config=PipelineAuditConfig(
+                windows=tuple(int(window) for window in windows.split(",")),
+                sample_receivers=sample_receivers,
+                seed=seed,
+            ),
+        ).run()
+        return 0 if result["passed"] else 1
+
+    @staticmethod
+    def run_eval_standalone(
+        project_root: Path,
+        dataset: str,
+        nrows: int | None,
+        windows: str,
+        architectures: str,
+        seeds: str,
+        hidden_dim: int,
+        bottleneck_dim: int | None,
+        split: str,
+        bootstrap: int,
+    ) -> int:
+        """Score already-trained LSTM-AE checkpoints on a grid of windows and architectures."""
+        architecture_list = tuple(name.strip() for name in architectures.split(","))
+        unknown = [name for name in architecture_list if name not in STANDALONE_ARCHITECTURES]
+        if unknown:
+            raise ValueError(f"Unknown architecture(s): {unknown}. Choose from: {list(STANDALONE_ARCHITECTURES)}")
+        config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+        StandaloneEvaluator(
+            dataset_config=config,
+            windows=tuple(int(window) for window in windows.split(",")),
+            architectures=architecture_list,
+            hidden_dim=hidden_dim,
+            bottleneck_dim=bottleneck_dim,
+            config=StandaloneConfig(
+                seeds=tuple(int(seed) for seed in seeds.split(",")), split=split, n_bootstrap=bootstrap
+            ),
+        ).run()
+        return 0
 
     @staticmethod
     def run_diagnose_scores(
@@ -218,7 +281,6 @@ class RunnerCLI:
             config=ScoreDiagnosticsConfig(seeds=tuple(seeds), split=split),
         ).run()
         return 0
-
 
     @staticmethod
     def run_eval_unsupervised(
@@ -241,7 +303,6 @@ class RunnerCLI:
             ),
         ).run()
         return 0
-
 
     @staticmethod
     def run_train_all_configs(
@@ -336,11 +397,22 @@ class RunnerCLI:
             )
             print()
 
-            cmd = [
-                "uv", "run", "python", "-m", "lstm_autoencoder", "train-model",
-                "--dataset", dataset,
-                "--window", str(window),
-            ] + arch_flags + ["--seeds", seed_list_str]
+            cmd = (
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "-m",
+                    "lstm_autoencoder",
+                    "train-model",
+                    "--dataset",
+                    dataset,
+                    "--window",
+                    str(window),
+                ]
+                + arch_flags
+                + ["--seeds", seed_list_str]
+            )
 
             if nrows:
                 cmd.extend(["--nrows", str(nrows)])
@@ -381,7 +453,6 @@ class RunnerCLI:
             print(f"Training completed with {failed} failures.")
 
         return 0 if failed == 0 else 1
-
 
     @staticmethod
     def run_eval_hybrid_all_configs(
@@ -479,15 +550,29 @@ class RunnerCLI:
             )
             print()
 
-            cmd = [
-                "uv", "run", "python", "-m", "lstm_autoencoder", "eval-hybrid",
-                "--dataset", dataset,
-                "--window", str(window),
-            ] + arch_flags + [
-                "--seeds", seed_list_str,
-                "--bootstrap", str(bootstrap),
-                "--bootstrap-mode", bootstrap_mode,
-            ]
+            cmd = (
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "-m",
+                    "lstm_autoencoder",
+                    "eval-hybrid",
+                    "--dataset",
+                    dataset,
+                    "--window",
+                    str(window),
+                ]
+                + arch_flags
+                + [
+                    "--seeds",
+                    seed_list_str,
+                    "--bootstrap",
+                    str(bootstrap),
+                    "--bootstrap-mode",
+                    bootstrap_mode,
+                ]
+            )
 
             if nrows:
                 cmd.extend(["--nrows", str(nrows)])
@@ -529,7 +614,6 @@ class RunnerCLI:
 
         return 0 if failed == 0 else 1
 
-
     @staticmethod
     def run_pipeline(
         project_root: Path,
@@ -558,13 +642,24 @@ class RunnerCLI:
         for window in windows_list:
             print(f"Evaluating hybrid for window {window}...")
             cmd = [
-                "uv", "run", "python", "-m", "lstm_autoencoder", "eval-hybrid-all-configs",
-                "--dataset", dataset,
-                "--windows", str(window),
-                "--seeds", seeds,
-                "--architectures", architectures,
-                "--bootstrap", str(bootstrap),
-                "--bootstrap-mode", bootstrap_mode,
+                "uv",
+                "run",
+                "python",
+                "-m",
+                "lstm_autoencoder",
+                "eval-hybrid-all-configs",
+                "--dataset",
+                dataset,
+                "--windows",
+                str(window),
+                "--seeds",
+                seeds,
+                "--architectures",
+                architectures,
+                "--bootstrap",
+                str(bootstrap),
+                "--bootstrap-mode",
+                bootstrap_mode,
             ]
             if nrows:
                 cmd.extend(["--nrows", str(nrows)])
@@ -577,9 +672,16 @@ class RunnerCLI:
         # Step 2: Evaluate Unsupervised Baselines
         print("Evaluating unsupervised baselines...")
         cmd = [
-            "uv", "run", "python", "-m", "lstm_autoencoder", "eval-unsupervised",
-            "--dataset", dataset,
-            "--seeds", seeds,
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "lstm_autoencoder",
+            "eval-unsupervised",
+            "--dataset",
+            dataset,
+            "--seeds",
+            seeds,
         ]
         if nrows:
             cmd.extend(["--nrows", str(nrows)])
@@ -592,8 +694,14 @@ class RunnerCLI:
         # Step 3: Summarize Results
         print("Summarizing results...")
         cmd = [
-            "uv", "run", "python", "-m", "lstm_autoencoder", "summarize-results",
-            "--dataset", dataset,
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "lstm_autoencoder",
+            "summarize-results",
+            "--dataset",
+            dataset,
         ]
 
         result = subprocess.run(cmd)
@@ -603,4 +711,3 @@ class RunnerCLI:
 
         print("Pipeline completed successfully!")
         return 0
-

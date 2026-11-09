@@ -54,6 +54,8 @@ class _PreparedData:
     train_history_bucket: np.ndarray | None = None
     val_history_bucket: np.ndarray | None = None
     test_history_bucket: np.ndarray | None = None
+    val_receiver: np.ndarray | None = None
+    test_receiver: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,7 @@ class SplitScoringData:
     labels: np.ndarray
     row_index: np.ndarray
     history_bucket: np.ndarray | None = None
+    receiver: np.ndarray | None = None  # receiver id per row, for receiver-cluster resampling
 
 
 class PaySimModelTrainingPipeline:
@@ -225,7 +228,9 @@ class PaySimModelTrainingPipeline:
         prepared = self._prepare_data(with_train_scoring=True)
         return {
             "train": SplitScoringData(
-                prepared.train_all_subset, prepared.train_all_labels, prepared.train_row_index,
+                prepared.train_all_subset,
+                prepared.train_all_labels,
+                prepared.train_row_index,
                 prepared.train_history_bucket,
             ),
             "val": SplitScoringData(
@@ -245,10 +250,18 @@ class PaySimModelTrainingPipeline:
         prepared = self._prepare_data()
         return {
             "val": SplitScoringData(
-                prepared.val_subset, prepared.val_labels, prepared.val_row_index, prepared.val_history_bucket
+                prepared.val_subset,
+                prepared.val_labels,
+                prepared.val_row_index,
+                prepared.val_history_bucket,
+                prepared.val_receiver,
             ),
             "test": SplitScoringData(
-                prepared.test_subset, prepared.test_labels, prepared.test_row_index, prepared.test_history_bucket
+                prepared.test_subset,
+                prepared.test_labels,
+                prepared.test_row_index,
+                prepared.test_history_bucket,
+                prepared.test_receiver,
             ),
         }
 
@@ -274,7 +287,11 @@ class PaySimModelTrainingPipeline:
             return None
         pattern = re.compile(r"^version_(\d+)(?:_.*)?$")
         versions = sorted(
-            ((int(match.group(1)), child) for child in root.iterdir() if child.is_dir() and (match := pattern.match(child.name))),
+            (
+                (int(match.group(1)), child)
+                for child in root.iterdir()
+                if child.is_dir() and (match := pattern.match(child.name))
+            ),
             key=lambda item: item[0],
             reverse=True,
         )
@@ -303,9 +320,7 @@ class PaySimModelTrainingPipeline:
             built[self._schema.target_column] == 0
         )
         log1p_columns = (self._schema.amount_column, HISTORY_LENGTH)
-        scaler = FeatureScaler(self._sequence_config.feature_columns, log1p_columns).fit(
-            built, train_normal_mask
-        )
+        scaler = FeatureScaler(self._sequence_config.feature_columns, log1p_columns).fit(built, train_normal_mask)
         scaled = scaler.transform(built)
 
         batch = SequenceBuilder(self._sequence_config, self._schema).build(scaled)
@@ -329,11 +344,11 @@ class PaySimModelTrainingPipeline:
             train_history_bucket=batch.history_bucket[splits["train"]] if with_train_scoring else None,
             val_history_bucket=batch.history_bucket[splits["val"]],
             test_history_bucket=batch.history_bucket[splits["test"]],
+            val_receiver=batch.receiver[splits["val"]],
+            test_receiver=batch.receiver[splits["test"]],
         )
 
-    def _train_and_evaluate(
-        self, prepared: _PreparedData, train_config: TrainConfig
-    ) -> dict[str, object]:
+    def _train_and_evaluate(self, prepared: _PreparedData, train_config: TrainConfig) -> dict[str, object]:
         """Fit one model on `prepared` with `train_config` and score it on test."""
         if self._artifact_version_dir is None:
             raise RuntimeError("Training artifact directory has not been initialized")
@@ -377,6 +392,11 @@ class PaySimModelTrainingPipeline:
             f"test AUC {summary['test_auc']:.4f} | test AP {summary['test_ap']:.4f} | "
             + self._recall_text(summary, prefix="test_recall_at_fpr_")
         )
+        self._reporter.update_summary({"training": summary})
+        self._reporter.save_reports(
+            text_filename="training_report.txt",
+            json_filename="training_report.json",
+        )
 
     @staticmethod
     def _recall_text(source: dict[str, object], prefix: str, mean_std: bool = False) -> str:
@@ -391,20 +411,15 @@ class PaySimModelTrainingPipeline:
             keys = sorted({k[: -len("_mean")] for k in source if k.startswith(prefix) and k.endswith("_mean")})
             parts = []
             for key in keys:
-                fpr_pct = float(key[len(prefix):]) * 100
+                fpr_pct = float(key[len(prefix) :]) * 100
                 parts.append(f"recall@{fpr_pct:g}%={source[f'{key}_mean']:.4f}+/-{source[f'{key}_std']:.4f}")
             return " | ".join(parts)
         keys = sorted(k for k in source if k.startswith(prefix))
         parts = []
         for key in keys:
-            fpr_pct = float(key[len(prefix):]) * 100
+            fpr_pct = float(key[len(prefix) :]) * 100
             parts.append(f"recall@{fpr_pct:g}%={source[key]:.4f}")
         return " | ".join(parts)
-        self._reporter.update_summary({"training": summary})
-        self._reporter.save_reports(
-            text_filename="training_report.txt",
-            json_filename="training_report.json",
-        )
 
     def _checkpoint_name(self, seed: int) -> str:
         """Checkpoint filename tagged by window, architecture variant, and seed
@@ -417,9 +432,7 @@ class PaySimModelTrainingPipeline:
         root.mkdir(parents=True, exist_ok=True)
         pattern = re.compile(r"^version_(\d+)(?:_.*)?$")
         numbers = [
-            int(match.group(1))
-            for child in root.iterdir()
-            if child.is_dir() and (match := pattern.match(child.name))
+            int(match.group(1)) for child in root.iterdir() if child.is_dir() and (match := pattern.match(child.name))
         ]
         next_number = max(numbers, default=0) + 1
         suffix = "auc" if self._train_config.selection_metric == "val_auc" else "loss"
@@ -493,17 +506,19 @@ class PaySimModelTrainingPipeline:
             aggregate[f"{key}_std"] = float(values.std(ddof=ddof))
         return aggregate
 
+    def split_receivers(self, built: pd.DataFrame) -> dict[str, pd.Index]:
+        """Receiver ids of the train/val/test split this pipeline uses (public for audits)."""
+        return self._split_receiver_ids(built)
+
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
         """Split receivers by split_config fractions, stratified by per-receiver fraud rate."""
         receiver_column = self._schema.receiver_column
         target_column = self._schema.target_column
-        stats = built.groupby(receiver_column).agg(
-            n=(target_column, "size"), n_fraud=(target_column, "sum")
-        )
+        stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
         stats["fraud_rate"] = stats["n_fraud"] / stats["n"]
-        bins = pd.cut(
-            stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True
-        ).fillna(FRAUD_RATE_LABELS[0])
+        bins = pd.cut(stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True).fillna(
+            FRAUD_RATE_LABELS[0]
+        )
 
         train_ids, rest_ids = train_test_split(
             stats.index,
@@ -520,7 +535,4 @@ class PaySimModelTrainingPipeline:
     def _rows_by_receiver(self, batch: SequenceBatch, receiver_ids: dict[str, pd.Index]) -> dict[str, np.ndarray]:
         """Map receiver-id splits onto sequence-batch row indices."""
         receiver_series = pd.Series(batch.receiver)
-        return {
-            name: np.flatnonzero(receiver_series.isin(ids).to_numpy())
-            for name, ids in receiver_ids.items()
-        }
+        return {name: np.flatnonzero(receiver_series.isin(ids).to_numpy()) for name, ids in receiver_ids.items()}

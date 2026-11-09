@@ -49,9 +49,7 @@ class SequenceProfiler:
         self._reporter.display_section("4. VIABILITAS SEKUENS PER AKUN PENGIRIM")
         self._reporter.display_text(f"Akun pengirim unik: {len(per_account):,}")
         self._display_account_quantiles(per_account)
-        full_window_share = self._display_window_table(
-            built, fraud_rows, per_account
-        )
+        full_window_share = self._display_window_table(built, fraud_rows, per_account)
         self._display_fraud_per_account(built, fraud_rows)
         self._display_gap_statistics(built)
 
@@ -76,9 +74,7 @@ class SequenceProfiler:
     def _display_account_quantiles(self, per_account: pd.Series) -> None:
         values = per_account.quantile(list(QUANTILES)).astype(int)
         joined = " / ".join(f"{value:,}" for value in values)
-        self._reporter.display_text(
-            f"Transaksi per akun min/p25/median/p75/p95/max: {joined}"
-        )
+        self._reporter.display_text(f"Transaksi per akun min/p25/median/p75/p95/max: {joined}")
 
     def _display_window_table(
         self,
@@ -105,12 +101,8 @@ class SequenceProfiler:
         self._reporter.display_table(pd.DataFrame(rows).set_index("W"))
         return reference_share
 
-    def _display_fraud_per_account(
-        self, built: pd.DataFrame, fraud_rows: pd.DataFrame
-    ) -> None:
-        fraud_per_account = built.groupby(ACCOUNT_CODE, sort=False)[
-            self._schema.target_column
-        ].sum()
+    def _display_fraud_per_account(self, built: pd.DataFrame, fraud_rows: pd.DataFrame) -> None:
+        fraud_per_account = built.groupby(ACCOUNT_CODE, sort=False)[self._schema.target_column].sum()
         with_fraud = int((fraud_per_account > 0).sum())
         share = (fraud_per_account > 0).mean() * 100
         first_share = (fraud_rows[HISTORY_LENGTH] == 0).mean() * 100
@@ -124,9 +116,7 @@ class SequenceProfiler:
     def _display_gap_statistics(self, built: pd.DataFrame) -> None:
         gaps = built[STEP_DIFF]
         ties = int((gaps == 0).sum())
-        self._reporter.display_text(
-            f"Transaksi dengan selisih step 0 dari sebelumnya: {ties:,}"
-        )
+        self._reporter.display_text(f"Transaksi dengan selisih step 0 dari sebelumnya: {ties:,}")
         by_class = gaps.groupby(built.loc[gaps.index, self._schema.target_column])
         described = by_class.describe(percentiles=[0.5, 0.95]).round(2)
         described.index = described.index.map({0: "normal", 1: "fraud"})

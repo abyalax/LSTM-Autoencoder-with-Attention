@@ -14,6 +14,25 @@ All 14 tests should pass before relying on any downstream metric. A failure
 here means re-verify the corresponding P0 TODO.md item before trusting
 anything built on top of it (splits, scores, the IMRAD draft).
 
+### 0b. Audit the real pipeline (P0, needs the PaySim CSV)
+
+The unit tests above prove the *code* on tiny fixtures. `audit-pipeline` checks the *data run*: it
+reimplements the history features with a slow per-receiver loop, perturbs every transaction after a random
+cut point of each sampled receiver and verifies the earlier features do not move (the operational test of
+"uses only past information"), checks windows/padding/masks against a naive reimplementation for every
+window, verifies the receiver split and the scaler's fit rows, and measures what the pipeline cannot
+guarantee: how many features change if same-`step` transactions are ordered differently, how often a
+"normal" training window contains an earlier fraud step, the hour-of-day profile of fraud, and which
+columns the baselines see that the AE does not. No model is trained.
+
+```Shell
+uv run python -m lstm_autoencoder audit-pipeline --dataset paysim_synthetic_financial
+```
+
+Optional arguments: `--windows` (default `1,3,5,10`), `--sample-receivers` (default 3000; half random, half the
+longest histories), `--seed` (default 42), `--nrows`. The exit code is 1 when any hard check fails. Saves
+`pipeline_audit_report.txt` and `.json`.
+
 ### 1. Download the Dataset
 
 Download [Synthetic Financial Datasets For Fraud Detection](https://www.kaggle.com/datasets/ealaxi/paysim1/data) from Kaggle and place it under `data/raw/` with a domain-specific folder:
@@ -94,7 +113,7 @@ The evaluator (BaselineEvaluator) performs the following operations:
 
 - **Feature encoding**: one-hot encodes `type`, drops leakage columns (`oldbalanceOrg`, `newbalanceOrig`, `oldbalanceDest`, `newbalanceDest`) and `isFlaggedFraud`
 - **Receiver-stratified split**: 70/15/15 split by `nameDest`, stratified by per-receiver fraud rate, same scheme used by `probe-signal`
-- **Variant training**: fits a standardized `LogisticRegression` per variant (`full`, `no_history`, `history_only`) on train
+- **Variant training**: fits a standardized `LogisticRegression` per variant (`full`, `no_history`, `history_only`) on train, plus `HistGradientBoosting` variants. Feature-matched controls use exactly the five columns the LSTM-AE sees: `ae_features` (LR) and `ae_features_gbm`; `full_gbm_no_step` is the full GBM without the raw `step` column (tests how much of its advantage is hour-of-day). The other variants also receive `step` and the transaction type, which the AE cannot use, so only the `ae_features*` variants compare model classes on identical inputs
 - **Stratified scoring**: reports AUC/AP overall (val, test) and per history bucket on test, for every variant
 
 The command saves the following artifacts under `artifacts/`:
@@ -158,6 +177,23 @@ Optional arguments:
 - `--min-delta` : Relative improvement that counts as progress (default 0.01 = 1%). Stops creeping gains from keeping an identity-like model training.
 
 Evaluation commands resolve checkpoints by searching `artifacts/model/paysim_synthetic_financial/version_N_*`, newest first, so evaluate a configuration before retraining another one with the same name.
+
+### 5c. Evaluate trained checkpoints without retraining (`eval-standalone`)
+
+Scores already-trained LSTM-AE checkpoints for a grid of windows x architectures and reports AUC, AP,
+Recall@FPR 1% and 0.1%, the same metrics inside every history bucket (with the bucket fraud rate), a
+receiver-cluster bootstrap 95% CI per run, and the parameter count. Use it to fill the standalone tables
+for ALL configurations without retraining anything. Checkpoints are found by name in the newest
+`version_N_*` folder, so evaluate each configuration before retraining another one with the same name.
+
+```Shell
+uv run python -m lstm_autoencoder eval-standalone --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026
+uv run python -m lstm_autoencoder eval-standalone --dataset paysim_synthetic_financial --windows 1 --architectures plain,bottleneck --bootstrap 500
+```
+
+Optional arguments: `--windows`, `--architectures` (`attention,bottleneck,plain,attention_pooling`), `--seeds`,
+`--hidden-dim`, `--bottleneck-dim`, `--split` (`test` default, or `val`), `--bootstrap` (default 2000, 0 skips the CI).
+Saves `standalone_report.txt` and `.json`; `summarize-results` shows them as table 1b.
 
 ### 6. Diagnose reconstruction scores
 
@@ -277,6 +313,13 @@ Reports test AUC/AP per receiver history bucket (1, 2-4, 5-9, >=10) for:
 - `--attention-pooling`: Match the checkpoint's architecture: attention pooling. Mutually exclusive with `--bottleneck` and `--plain`. Default is False.
 - `--seeds`: Comma-separated seeds for multi-seed evaluation (e.g., 42,123,2026). Checkpoints must have been trained with train-model using these seeds. Default is 42.
 - `--n-bootstrap`: Number of bootstrap resamples for confidence interval calculation. Default is 200.
+
+#### Bootstrap cost
+
+`--bootstrap-mode receiver` (default) resamples whole receivers. The engine in `evaluation/bootstrap.py` sorts
+every score vector once and expresses a draw as integer row weights, which is exactly equivalent to
+materialising the resample (`tests/test_bootstrap.py`) but about 8x faster: roughly 0.17 s per draw for the 8
+paired score vectors on 415k test rows, i.e. about 5-6 minutes for 2,000 resamples per seed per configuration.
 
 ### 8. Evaluate Unsupervised Baselines
 
@@ -420,3 +463,16 @@ Optional arguments:
 - `--legacy-since`: Only list unverified training reports (no `run_config`) with this timestamp or later. Defaults to `20261106_103302`.
 
 _Last Updated 6 November 2026_
+
+### 13. Draw the paper figures
+
+Draws the pipeline diagram, the four architecture variants, the per-history-bucket performance chart, the
+decomposition of the pooled AUC into within-bucket and across-bucket parts, and the training dynamics into
+`paper/figures/` (PNG for the draft, SVG for submission). Charts are read from the existing reports (nothing is
+trained or recomputed); a chart whose source report is missing is skipped. Needs `matplotlib` (`uv sync`).
+
+```Shell
+uv run python -m lstm_autoencoder make-figures --dataset paysim_synthetic_financial --window 1 --architecture attn
+```
+
+Optional arguments: `--window` and `--architecture` pick the hybrid report used in figure 3; `--output-dir`.

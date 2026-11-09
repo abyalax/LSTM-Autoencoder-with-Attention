@@ -225,7 +225,8 @@ class ScoreDiagnostics:
     ) -> dict[str, dict[str, float]]:
         """Spearman correlation of the mean error with real-step count and history bucket (0 = shortest)."""
         ordinal = (
-            pd.Series(buckets).map({label: index for index, label in enumerate(HISTORY_STRATA_LABELS)})
+            pd.Series(buckets)
+            .map({label: index for index, label in enumerate(HISTORY_STRATA_LABELS)})
             .to_numpy(dtype="float64")
         )
         groups = {"all": np.ones(len(labels), dtype=bool), "normal": labels == 0, "fraud": labels == 1}
@@ -331,7 +332,9 @@ class ScoreDiagnostics:
             "(normal rows only isolates the confound from the label):"
         )
         self._reporter.display_table(self._table(result["correlations"]))  # type: ignore[arg-type]
-        self._reporter.display_text("\nAE-only metrics inside each history bucket (pooled = the number reported so far):")
+        self._reporter.display_text(
+            "\nAE-only metrics inside each history bucket (pooled = the number reported so far):"
+        )
         self._reporter.display_table(self._table(result["per_bucket"]))  # type: ignore[arg-type]
 
     def _report_aggregate(self, aggregate: dict[str, dict[str, float]]) -> None:
@@ -350,7 +353,9 @@ class ScoreDiagnostics:
     def _table(cls, rows: dict[str, dict[str, float]]) -> pd.DataFrame:
         """Rows-by-metrics DataFrame of pre-formatted strings, for the console grid."""
         frame = pd.DataFrame(rows).T
-        return frame.apply(lambda column: column.map(lambda value: cls._format(value, is_count=column.name in COUNT_COLUMNS)))
+        return frame.apply(
+            lambda column: column.map(lambda value: cls._format(value, is_count=column.name in COUNT_COLUMNS))
+        )
 
     @staticmethod
     def _format(value: object, is_count: bool = False) -> str:

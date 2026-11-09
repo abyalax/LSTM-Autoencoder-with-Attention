@@ -44,6 +44,7 @@ class SignalProbe(BaseSignalProbe):
         self._schema = FinancialFraudDetectionSchema()
         if self._loader is None:
             from lstm_autoencoder.data.loader import DatasetLoader
+
             self._loader = DatasetLoader(dataset_config, self._schema)
         self._builder = CausalFeatureBuilder(dataset_config, self._schema)
 
@@ -72,8 +73,7 @@ class SignalProbe(BaseSignalProbe):
         chi_square = (((grouped["sum"] - expected) ** 2) / variance).sum()
         index = float(chi_square / len(grouped))
         self._reporter.display_text(
-            f"\nIndeks dispersi fraud per akun = {index:.4f} "
-            "(1.0 berarti fraud tersebar acak antar akun)"
+            f"\nIndeks dispersi fraud per akun = {index:.4f} (1.0 berarti fraud tersebar acak antar akun)"
         )
         if index > CLUSTERING_THRESHOLD:
             self._reporter.display_text("  -> ada akun yang lebih berisiko.")

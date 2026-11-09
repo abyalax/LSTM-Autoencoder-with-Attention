@@ -31,6 +31,7 @@ class Schema:
             self.amount_column,
         )
 
+
 TARGET_LABELS: dict[str, float] = {
     "true": 1.0,
     "false": 0.0,
@@ -85,7 +86,9 @@ class DatasetLoader:
         if hasattr(self._schema, "valid_transaction_types") and hasattr(self._schema, "transaction_type_column"):
             if self._schema.transaction_type_column in frame.columns:
                 n_before_filter = len(frame)
-                frame = frame[frame[self._schema.transaction_type_column].isin(self._schema.valid_transaction_types)].copy()
+                frame = frame[
+                    frame[self._schema.transaction_type_column].isin(self._schema.valid_transaction_types)
+                ].copy()
                 n_filtered_by_scope = n_before_filter - len(frame)
 
         return LoadedDataset(
@@ -104,15 +107,11 @@ class DatasetLoader:
         csv_path = config.raw_dir / f"{config.dataset_name}.csv"
         zip_path = config.raw_dir / f"{config.dataset_name}.zip"
         if csv_path.exists():
-            frame = pd.read_csv(
-                csv_path, nrows=config.row_limit, low_memory=False, dtype=dtype
-            )
+            frame = pd.read_csv(csv_path, nrows=config.row_limit, low_memory=False, dtype=dtype)
             return frame, csv_path
         if zip_path.exists():
             return self._read_zip(zip_path, dtype), zip_path
-        raise FileNotFoundError(
-            f"Dataset not found. Expected {csv_path} or {zip_path}."
-        )
+        raise FileNotFoundError(f"Dataset not found. Expected {csv_path} or {zip_path}.")
 
     def _read_zip(self, zip_path: Path, dtype: dict[str, str] | None = None) -> pd.DataFrame:
         with zipfile.ZipFile(zip_path) as archive:
@@ -123,9 +122,7 @@ class DatasetLoader:
             if not candidates:
                 raise ValueError(f"No CSV file found inside {zip_path}.")
             with archive.open(candidates[0]) as handle:
-                return pd.read_csv(
-                    handle, nrows=self._config.row_limit, low_memory=False, dtype=dtype
-                )
+                return pd.read_csv(handle, nrows=self._config.row_limit, low_memory=False, dtype=dtype)
 
     def _validate_columns(self, frame: pd.DataFrame) -> None:
         missing = [c for c in self._schema.required_columns if c not in frame.columns]

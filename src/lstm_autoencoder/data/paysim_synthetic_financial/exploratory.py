@@ -25,6 +25,7 @@ WINDOW_LENGTHS: tuple[int, ...] = (1, 3, 5, 10)
 HISTORY_STRATA_BINS: tuple[int, ...] = (0, 1, 4, 9, np.inf)
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
+
 class PaySimSyntheticFinancialDatasetsExplorer:
     """Explorer for PaySim synthetic financial datasets."""
 
@@ -76,12 +77,8 @@ class PaySimSyntheticFinancialDatasetsExplorer:
 
         split = self._simulate_chronological_split(df)
         checker = UnivariateSignalChecker()
-        signal_with_leakage = checker.check_univariate_signal(
-            df, target_column=TARGET_COLUMN, exclude_leakage=False
-        )
-        signal_without_leakage = checker.check_univariate_signal(
-            df, target_column=TARGET_COLUMN, exclude_leakage=True
-        )
+        signal_with_leakage = checker.check_univariate_signal(df, target_column=TARGET_COLUMN, exclude_leakage=False)
+        signal_without_leakage = checker.check_univariate_signal(df, target_column=TARGET_COLUMN, exclude_leakage=True)
 
         self._report_structure(structure)
         self._report_target(target)
@@ -163,8 +160,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         counts = df.groupby(ACCOUNT_COLUMN).size()
         n_accounts = int(counts.shape[0])
         pct_with_window = {
-            window: round(int((counts >= window).sum()) / n_accounts * 100, 2)
-            for window in WINDOW_LENGTHS
+            window: round(int((counts >= window).sum()) / n_accounts * 100, 2) for window in WINDOW_LENGTHS
         }
         return {
             "n_accounts": n_accounts,
@@ -172,7 +168,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
             "txn_per_account_p95": float(counts.quantile(0.95)),
             "pct_accounts_with_window": pct_with_window,
         }
-    
+
     def _inspect_account_viability_namedest(self, df: pd.DataFrame) -> dict[str, object]:
         """Check how many accounts support each candidate window length, for both roles."""
         results: dict[str, object] = {}
@@ -184,20 +180,16 @@ class PaySimSyntheticFinancialDatasetsExplorer:
                 "txn_per_account_median": float(counts.median()),
                 "txn_per_account_p95": float(counts.quantile(0.95)),
                 "pct_accounts_with_window": {
-                    window: round(int((counts >= window).sum()) / n_accounts * 100, 2)
-                    for window in WINDOW_LENGTHS
+                    window: round(int((counts >= window).sum()) / n_accounts * 100, 2) for window in WINDOW_LENGTHS
                 },
             }
         return results
 
     def _inspect_fraud_window_coverage(self, df: pd.DataFrame) -> dict[str, object]:
-        """Check window viability and what fraction of fraud transactions actually have sufficient receiver history.
-        """
+        """Check window viability and what fraction of fraud transactions actually have sufficient receiver history."""
         receiver_counts = df.groupby("nameDest").size()
 
-        df = df.assign(
-            receiver_history_len=df["nameDest"].map(receiver_counts)
-        )
+        df = df.assign(receiver_history_len=df["nameDest"].map(receiver_counts))
         fraud_rows = df[df[TARGET_COLUMN] == 1]
 
         coverage = {
@@ -211,7 +203,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
             "receiver_history_p95": float(receiver_counts.quantile(0.95)),
             "pct_fraud_with_window": coverage,
         }
-    
+
     def _inspect_fraud_history_strata(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Break down fraud transactions by receiver history-length bucket, checking
@@ -219,9 +211,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         """
         receiver_counts = df.groupby("nameDest").size()
 
-        fraud_rows = df[df[TARGET_COLUMN] == 1].assign(
-            history_len=lambda t: t["nameDest"].map(receiver_counts)
-        )
+        fraud_rows = df[df[TARGET_COLUMN] == 1].assign(history_len=lambda t: t["nameDest"].map(receiver_counts))
         fraud_rows = fraud_rows.assign(
             history_bucket=pd.cut(
                 fraud_rows["history_len"],
@@ -239,7 +229,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         )
         strata["pct_of_fraud"] = (strata["n_fraud"] / len(fraud_rows) * 100).round(2)
         return strata
-    
+
     def _compare_history_bucket_distribution(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Compare receiver history-length bucket distribution between fraud and
@@ -269,7 +259,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         counts["pct_fraud"] = (counts["fraud"] / counts["fraud"].sum() * 100).round(2)
         counts["lift"] = (counts["pct_fraud"] / counts["pct_normal"]).round(2)
         return counts
-    
+
     def _simulate_chronological_split(
         self,
         df: pd.DataFrame,
@@ -283,10 +273,14 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         from sklearn.model_selection import train_test_split
 
         # Get unique receivers and their fraud rates
-        receiver_stats = df.groupby("nameDest").agg(
-            n_transactions=(TARGET_COLUMN, "size"),
-            n_fraud=(TARGET_COLUMN, "sum"),
-        ).reset_index()
+        receiver_stats = (
+            df.groupby("nameDest")
+            .agg(
+                n_transactions=(TARGET_COLUMN, "size"),
+                n_fraud=(TARGET_COLUMN, "sum"),
+            )
+            .reset_index()
+        )
         receiver_stats["fraud_rate"] = receiver_stats["n_fraud"] / receiver_stats["n_transactions"]
 
         # Split receivers into train/val/test (stratified by fraud rate)
@@ -357,11 +351,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         )
         self._reporter.display_section("Fraud transactions with receiver window >= W (%)")
         self._reporter.display_table(
-            pd.DataFrame.from_dict(
-                coverage["pct_fraud_with_window"],
-                orient="index",
-                columns=["pct_fraud"]
-            )
+            pd.DataFrame.from_dict(coverage["pct_fraud_with_window"], orient="index", columns=["pct_fraud"])
         )
 
     def _report_structure(self, structure: dict[str, object]) -> None:
@@ -373,17 +363,11 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         self._reporter.display_table(pd.DataFrame.from_dict(structure["dtypes"], orient="index", columns=["dtype"]))
         self._reporter.display_section("Missing (%)")
         self._reporter.display_table(
-            pd.DataFrame.from_dict(
-                structure["pct_missing"],
-                orient="index",
-                columns=["missing_pct"]
-            )
+            pd.DataFrame.from_dict(structure["pct_missing"], orient="index", columns=["missing_pct"])
         )
 
     def _report_target(self, target: dict[str, object]) -> None:
-        self._reporter.display_text(
-            f"Fraud: {target['n_fraud']:,} / {target['n_rows']:,} ({target['prevalence']:.4%})"
-        )
+        self._reporter.display_text(f"Fraud: {target['n_fraud']:,} / {target['n_rows']:,} ({target['prevalence']:.4%})")
         self._reporter.display_section("Fraud rate by transaction type")
         self._reporter.display_table(target["by_type"])
 
@@ -409,9 +393,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
                 self._reporter.display_section(f"Accounts with window >= W (%) ({role})")
                 self._reporter.display_table(
                     pd.DataFrame.from_dict(
-                        role_data["pct_accounts_with_window"],
-                        orient="index",
-                        columns=["pct_accounts"]
+                        role_data["pct_accounts_with_window"], orient="index", columns=["pct_accounts"]
                     )
                 )
         else:
@@ -422,11 +404,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
             )
             self._reporter.display_section("Accounts with window >= W (%)")
             self._reporter.display_table(
-                pd.DataFrame.from_dict(
-                    viability["pct_accounts_with_window"],
-                    orient="index",
-                    columns=["pct_accounts"]
-                )
+                pd.DataFrame.from_dict(viability["pct_accounts_with_window"], orient="index", columns=["pct_accounts"])
             )
 
     def _report_split(self, split: dict[str, dict[str, float]]) -> None:

@@ -3,4 +3,3 @@
 from lstm_autoencoder.cli import main
 
 __all__ = ["main"]
-

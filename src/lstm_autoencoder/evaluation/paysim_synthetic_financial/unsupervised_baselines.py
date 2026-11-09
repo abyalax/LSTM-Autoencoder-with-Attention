@@ -105,8 +105,7 @@ class UnsupervisedBaselineEvaluator:
         )
 
         per_seed = [
-            self._run_seed(seed, data, matrices, sequence_frame, y, buckets_test)
-            for seed in self._config.seeds
+            self._run_seed(seed, data, matrices, sequence_frame, y, buckets_test) for seed in self._config.seeds
         ]
         aggregate = self._aggregate(per_seed)
         self._report(aggregate)
@@ -182,9 +181,7 @@ class UnsupervisedBaselineEvaluator:
         return out
 
     @staticmethod
-    def _by_bucket(
-        scores: np.ndarray, labels: np.ndarray, buckets: np.ndarray
-    ) -> dict[str, dict[str, float]]:
+    def _by_bucket(scores: np.ndarray, labels: np.ndarray, buckets: np.ndarray) -> dict[str, dict[str, float]]:
         """Test AUC/AP per receiver history bucket."""
         rows: dict[str, dict[str, float]] = {}
         for label in HISTORY_STRATA_LABELS:

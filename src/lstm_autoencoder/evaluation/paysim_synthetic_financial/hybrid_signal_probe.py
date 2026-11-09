@@ -69,8 +69,9 @@ class HybridSignalProbe:
         lr_test_idx, lr_scores, lr_labels = self._score_baseline()
         self._assert_aligned(ae_test_idx, lr_test_idx, ae_labels, lr_labels)
 
-        ae_auc, ae_ap = RankingMetrics.roc_auc(ae_errors, ae_labels), RankingMetrics.average_precision(
-            ae_errors, ae_labels
+        ae_auc, ae_ap = (
+            RankingMetrics.roc_auc(ae_errors, ae_labels),
+            RankingMetrics.average_precision(ae_errors, ae_labels),
         )
         lr_auc = RankingMetrics.roc_auc(lr_scores, lr_labels)
 

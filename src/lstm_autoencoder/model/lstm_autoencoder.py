@@ -15,8 +15,11 @@ class Encoder(nn.Module):
         """Create the encoder LSTM."""
         super().__init__()
         self.lstm = nn.LSTM(
-            input_dim, hidden_dim, num_layers,
-            batch_first=True, dropout=dropout if num_layers > 1 else 0.0,
+            input_dim,
+            hidden_dim,
+            num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
         )
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
@@ -34,27 +37,27 @@ class SelfAttention(nn.Module):
         self.query = nn.Linear(hidden_dim, hidden_dim, bias=False)
         self.key = nn.Linear(hidden_dim, hidden_dim, bias=False)
         self.value = nn.Linear(hidden_dim, hidden_dim, bias=False)
-        self.scale = hidden_dim ** 0.5
+        self.scale = hidden_dim**0.5
 
     def forward(self, encoded: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-       """Attend each step to the OTHER real steps in its window, never to
-       itself, unless it is the only real step (then fall back to self)."""
-       query = self.query(encoded)
-       key = self.key(encoded)
-       value = self.value(encoded)
+        """Attend each step to the OTHER real steps in its window, never to
+        itself, unless it is the only real step (then fall back to self)."""
+        query = self.query(encoded)
+        key = self.key(encoded)
+        value = self.value(encoded)
 
-       scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale
-       padding = (mask == 0).unsqueeze(1)
+        scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale
+        padding = (mask == 0).unsqueeze(1)
 
-       window = encoded.size(1)
-       diagonal = torch.eye(window, dtype=torch.bool, device=encoded.device).unsqueeze(0)
-       real_count = mask.sum(dim=1, keepdim=True)  # (batch, 1)
-       exclude_self = diagonal & (real_count > 1).unsqueeze(-1)
+        window = encoded.size(1)
+        diagonal = torch.eye(window, dtype=torch.bool, device=encoded.device).unsqueeze(0)
+        real_count = mask.sum(dim=1, keepdim=True)  # (batch, 1)
+        exclude_self = diagonal & (real_count > 1).unsqueeze(-1)
 
-       scores = scores.masked_fill(padding | exclude_self, float("-inf"))
-       weights = torch.softmax(scores, dim=-1)
-       weights = torch.nan_to_num(weights)
-       return torch.matmul(weights, value)
+        scores = scores.masked_fill(padding | exclude_self, float("-inf"))
+        weights = torch.softmax(scores, dim=-1)
+        weights = torch.nan_to_num(weights)
+        return torch.matmul(weights, value)
 
 
 class AttentionPooling(nn.Module):
@@ -66,37 +69,37 @@ class AttentionPooling(nn.Module):
         self.query = nn.Parameter(torch.randn(hidden_dim))
         self.key = nn.Linear(hidden_dim, hidden_dim, bias=False)
         self.value = nn.Linear(hidden_dim, hidden_dim, bias=False)
-        self.scale = hidden_dim ** 0.5
+        self.scale = hidden_dim**0.5
 
     def forward(self, encoded: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Pool encoder outputs to a single vector using attention.
-        
+
         Args:
             encoded: (batch, seq_len, hidden_dim) encoder outputs
             mask: (batch, seq_len) padding mask (1 = real, 0 = padding)
-            
+
         Returns:
             (batch, hidden_dim) pooled representation
         """
         batch_size = encoded.size(0)
-        
+
         # Expand query to batch dimension
         query = self.query.unsqueeze(0).expand(batch_size, -1).unsqueeze(1)  # (batch, 1, hidden_dim)
-        
+
         key = self.key(encoded)  # (batch, seq_len, hidden_dim)
         value = self.value(encoded)  # (batch, seq_len, hidden_dim)
-        
+
         # Compute attention scores
         scores = torch.matmul(query, key.transpose(-2, -1)) / self.scale  # (batch, 1, seq_len)
-        
+
         # Mask padding positions
         padding_mask = (mask == 0).unsqueeze(1)  # (batch, 1, seq_len)
         scores = scores.masked_fill(padding_mask, float("-inf"))
-        
+
         # Normalize attention weights
         weights = torch.softmax(scores, dim=-1)  # (batch, 1, seq_len)
         weights = torch.nan_to_num(weights)
-        
+
         # Apply attention to values
         pooled = torch.matmul(weights, value)  # (batch, 1, hidden_dim)
         return pooled.squeeze(1)  # (batch, hidden_dim)
@@ -109,8 +112,11 @@ class Decoder(nn.Module):
         """Create the decoder LSTM and output projection."""
         super().__init__()
         self.lstm = nn.LSTM(
-            hidden_dim, hidden_dim, num_layers,
-            batch_first=True, dropout=dropout if num_layers > 1 else 0.0,
+            hidden_dim,
+            hidden_dim,
+            num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
         )
         self.project = nn.Linear(hidden_dim, output_dim)
 
@@ -148,7 +154,7 @@ class LSTMAutoencoder(nn.Module):
         `hidden_dim`). Without it the "bottleneck" is still `hidden_dim` wide, which
         is larger than the input itself, so the model can learn the identity.
         Only valid together with `bottleneck` or `attention_pooling`.
-        
+
         `bottleneck=True` takes priority over `attention` and `attention_pooling`:
         the decoder is fed only the encoder's final hidden state, repeated across
         the window -- a real information bottleneck. Both `attention=True` and
@@ -214,16 +220,12 @@ class LSTMAutoencoder(nn.Module):
         return vector.unsqueeze(1).repeat(1, window, 1)
 
     @staticmethod
-    def stepwise_error(
-        x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor
-    ) -> torch.Tensor:
+    def stepwise_error(x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Per-step mean squared error over features, zero on padded steps: (batch, window)."""
         return ((x - reconstructed) ** 2).mean(dim=-1) * mask
 
     @staticmethod
-    def reconstruction_error(
-        x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor
-    ) -> torch.Tensor:
+    def reconstruction_error(x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Per-example mean squared error over real (non-padded) steps only."""
         step_error = LSTMAutoencoder.stepwise_error(x, reconstructed, mask)
         return step_error.sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)

@@ -6,12 +6,17 @@ import argparse
 from pathlib import Path
 
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier import HybridClassifierConfig
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.pipeline_audit import PipelineAuditConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.results_summary import DEFAULT_LEGACY_SINCE
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_diagnostics import (
     SPLITS as DIAGNOSTIC_SPLITS,
 )
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_diagnostics import ScoreDiagnosticsConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import ProbeConfig
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.standalone_evaluator import (
+    SPLITS as STANDALONE_SPLITS,
+)
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.standalone_evaluator import StandaloneConfig
 from lstm_autoencoder.model.config import (
     SELECTION_METRICS,
     DenseAutoencoderConfig,
@@ -44,7 +49,7 @@ class ParserArgs:
             default=None,
             help="Read only the first N rows (quick trial run).",
         )
-    
+
     @staticmethod
     def _add_capacity_arguments(parser: argparse.ArgumentParser) -> None:
         """Add the model-capacity flags. They also change the checkpoint name, so every
@@ -352,7 +357,7 @@ class ParserArgs:
             help=(
                 "Match the checkpoints' architecture: bottleneck decoder."
                 "Mutually exclusive with --plain and --attention-pooling."
-            )
+            ),
         )
         diagnose_parser.add_argument(
             "--plain",
@@ -360,7 +365,7 @@ class ParserArgs:
             help=(
                 "Match the checkpoints' architecture: raw per-step outputs."
                 "Mutually exclusive with --bottleneck and --attention-pooling."
-            )
+            ),
         )
         diagnose_parser.add_argument(
             "--attention-pooling",
@@ -368,8 +373,7 @@ class ParserArgs:
             help=(
                 "Match the checkpoints' architecture: attention pooling"
                 "Mutually exclusive with --bottleneck and --plain."
-            )
-            ,
+            ),
         )
         ParserArgs._add_capacity_arguments(diagnose_parser)
         diagnose_parser.add_argument(
@@ -386,6 +390,86 @@ class ParserArgs:
                 "Split to score. Defaults to val so design decisions never use test; "
                 "test additionally reports the LR-outcome groups."
             ),
+        )
+
+        audit_parser = subparsers.add_parser(
+            "audit-pipeline",
+            help=(
+                "P0 audit: feature causality, sequence construction, split/leakage, metric implementation "
+                "and feature-set comparability. Every hard check is pass/fail; no model is trained."
+            ),
+        )
+        ParserArgs._add_dataset_arguments(audit_parser)
+        audit_parser.add_argument(
+            "--windows",
+            type=str,
+            default=",".join(map(str, PipelineAuditConfig.windows)),
+            help="Comma-separated window sizes whose sequence construction is checked (default: 1,3,5,10).",
+        )
+        audit_parser.add_argument(
+            "--sample-receivers",
+            type=int,
+            default=PipelineAuditConfig.sample_receivers,
+            help="Receivers sampled for the per-row reference checks (half random, half longest history).",
+        )
+        audit_parser.add_argument("--seed", type=int, default=PipelineAuditConfig.seed)
+
+        standalone_parser = subparsers.add_parser(
+            "eval-standalone",
+            help=(
+                "Score already-trained LSTM-AE checkpoints for a grid of windows x architectures: AUC, AP, "
+                "Recall@FPR, per-bucket metrics and receiver-cluster bootstrap CIs. No retraining."
+            ),
+        )
+        ParserArgs._add_dataset_arguments(standalone_parser)
+        standalone_parser.add_argument(
+            "--windows", type=str, default="1,3,5,10", help="Comma-separated window sizes (default: 1,3,5,10)."
+        )
+        standalone_parser.add_argument(
+            "--architectures",
+            type=str,
+            default="attention,bottleneck,plain,attention_pooling",
+            help="Comma-separated architectures. Choices: attention, bottleneck, plain, attention_pooling.",
+        )
+        standalone_parser.add_argument(
+            "--seeds",
+            type=str,
+            default=",".join(map(str, StandaloneConfig.seeds)),
+            help="Comma-separated seeds of already-trained checkpoints (default: 42,123,2026).",
+        )
+        ParserArgs._add_capacity_arguments(standalone_parser)
+        standalone_parser.add_argument(
+            "--split",
+            choices=STANDALONE_SPLITS,
+            default=StandaloneConfig.split,
+            help="Split to score (default: test, the reported numbers).",
+        )
+        standalone_parser.add_argument(
+            "--bootstrap",
+            type=int,
+            default=StandaloneConfig.n_bootstrap,
+            help="Receiver-cluster bootstrap resamples per run for the 95%% CIs (0 to skip).",
+        )
+
+        figures_parser = subparsers.add_parser(
+            "make-figures",
+            help=(
+                "Draw the paper figures (pipeline and architecture diagrams, per-bucket performance, "
+                "confound decomposition, training dynamics) into paper/figures/. Reads existing reports only."
+            ),
+        )
+        ParserArgs._add_dataset_arguments(figures_parser)
+        figures_parser.add_argument(
+            "--window", type=int, default=1, help="Window of the hybrid report used in figure 3."
+        )
+        figures_parser.add_argument(
+            "--architecture",
+            type=str,
+            default="attn",
+            help="Architecture tag of the hybrid report used in figure 3 (attn, plain, bottleneck, attn_pool).",
+        )
+        figures_parser.add_argument(
+            "--output-dir", type=Path, default=None, help="Output folder (default: <project-root>/paper/figures)."
         )
 
         train_all_parser = subparsers.add_parser(
@@ -410,8 +494,7 @@ class ParserArgs:
             type=str,
             default="attention,bottleneck,plain,attention_pooling",
             help=(
-                "Comma-separated architectures (default: all)"
-                "Choices: attention, bottleneck, plain, attention_pooling."
+                "Comma-separated architectures (default: all)Choices: attention, bottleneck, plain, attention_pooling."
             ),
         )
         train_all_parser.add_argument(
@@ -447,8 +530,7 @@ class ParserArgs:
             type=str,
             default="attention,bottleneck,plain,attention_pooling",
             help=(
-                "Comma-separated architectures (default: all)."
-                "Choices: attention, bottleneck, plain, attention_pooling."
+                "Comma-separated architectures (default: all).Choices: attention, bottleneck, plain, attention_pooling."
             ),
         )
         eval_hybrid_all_parser.add_argument(
@@ -497,8 +579,7 @@ class ParserArgs:
             type=str,
             default="attention,bottleneck,plain,attention_pooling",
             help=(
-                "Comma-separated architectures (default: all)"
-                "Choices: attention, bottleneck, plain, attention_pooling."
+                "Comma-separated architectures (default: all)Choices: attention, bottleneck, plain, attention_pooling."
             ),
         )
         run_pipeline_parser.add_argument(
@@ -523,4 +604,3 @@ class ParserArgs:
             help="Maximum number of training rows used by the probe model.",
         )
         return parser
-

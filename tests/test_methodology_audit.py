@@ -226,9 +226,7 @@ class TestReceiverSplitLeakage:
     def test_no_receiver_has_rows_in_more_than_one_split(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema)
         splits = self._evaluator(dataset_config)._stratified_receiver_split(built)
-        receivers_in = {
-            name: set(built.iloc[idx]["nameDest"].unique()) for name, idx in splits.items()
-        }
+        receivers_in = {name: set(built.iloc[idx]["nameDest"].unique()) for name, idx in splits.items()}
         assert receivers_in["train"].isdisjoint(receivers_in["val"])
         assert receivers_in["train"].isdisjoint(receivers_in["test"])
         assert receivers_in["val"].isdisjoint(receivers_in["test"])

@@ -60,4 +60,3 @@ class UnivariateSignalChecker(BaseUnivariateSignalChecker):
             exclude_columns=exclude_columns,
             leakage_candidate_columns=LEAKAGE_CANDIDATE_COLUMNS,
         )
-

@@ -46,10 +46,7 @@ class Trainer:
         torch.backends.cudnn.benchmark = True
 
     def fit(
-        self,
-        train_dataset: Dataset,
-        val_dataset: Dataset,
-        val_labels: np.ndarray
+        self, train_dataset: Dataset, val_dataset: Dataset, val_labels: np.ndarray
     ) -> tuple[LSTMAutoencoder, TrainResult]:
         """Train on normal-only windows; select the checkpoint by `selection_metric`."""
         torch.manual_seed(self._train_config.seed)
@@ -159,7 +156,7 @@ class Trainer:
         for fpr in self._train_config.fpr_targets:
             out[f"recall_at_fpr_{fpr:g}"] = float(RankingMetrics.recall_at_fpr(errors, labels, fpr))
         return out
-    
+
     def _make_loader(self, dataset: Dataset, shuffle: bool) -> DataLoader:
         """Build a DataLoader with worker/pinning settings tuned for an under-used GPU."""
         return DataLoader(

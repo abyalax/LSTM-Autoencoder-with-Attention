@@ -31,7 +31,6 @@ def _build_model_config(
     )
 
 
-
 class CommandCLI:
     """Command dispatcher for CLI."""
 
@@ -44,9 +43,7 @@ class CommandCLI:
         project_root = arguments.project_root.resolve()
 
         commands = {
-            "inspect-data": lambda: RunnerCLI.run_inspect_data(
-                project_root, arguments.dataset, arguments.nrows
-            ),
+            "inspect-data": lambda: RunnerCLI.run_inspect_data(project_root, arguments.dataset, arguments.nrows),
             "probe-signal": lambda: RunnerCLI.run_probe_signal(
                 project_root,
                 arguments.dataset,
@@ -106,6 +103,33 @@ class CommandCLI:
                 ),
                 [int(seed) for seed in arguments.seeds.split(",")],
                 arguments.split,
+            ),
+            "make-figures": lambda: RunnerCLI.run_make_figures(
+                project_root,
+                arguments.dataset,
+                arguments.window,
+                arguments.architecture,
+                arguments.output_dir,
+            ),
+            "audit-pipeline": lambda: RunnerCLI.run_audit_pipeline(
+                project_root,
+                arguments.dataset,
+                arguments.nrows,
+                arguments.windows,
+                arguments.sample_receivers,
+                arguments.seed,
+            ),
+            "eval-standalone": lambda: RunnerCLI.run_eval_standalone(
+                project_root,
+                arguments.dataset,
+                arguments.nrows,
+                arguments.windows,
+                arguments.architectures,
+                arguments.seeds,
+                arguments.hidden_dim,
+                arguments.bottleneck_dim,
+                arguments.split,
+                arguments.bootstrap,
             ),
             "eval-unsupervised": lambda: RunnerCLI.run_eval_unsupervised(
                 project_root,

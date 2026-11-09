@@ -12,7 +12,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     ACCOUNT_CODE,
@@ -22,7 +21,9 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     CausalFeatureBuilder,
 )
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
+from lstm_autoencoder.model.config import SequenceConfig
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
@@ -145,9 +146,7 @@ class BaselineEvaluator:
         splits = self._stratified_receiver_split(built)
 
         self._reporter.display_section("ABLATION: full vs no-history vs history-only vs non-linear controls")
-        self._reporter.display_text(
-            f"Baris {len(built):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)"
-        )
+        self._reporter.display_text(f"Baris {len(built):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)")
 
         encoded = self._encode(built)
         variants = self._build_variants(encoded)
@@ -155,18 +154,14 @@ class BaselineEvaluator:
         results: dict[str, object] = {}
         for variant in variants:
             columns = list(variant.columns)
-            if variant.name == "full_gbm":
+            if variant.name.endswith("_gbm"):
                 model = self._fit_gbm(encoded[columns], labels, splits["train"])
                 scores = self._score_gbm(model, encoded[columns], labels, splits)
-                stratified = self._score_gbm_by_bucket(
-                    model, encoded[columns], labels, splits["test"], buckets
-                )
+                stratified = self._score_gbm_by_bucket(model, encoded[columns], labels, splits["test"], buckets)
             else:
                 model, scaler = self._fit(encoded[columns], labels, splits["train"])
                 scores = self._score(model, scaler, encoded[columns], labels, splits)
-                stratified = self._score_by_bucket(
-                    model, scaler, encoded[columns], labels, splits["test"], buckets
-                )
+                stratified = self._score_by_bucket(model, scaler, encoded[columns], labels, splits["test"], buckets)
             results[variant.name] = {"overall": scores, "by_bucket": stratified}
             self._report_variant(variant.name, scores, stratified)
 
@@ -215,31 +210,44 @@ class BaselineEvaluator:
         # history_bucket_* is a one-hot of the same history signal (derived from
         # history_length); no_history must drop it too or the ablation leaks.
         history_bucket_columns = tuple(c for c in modeling_columns if c.startswith(f"{HISTORY_BUCKET}_"))
-        no_history = tuple(
-            c for c in modeling_columns if c not in history_columns and c not in history_bucket_columns
-        )
+        no_history = tuple(c for c in modeling_columns if c not in history_columns and c not in history_bucket_columns)
         history_only = tuple(c for c in history_columns if c in modeling_columns)
+        # Feature-matched controls: exactly the five columns the LSTM-AE sees. The other variants also
+        # receive the raw `step` and the transaction type, which the AE cannot use, so only these two
+        # compare the model CLASS (linear / tree vs recurrent autoencoder) on identical inputs.
+        ae_features = tuple(c for c in SequenceConfig().feature_columns if c in modeling_columns)
+        # Raw `step` lets a tree model recover hour-of-day, a simulator artefact (see `audit-pipeline`);
+        # this control removes only that column to measure how much of the GBM's advantage depends on it.
+        no_step = tuple(c for c in modeling_columns if c != self._schema.timestamp_column)
         return [
             AblationVariant("full", modeling_columns),
             AblationVariant("no_history", no_history),
             AblationVariant("history_only", history_only),
             AblationVariant("full_gbm", modeling_columns),  # Non-linear control: HistGradientBoosting
+            AblationVariant("full_gbm_no_step", no_step),  # GBM without the raw `step` column
+            AblationVariant("ae_features", ae_features),  # LR on the AE's five features
+            AblationVariant("ae_features_gbm", ae_features),  # GBM on the AE's five features
         ]
+
+    def split_rows(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
+        """Row positions of the train/val/test receiver split the baselines use (public for audits)."""
+        return self._stratified_receiver_split(built)
 
     def _stratified_receiver_split(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
         """Split receivers based on split_config fractions, stratified by per-receiver fraud rate."""
         receiver_column = self._schema.receiver_column
         target_column = self._schema.target_column
-        stats = built.groupby(receiver_column).agg(
-            n=(target_column, "size"), n_fraud=(target_column, "sum")
-        )
+        stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
         stats["fraud_rate"] = stats["n_fraud"] / stats["n"]
-        bins = pd.cut(
-            stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True
-        ).fillna(FRAUD_RATE_LABELS[0])
+        bins = pd.cut(stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True).fillna(
+            FRAUD_RATE_LABELS[0]
+        )
 
         train_ids, rest_ids = train_test_split(
-            stats.index, test_size=1 - self._split_config.train_fraction, random_state=self._probe.random_seed, stratify=bins
+            stats.index,
+            test_size=1 - self._split_config.train_fraction,
+            random_state=self._probe.random_seed,
+            stratify=bins,
         )
         val_ratio = self._split_config.validation_fraction / (1 - self._split_config.train_fraction)
         val_ids, test_ids = train_test_split(
@@ -259,9 +267,7 @@ class BaselineEvaluator:
         """Fit a standardized logistic regression on the training split."""
         scaler = StandardScaler()
         x_train = scaler.fit_transform(features.iloc[train_idx])
-        model = LogisticRegression(
-            max_iter=1000, class_weight="balanced", random_state=self._probe.random_seed
-        )
+        model = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=self._probe.random_seed)
         model.fit(x_train, labels[train_idx])
         return model, scaler
 
@@ -377,9 +383,7 @@ class BaselineEvaluator:
             }
         return out
 
-    def _report_variant(
-        self, name: str, scores: dict[str, float], stratified: dict[str, dict[str, float]]
-    ) -> None:
+    def _report_variant(self, name: str, scores: dict[str, float], stratified: dict[str, dict[str, float]]) -> None:
         """Print one variant's overall and per-bucket scores."""
         self._reporter.display_section(f"Variant: {name}")
         self._reporter.display_table(pd.DataFrame({name: scores}).T)

@@ -36,6 +36,7 @@ class PaySimSignalProbe(BaseSignalProbe):
         self._schema = PaySimSchema()
         if self._loader is None:
             from lstm_autoencoder.data.loader import DatasetLoader
+
             self._loader = DatasetLoader(dataset_config, self._schema)
         # Override loader methods for PaySim-specific handling
         self._loader._parse_timestamps = self._skip_timestamp_parsing
@@ -62,10 +63,14 @@ class PaySimSignalProbe(BaseSignalProbe):
         df = loaded.frame
 
         # Get unique receivers and their fraud rates
-        receiver_stats = df.groupby("nameDest").agg(
-            n_transactions=(self._schema.target_column, "size"),
-            n_fraud=(self._schema.target_column, "sum"),
-        ).reset_index()
+        receiver_stats = (
+            df.groupby("nameDest")
+            .agg(
+                n_transactions=(self._schema.target_column, "size"),
+                n_fraud=(self._schema.target_column, "sum"),
+            )
+            .reset_index()
+        )
         receiver_stats["fraud_rate"] = receiver_stats["n_fraud"] / receiver_stats["n_transactions"]
 
         # Split receivers into train/val/test (stratified by fraud rate)
@@ -124,9 +129,7 @@ class PaySimSignalProbe(BaseSignalProbe):
         """Display additional PaySim-specific information (placeholder for future extensions)."""
         pass
 
-    def _build_features(
-        self, ordered: pd.DataFrame
-    ) -> tuple[pd.DataFrame, list[bool]]:
+    def _build_features(self, ordered: pd.DataFrame) -> tuple[pd.DataFrame, list[bool]]:
         """Build features from the ordered dataframe.
 
         For PaySim, this includes one-hot encoding transaction type.
@@ -154,8 +157,7 @@ class PaySimSignalProbe(BaseSignalProbe):
 
         self._reporter.display_section("PROBE SINYAL: apakah isFraud bisa dipelajari?")
         self._reporter.display_text(
-            f"Baris {len(ordered):,} | fraud {int(labels.sum()):,} "
-            f"({labels.mean() * 100:.3f}%)"
+            f"Baris {len(ordered):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)"
         )
 
         # Display split statistics
@@ -182,16 +184,13 @@ class PaySimSignalProbe(BaseSignalProbe):
         )
         self._reporter.display_text("\nUnivariate signal check (without leakage):")
         for result in signal_results[:5]:  # Show top 5
-            self._reporter.display_text(
-                f"  {result.feature}: AUC = {result.auc:.4f}"
-            )
+            self._reporter.display_text(f"  {result.feature}: AUC = {result.auc:.4f}")
 
         has_signal = UnivariateSignalChecker().has_usable_signal(signal_results)
 
         if not has_signal:
             self._reporter.display_text(
-                "\n[WARNING] Tidak ada sinyal univariat yang usable. "
-                "Model supervised tidak akan berhasil."
+                "\n[WARNING] Tidak ada sinyal univariat yang usable. Model supervised tidak akan berhasil."
             )
             verdict = SignalVerdict.NO_SIGNAL
             self._reporter.save_reports(
@@ -224,8 +223,7 @@ class PaySimSignalProbe(BaseSignalProbe):
         reporter = self._reporter.reporter
         reporter.display_text("\nKESIMPULAN")
         summary = (
-            f"AUC test {auc:.3f}, AP {ap:.4f} (prevalensi {prevalence:.4f}), "
-            f"kontrol label-acak AUC {control_auc:.3f}."
+            f"AUC test {auc:.3f}, AP {ap:.4f} (prevalensi {prevalence:.4f}), kontrol label-acak AUC {control_auc:.3f}."
         )
         lift_limit = self._probe.no_signal_lift * prevalence
         if auc < self._probe.no_signal_auc and ap < lift_limit:
@@ -237,14 +235,10 @@ class PaySimSignalProbe(BaseSignalProbe):
             return SignalVerdict.NO_SIGNAL
         if auc < self._probe.weak_signal_auc:
             reporter.display_text(f"  {summary}")
-            reporter.display_text(
-                "  Sinyal sangat lemah, hasil model deep kemungkinan tidak bermakna."
-            )
+            reporter.display_text("  Sinyal sangat lemah, hasil model deep kemungkinan tidak bermakna.")
             return SignalVerdict.WEAK_SIGNAL
         reporter.display_text(f"  {summary}")
-        reporter.display_text(
-            "  Ada sinyal yang dapat dipelajari, lanjut ke desain model."
-        )
+        reporter.display_text("  Ada sinyal yang dapat dipelajari, lanjut ke desain model.")
         return SignalVerdict.LEARNABLE
 
     def _evaluate_with_splits(
@@ -264,22 +258,14 @@ class PaySimSignalProbe(BaseSignalProbe):
             train = np.sort(chosen)
 
         self._reporter.display_text(
-            f"\nBatas atas supervised | train {len(train):,} "
-            f"val {len(splits['val']):,} test {len(splits['test']):,}"
+            f"\nBatas atas supervised | train {len(train):,} val {len(splits['val']):,} test {len(splits['test']):,}"
         )
         shuffled = rng.permutation(labels[train])
         results = {
-            "label asli": self._fit_and_score(
-                features, categorical, train, labels[train], splits, labels
-            ),
-            "label diacak": self._fit_and_score(
-                features, categorical, train, shuffled, splits, labels
-            ),
+            "label asli": self._fit_and_score(features, categorical, train, labels[train], splits, labels),
+            "label diacak": self._fit_and_score(features, categorical, train, shuffled, splits, labels),
         }
-        rows = {
-            name: {key: round(value, 4) for key, value in scores.items()}
-            for name, scores in results.items()
-        }
+        rows = {name: {key: round(value, 4) for key, value in scores.items()} for name, scores in results.items()}
         self._reporter.display_table(pd.DataFrame(rows).T)
         return results
 

@@ -62,12 +62,12 @@ def print_magenta(text: str) -> None:
 
 def colorize(text: str, color: str = _CYAN, bold: bool = False) -> str:
     """Return a colored string without printing it.
-    
+
     Args:
         text: The text to colorize
         color: ANSI color code (default: cyan)
         bold: Whether to make the text bold (default: False)
-        
+
     Returns:
         Colorized string with reset code
     """

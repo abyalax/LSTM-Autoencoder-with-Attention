@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -10,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.evaluation.bootstrap import WeightedRankingBootstrap
 from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
@@ -235,13 +237,15 @@ class HybridClassifierEvaluator:
         train_normal_log_errors = np.log(errors["train"][train_normal_mask] + self._config.error_epsilon)
         train_normal_stats: dict[str, tuple[float, float]] = {}
         for label in HISTORY_STRATA_LABELS:
-            mask = (buckets["train"][train_normal_mask] == label)
+            mask = buckets["train"][train_normal_mask] == label
             if mask.sum() > 0:
                 bucket_log_errors = train_normal_log_errors[mask]
                 train_normal_stats[label] = (float(bucket_log_errors.mean()), float(bucket_log_errors.std()))
 
         feature = {name: self._error_feature(values) for name, values in errors.items()}
-        feature_norm = {name: self._error_feature(values, buckets[name], train_normal_stats) for name, values in errors.items()}
+        feature_norm = {
+            name: self._error_feature(values, buckets[name], train_normal_stats) for name, values in errors.items()
+        }
         rng = np.random.default_rng(self._config.random_seed + seed)
         shuffled = {name: rng.permutation(feature[name]) for name in ("val", "test")}
 
@@ -269,9 +273,7 @@ class HybridClassifierEvaluator:
             self._pair_name(candidate, reference): self._delta(variants[candidate], variants[reference])
             for candidate, reference in (*BOOTSTRAP_COMPARISONS, *DIAGNOSTIC_COMPARISONS)
         }
-        bootstrap = (
-            self._bootstrap(test_scores, labels, seed, receivers_test) if self._config.n_bootstrap > 0 else {}
-        )
+        bootstrap = self._bootstrap(test_scores, labels, seed, receivers_test) if self._config.n_bootstrap > 0 else {}
         return {
             "seed": seed,
             "variants": variants,
@@ -293,7 +295,12 @@ class HybridClassifierEvaluator:
         model.fit(scaler.fit_transform(x), y)
         return _FittedLogistic(scaler, model)
 
-    def _error_feature(self, errors: np.ndarray, buckets: np.ndarray | None = None, train_normal_stats: dict[str, tuple[float, float]] | None = None) -> np.ndarray:
+    def _error_feature(
+        self,
+        errors: np.ndarray,
+        buckets: np.ndarray | None = None,
+        train_normal_stats: dict[str, tuple[float, float]] | None = None,
+    ) -> np.ndarray:
         """Log-transform the heavy-tailed reconstruction error (epsilon guards exact zeros).
 
         If buckets are provided, normalizes log-error per history bucket using train-normal statistics.
@@ -376,23 +383,17 @@ class HybridClassifierEvaluator:
             self._pair_name(*pair): {key: [] for key in metric_keys} for pair in self._ALL_BOOTSTRAP_COMPARISONS
         }
 
-        draw_index = self._bootstrap_draw_fn(labels, receivers, rng)
+        # Every score vector is sorted once; each draw is then an integer weight per row (see
+        # `WeightedRankingBootstrap`), which is ~8x faster than re-sorting a materialised resample
+        # and is exactly equivalent to it (`tests/test_bootstrap.py`).
+        engine = WeightedRankingBootstrap(labels, {name: scores[name] for name in names}, self._config.fpr_targets)
+        draw_weights = self._bootstrap_weight_fn(labels, receivers, rng)
         for _ in range(self._config.n_bootstrap):
-            index = draw_index()
-            resampled = labels[index]
-            auc = {name: RankingMetrics.roc_auc(scores[name][index], resampled) for name in names}
-            ap = {name: RankingMetrics.average_precision(scores[name][index], resampled) for name in names}
-            recall_at_fpr = {
-                fpr: {name: RankingMetrics.recall_at_fpr(scores[name][index], resampled, fpr) for name in names}
-                for fpr in self._config.fpr_targets
-            }
+            resampled = engine.metrics(draw_weights())
             for candidate, reference in self._ALL_BOOTSTRAP_COMPARISONS:
                 pair_name = self._pair_name(candidate, reference)
-                draws[pair_name]["auc"].append(auc[candidate] - auc[reference])
-                draws[pair_name]["ap"].append(ap[candidate] - ap[reference])
-                for fpr in self._config.fpr_targets:
-                    key = f"recall_at_fpr_{fpr:g}"
-                    draws[pair_name][key].append(recall_at_fpr[fpr][candidate] - recall_at_fpr[fpr][reference])
+                for key in metric_keys:
+                    draws[pair_name][key].append(resampled[candidate][key] - resampled[reference][key])
 
         summary: dict[str, dict[str, float]] = {}
         for pair_name, metrics in draws.items():
@@ -415,37 +416,25 @@ class HybridClassifierEvaluator:
                 summary[pair_name][f"p_d_{key}_le_0"] = float(np.mean(np.asarray(metrics[key]) <= 0.0))
         return summary
 
-    def _bootstrap_draw_fn(self, labels: np.ndarray, receivers: np.ndarray, rng: np.random.Generator):
-        """Return a zero-arg callable that draws one resampled row-index array.
+    def _bootstrap_weight_fn(
+        self, labels: np.ndarray, receivers: np.ndarray, rng: np.random.Generator
+    ) -> Callable[[], np.ndarray]:
+        """Return a zero-arg callable that draws one integer weight per test row.
 
-        "row": class-stratified resampling of individual rows (legacy).
+        "row": class-stratified resampling of individual rows (legacy; same random
+        stream as before, so earlier row-bootstrap results are reproduced).
         "receiver": resample receivers with replacement; a drawn receiver
-        contributes ALL of its test rows for that draw (block/cluster bootstrap).
+        contributes ALL of its test rows for that draw (cluster bootstrap).
         """
         mode = self._config.bootstrap_mode
         if mode == "row":
-            positives = np.flatnonzero(labels == 1)
-            negatives = np.flatnonzero(labels == 0)
-
-            def _draw_row() -> np.ndarray:
-                return np.concatenate(
-                    [rng.choice(positives, size=len(positives)), rng.choice(negatives, size=len(negatives))]
-                )
-
-            return _draw_row
-
+            return lambda: WeightedRankingBootstrap.stratified_row_weights(labels, rng)
         if mode != "receiver":
             raise ValueError(f"bootstrap_mode must be 'row' or 'receiver', got {mode!r}.")
 
-        unique_receivers, inverse = np.unique(receivers, return_inverse=True)
-        rows_by_receiver = [np.flatnonzero(inverse == i) for i in range(len(unique_receivers))]
-        n_receivers = len(unique_receivers)
-
-        def _draw_receiver() -> np.ndarray:
-            drawn = rng.integers(0, n_receivers, size=n_receivers)
-            return np.concatenate([rows_by_receiver[i] for i in drawn])
-
-        return _draw_receiver
+        _, inverse = np.unique(receivers, return_inverse=True)
+        n_receivers = int(inverse.max()) + 1
+        return lambda: WeightedRankingBootstrap.cluster_weights(inverse, n_receivers, rng)
 
     # Per-bucket bootstrap CI is reported only for these (the headline comparison);
     # adding it for every variant would multiply an already O(n_bootstrap x n_rows)
@@ -478,9 +467,7 @@ class HybridClassifierEvaluator:
                     "ap": RankingMetrics.average_precision(scores[name][mask], labels[mask]),
                 }
                 if name in self._BUCKET_CI_VARIANTS and n_fraud > 1 and (n - n_fraud) > 1:
-                    auc_low, auc_high, ap_low, ap_high = self._bucket_ci(
-                        scores[name][mask], labels[mask], rng
-                    )
+                    auc_low, auc_high, ap_low, ap_high = self._bucket_ci(scores[name][mask], labels[mask], rng)
                     entry["auc_ci_low"] = auc_low
                     entry["auc_ci_high"] = auc_high
                     entry["ap_ci_low"] = ap_low
@@ -661,4 +648,4 @@ class HybridClassifierEvaluator:
 
     def _architecture_tag(self) -> str:
         """Short label for the current model variant."""
-        return self._model_config.architecture_tag
+        return self._model_config.architecture_tag

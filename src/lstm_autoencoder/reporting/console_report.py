@@ -98,4 +98,3 @@ class ConsoleReporter:
         lines.extend(format_row(row) for row in rows)
         lines.append(border("└", "┴", "┘"))
         return "\n".join(lines)
-    

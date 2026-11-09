@@ -31,9 +31,6 @@ class SchemaProtocol(Protocol):
     reuse_columns: tuple[str, ...]
 
 
-
-
-
 class SignalVerdict(Enum):
     """Outcome of the learnability check."""
 
@@ -83,9 +80,7 @@ class BaseSignalProbe(ABC):
         pass
 
     @abstractmethod
-    def _build_features(
-        self, ordered: pd.DataFrame
-    ) -> tuple[pd.DataFrame, list[bool]]:
+    def _build_features(self, ordered: pd.DataFrame) -> tuple[pd.DataFrame, list[bool]]:
         """Build features from the ordered dataframe.
 
         Args:
@@ -110,6 +105,7 @@ class BaseSignalProbe(ABC):
         """Run the probe, save its report, and return the verdict."""
         if self._loader is None:
             from lstm_autoencoder.data.loader import DatasetLoader
+
             self._loader = DatasetLoader(self._config, self._get_schema())
 
         loaded = self._loader.load()
@@ -117,8 +113,7 @@ class BaseSignalProbe(ABC):
 
         self._reporter.display_section("PROBE SINYAL: apakah target bisa dipelajari?")
         self._reporter.display_text(
-            f"Baris {len(features):,} | target {int(labels.sum()):,} "
-            f"({labels.mean() * 100:.3f}%)"
+            f"Baris {len(features):,} | target {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)"
         )
 
         self._display_additional_info(features, labels)
@@ -148,22 +143,14 @@ class BaseSignalProbe(ABC):
         splits = {"val": np.arange(first, second), "test": np.arange(second, n_rows)}
 
         self._reporter.display_text(
-            f"\nBatas atas supervised | train {len(train):,} "
-            f"val {len(splits['val']):,} test {len(splits['test']):,}"
+            f"\nBatas atas supervised | train {len(train):,} val {len(splits['val']):,} test {len(splits['test']):,}"
         )
         shuffled = rng.permutation(labels[train])
         results = {
-            "label asli": self._fit_and_score(
-                features, categorical, train, labels[train], splits, labels
-            ),
-            "label diacak": self._fit_and_score(
-                features, categorical, train, shuffled, splits, labels
-            ),
+            "label asli": self._fit_and_score(features, categorical, train, labels[train], splits, labels),
+            "label diacak": self._fit_and_score(features, categorical, train, shuffled, splits, labels),
         }
-        rows = {
-            name: {key: round(value, 4) for key, value in scores.items()}
-            for name, scores in results.items()
-        }
+        rows = {name: {key: round(value, 4) for key, value in scores.items()} for name, scores in results.items()}
         self._reporter.display_table(pd.DataFrame(rows).T)
         return results
 
@@ -204,8 +191,7 @@ class BaseSignalProbe(ABC):
         reporter = self._reporter.reporter
         reporter.display_text("\nKESIMPULAN")
         summary = (
-            f"AUC test {auc:.3f}, AP {ap:.4f} (prevalensi {prevalence:.4f}), "
-            f"kontrol label-acak AUC {control_auc:.3f}."
+            f"AUC test {auc:.3f}, AP {ap:.4f} (prevalensi {prevalence:.4f}), kontrol label-acak AUC {control_auc:.3f}."
         )
         lift_limit = self._probe.no_signal_lift * prevalence
         if auc < self._probe.no_signal_auc and ap < lift_limit:
@@ -217,12 +203,8 @@ class BaseSignalProbe(ABC):
             return SignalVerdict.NO_SIGNAL
         if auc < self._probe.weak_signal_auc:
             reporter.display_text(f"  {summary}")
-            reporter.display_text(
-                "  Sinyal sangat lemah, hasil model deep kemungkinan tidak bermakna."
-            )
+            reporter.display_text("  Sinyal sangat lemah, hasil model deep kemungkinan tidak bermakna.")
             return SignalVerdict.WEAK_SIGNAL
         reporter.display_text(f"  {summary}")
-        reporter.display_text(
-            "  Ada sinyal yang dapat dipelajari, lanjut ke desain model."
-        )
+        reporter.display_text("  Ada sinyal yang dapat dipelajari, lanjut ke desain model.")
         return SignalVerdict.LEARNABLE
