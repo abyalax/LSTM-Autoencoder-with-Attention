@@ -1,18 +1,52 @@
-### 0. Pre-submit methodology audits (P0)
+### 0. Development checks (no PaySim CSV required)
 
-Run before touching the dataset. These are the automated, runnable version of
-TODO.md's P0 checklist (causal feature construction, sequence windowing,
-receiver-disjoint splits, scaler fit-on-train-normal-only). All fixtures are
-tiny synthetic frames built in the test file itself -- **no PaySim CSV
-download needed** for this step.
+Run these checks after changing code and before starting a new experiment.
+
+**Full automated test suite:**
+
+```Shell
+uv run pytest tests/ -v
+```
+
+The suite is built around synthetic fixtures and temporary directories; it does
+not train the full model or require the PaySim CSV. It currently covers:
+
+- `test_methodology_audit.py`: causal feature construction, sequence ordering,
+  window labels/masks, receiver-disjoint splits, and train-only scaler fitting.
+- `test_pipeline_audit.py`: hard-check behavior of the real-pipeline audit,
+  including future-independence, sequence integrity, split overlap, tie
+  sensitivity, context contamination, and metric parity with scikit-learn.
+- `test_bootstrap.py` and `test_hybrid_bootstrap.py`: weighted and
+  receiver-cluster bootstrap behavior against materialized reference draws.
+- `test_standalone_evaluator.py`: architecture/checkpoint naming, score
+  aggregation, bucket consistency, and receiver-cluster confidence intervals.
+- `test_figures.py`: pooled-AUC decomposition and figure output when reports
+  are absent or present.
+
+**Lint and formatting checks:**
+
+```Shell
+uv run ruff check .
+uv run ruff format --check .
+```
+
+If formatting is required, apply it with `uv run ruff format .`, inspect the
+diff, and rerun both checks. A passing unit suite does not establish that the
+full PaySim data pipeline or trained-model results are valid; continue with
+the methodology and real-data audits below.
+
+### 0a. Focused methodology audit (P0, no PaySim CSV required)
+
+Run this focused subset when working specifically on causal feature
+construction, sequence windowing, receiver-disjoint splits, or scaler fitting:
 
 ```Shell
 uv run pytest tests/test_methodology_audit.py -v
 ```
 
-All 14 tests should pass before relying on any downstream metric. A failure
-here means re-verify the corresponding P0 TODO.md item before trusting
-anything built on top of it (splits, scores, the IMRAD draft).
+All 14 focused tests should pass. The fixtures are tiny synthetic frames
+defined in the test file. A failure means re-verify the corresponding P0
+TODO.md item before trusting downstream splits, scores, or manuscript claims.
 
 ### 0b. Audit the real pipeline (P0, needs the PaySim CSV)
 
@@ -462,7 +496,7 @@ Optional arguments:
 - `--out`: Output markdown path. Defaults to `artifacts/summary/results_summary.md`.
 - `--legacy-since`: Only list unverified training reports (no `run_config`) with this timestamp or later. Defaults to `20261106_103302`.
 
-_Last Updated 6 November 2026_
+_Last Updated 9 November 2026_
 
 ### 13. Draw the paper figures
 
