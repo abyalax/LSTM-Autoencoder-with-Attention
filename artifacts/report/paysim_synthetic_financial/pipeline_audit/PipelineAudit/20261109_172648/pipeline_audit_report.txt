@@ -1,0 +1,28 @@
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+PIPELINE AUDIT (P0)
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+rows 2,770,409 | sampled rows 66,105 (3,000 receivers) | seed 42
+┌────┬────────────────────────────────────┬────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│    │ check                              │ status │ detail                                                                                                                                       │
+├────┼────────────────────────────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0  │ feature_reference                  │ PASS   │ rows=66105; mismatches={'history_length': 0, 'step_diff': 0, 'is_new_receiver': 0, 'history_bucket': 0, 'log_amount_ratio': 0}; max_abs_log_ │
+│ 1  │ future_independence                │ PASS   │ rows_checked=34171; future_rows_perturbed=31934; features_moved={'history_length': 0, 'step_diff': 0, 'log_amount_ratio': 0, 'is_new_receive │
+│ 2  │ receiver_isolation                 │ PASS   │ receivers=3000; features_moved={'history_length': 0, 'step_diff': 0, 'log_amount_ratio': 0, 'is_new_receiver': 0, 'history_bucket': 0}       │
+│ 3  │ tie_sensitivity                    │ INFO   │ rows=66105; share_rows_with_same_step_predecessor=0.2795249981090689; fraud_rate_tied_rows=0.0004329472886676047                             │
+│ 4  │ time_structure                     │ INFO   │ fraud_rate_by_hour_min=0.0011402546568733685; fraud_rate_by_hour_max=0.5791139240506329; fraud_rate_max_over_min=507.8812180768376           │
+│ 5  │ sequences_w1                       │ PASS   │ examples=66105; deterministic_rebuild=True; example_count_matches_eligible_rows=True                                                         │
+│ 6  │ sequences_w3                       │ PASS   │ examples=66105; deterministic_rebuild=True; example_count_matches_eligible_rows=True                                                         │
+│ 7  │ sequences_w5                       │ PASS   │ examples=66105; deterministic_rebuild=True; example_count_matches_eligible_rows=True                                                         │
+│ 8  │ sequences_w10                      │ PASS   │ examples=66105; deterministic_rebuild=True; example_count_matches_eligible_rows=True                                                         │
+│ 9  │ split_disjoint                     │ PASS   │ receiver_overlaps={'train&val': 0, 'train&test': 0, 'val&test': 0}; every_receiver_assigned=True; rows={'train': 1940924, 'val': 414442, 'te │
+│ 10 │ scaler_fit_on_train_normal_only    │ PASS   │ train_normal_mean_abs_max=1.0076363171578227e-15; train_normal_std_minus_1_abs_max=1.1102230246251565e-16; scaled_normal_rows_per_split={'tr │
+│ 11 │ training_context_contamination_w1  │ INFO   │ normal_train_windows=1935179; share_with_fraud_in_context=0.0                                                                                │
+│ 12 │ training_context_contamination_w3  │ INFO   │ normal_train_windows=1935179; share_with_fraud_in_context=0.0024840079393172415                                                              │
+│ 13 │ training_context_contamination_w5  │ INFO   │ normal_train_windows=1935179; share_with_fraud_in_context=0.004172740609525011                                                               │
+│ 14 │ training_context_contamination_w10 │ INFO   │ normal_train_windows=1935179; share_with_fraud_in_context=0.006681552455871007                                                               │
+│ 15 │ split_identical_in_baseline_and_ae │ PASS   │ receiver_sets_equal={'train': True, 'val': True, 'test': True}                                                                               │
+│ 16 │ metric_implementation_lr_full_test │ PASS   │ abs_gap_auc=0.0; abs_gap_ap=0.0; n=415043                                                                                                    │
+│ 17 │ feature_set_comparability          │ INFO   │ ae_features=['amount', 'history_length', 'is_new_receiver', 'log_amount_ratio', 'step_diff']; baseline_features=['amount', 'history_bucket_1 │
+└────┴────────────────────────────────────┴────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ALL HARD CHECKS PASSED

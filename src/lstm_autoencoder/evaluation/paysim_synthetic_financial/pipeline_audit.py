@@ -137,7 +137,7 @@ class PipelineAudit:
         """Compare the vectorised features with a per-receiver Python loop (independent reimplementation)."""
         built = self._build(sample)
         expected = self._reference_features(sample)
-        merged = built.set_index(ROW_ID)[list(DERIVED)].join(expected, rsuffix="_ref")
+        merged = built.set_index(ROW_ID)[list(DERIVED)].join(expected, suffixes=("", "_ref"))
         mismatches: dict[str, int] = {}
         for column in (HISTORY_LENGTH, STEP_DIFF, IS_NEW_RECEIVER, HISTORY_BUCKET):
             mismatches[column] = int((merged[column].astype(str) != merged[f"{column}_ref"].astype(str)).sum())
@@ -244,7 +244,10 @@ class PipelineAudit:
         )
 
     def check_time_structure(self, frame: pd.DataFrame) -> AuditFinding:
-        """Hour-of-day profile of fraud vs normal; a flat fraud profile against a diurnal normal one is a simulator artefact."""
+        """
+            Hour-of-day profile of fraud vs normal; 
+            a flat fraud profile against a diurnal normal one is a simulator artefact.
+        """
         step = frame[self._schema.timestamp_column].to_numpy()
         label = frame[self._schema.target_column].to_numpy()
         hour = (step % 24).astype(int)
