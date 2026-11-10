@@ -1,0 +1,16 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder probe-hybrid-signal --dataset paysim_synthetic_financial --window 5 --seed 42",
+  "hybrid_signal_probe": {
+    "n_test": 415816,
+    "lr_test_auc": 0.875831781696799,
+    "ae_test_auc": 0.30199993688939486,
+    "ae_test_ap": 0.0018782210550028985,
+    "pearson_r": -0.3789140999521475,
+    "spearman_r": -0.7120008055119175,
+    "mean_ae_error_by_lr_outcome": {
+      "normal": 1.1242624521255493,
+      "fraud_lr_low": 0.9662591814994812,
+      "fraud_lr_high": 0.9414951801300049
+    }
+  }
+}

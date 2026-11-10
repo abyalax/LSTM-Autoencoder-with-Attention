@@ -28,8 +28,10 @@ from lstm_autoencoder.model.sequence_builder import SequenceBatch, SequenceBuild
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
-FRAUD_RATE_BINS: tuple[float, ...] = (0, 0.001, 0.01, 0.1, 1.0)
-FRAUD_RATE_LABELS: tuple[str, ...] = ("very_low", "low", "medium", "high")
+# Split stratification bins, by per-receiver transaction COUNT (not fraud_rate/label --
+# see `_split_receiver_ids` docstring). Mirrors the `history_bucket` reporting buckets.
+VOLUME_BINS: tuple[float, ...] = (0, 1, 4, 9, float("inf"))
+VOLUME_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
 @dataclass(frozen=True)
@@ -511,14 +513,19 @@ class PaySimModelTrainingPipeline:
         return self._split_receiver_ids(built)
 
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
-        """Split receivers by split_config fractions, stratified by per-receiver fraud rate."""
+        """Split receivers by split_config fractions, stratified by per-receiver transaction count.
+
+        Stratified on `n` (transaction volume), NOT on fraud_rate/n_fraud: binning
+        receivers by their own `isFraud` outcome before the split uses label
+        information to decide split membership, which can inflate validation/test
+        fraud prevalence toward the training prevalence. Volume-based bins still
+        keep thin-history and long-history receivers proportionally represented
+        across splits without touching the label.
+        """
         receiver_column = self._schema.receiver_column
         target_column = self._schema.target_column
         stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
-        stats["fraud_rate"] = stats["n_fraud"] / stats["n"]
-        bins = pd.cut(stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True).fillna(
-            FRAUD_RATE_LABELS[0]
-        )
+        bins = pd.cut(stats["n"], bins=VOLUME_BINS, labels=VOLUME_LABELS, include_lowest=True).fillna(VOLUME_LABELS[0])
 
         train_ids, rest_ids = train_test_split(
             stats.index,

@@ -1,8 +1,46 @@
 # Research Roadmap
 
-> Last updated: 2026-11-09  
+> Last updated: 2026-11-10  
 > Active focus: pipeline integrity, reconstruction-score diagnostics, and final evaluation gaps.  
 > Convention: `W` is the sequence window length; current grid is `W ∈ {1,3,5,10}`. Unless stated otherwise, AUC/AP refer to the held-out test split.
+
+## 2026-11-10 session (checklist validation pass, see `0003-*.patch`)
+
+Validated the "pre-submit checklist" against the ACTUAL code (not this file's
+checkboxes, which had drifted from what was implemented). Two findings:
+
+- **P1.0/entity definition had a real bug, not just a missing audit.** The
+  proposal's own decided entity rule ("nameDest for TRANSFER, nameOrig for
+  CASH_OUT, so a mule's TRANSFER-in and CASH_OUT-out link into one account
+  history") was never implemented -- `PaySimSchema.receiver_column` was used
+  uniformly as `nameDest` for every row, including CASH_OUT. Fixed in
+  `causal_features.py`: account identity is now role-aware; original value
+  kept as `nameDest_raw`. **This changes the dataset CASH_OUT rows are built
+  from -- every checkpoint and report trained before this patch is stale and
+  must be regenerated.**
+- **P2.0 (compare mean/last/max reconstruction score) was already implemented**
+  (`ScoreDiagnostics`, `score-diagnostics` CLI command) despite the checkbox
+  being unchecked -- ticked below. Still only run at seed=42; P2.1's "across
+  seeds 42/123/2026" stays open.
+
+Also fixed this session (code-only, no retraining needed to apply, but
+results built on the OLD split/identity must be redone):
+- P1.1 tie handling: same-step ties now break on an explicit, tested,
+  documented row-order rank (previously an untested side effect of a stable
+  sort).
+- P1.3 padding: added exhaustive left-padding/mask tests for every valid
+  length 1..W (existing vectorized logic was already correct, just untested
+  at that coverage).
+- P1.4 label-informed stratification: removed. `_split_receiver_ids`
+  (`pipeline.py` and `baseline.py`, previously two copies of the same logic)
+  stratified train/val/test by each receiver's own `fraud_rate` -- replaced
+  with stratification by transaction count only, in both places. Verified
+  with a test that relabels which receivers are fraud while holding
+  transaction counts fixed: split is unchanged.
+
+**Everything downstream (P2 retraining grid, P3-P5 result tables, IMRAD
+numbers) is built on the pre-fix split/identity and is not valid until
+re-run** -- see the command list at the end of this file.
 
 ## 2026-11-09 session (pre-submit P0/P1 pass, see `0001-*.patch`)
 
@@ -41,7 +79,7 @@ pass (IMRAD narrative + editorial still queued separately).
 
 ### P1.0 Validate receiver-centric sequence semantics
 
-- [ ] - Audit whether `nameDest` is the correct sequence entity for the research question [AC - Research question and entity definition are explicit in Methods]
+- [ ] - Audit whether `nameDest` is the correct sequence entity for the research question [AC - Research question and entity definition are explicit in Methods] -- `0003-*.patch` fixed a real bug here (code used `nameDest` for CASH_OUT rows too, contradicting the documented role-aware decision); the broader "is this entity choice right at all" comparison below is still open
 - [ ] - Compare receiver-only, sender-only, and account-centric sequence construction [AC - All variants have comparable counts, labels, and metrics]
 - [ ] - For account-centric sequences, represent incoming and outgoing transactions with an explicit transaction role [AC - One account history contains both directions without duplicating target labels]
 - [ ] - Decide whether merchant destinations and account destinations require different handling [AC - Inclusion/exclusion rules are documented and tested]
@@ -49,7 +87,7 @@ pass (IMRAD narrative + editorial still queued separately).
 ### P1.1 Validate transaction ordering and causal history
 
 - [x] - Audit sorting by account identifier and PaySim `step` [AC - Every account sequence is monotonically ordered by the documented key]
-- [ ] - Investigate transactions sharing the same `step`; define deterministic tie handling without claiming unavailable within-hour chronology [AC - Tie policy is deterministic and documented]
+- [x] - Investigate transactions sharing the same `step`; define deterministic tie handling without claiming unavailable within-hour chronology [AC - Tie policy is deterministic and documented] -- `0003-*.patch`; code-only, applies retroactively once re-run
 - [x] - Verify that `history_length`, `step_diff`, and `log_amount_ratio` use only information available at the current transaction [AC - No feature for row t reads a later row or post-transaction value]
 - [ ] - Verify that the sequence label is the `isFraud` value of the final/current transaction [AC - Hand-constructed tests confirm exact label alignment]
 
@@ -61,7 +99,7 @@ pass (IMRAD narrative + editorial still queued separately).
 
 ### P1.3 Audit padding and recurrent-state handling
 
-- [ ] - Add tests for left-padding masks at each valid sequence length from 1 through W [AC - Mask contains exactly the real positions]
+- [x] - Add tests for left-padding masks at each valid sequence length from 1 through W [AC - Mask contains exactly the real positions] -- `0003-*.patch`; existing vectorized logic found already correct
 - [ ] - Measure whether zero-valued left-padding changes LSTM hidden/cell states for otherwise identical valid sequences [AC - A regression test detects padding-induced state changes]
 - [ ] - Compare current left-padding with right-padding plus `pack_padded_sequence`, or an equivalent recurrent mask [AC - Both approaches are evaluated on identical data]
 - [ ] - Verify that attention and reconstruction loss ignore padding while the encoder state does not encode padding length unintentionally [AC - Padding-invariance tests pass for the selected implementation]
@@ -70,7 +108,7 @@ pass (IMRAD narrative + editorial still queued separately).
 ### P1.4 Audit split, scaling, and training eligibility
 
 - [x] - Assert that receiver IDs are disjoint across train, validation, and test [AC - Automated overlap checks return zero]
-- [ ] - Document label-informed receiver fraud-rate stratification and compare with a split strategy that does not use receiver fraud rates [AC - Split protocol and sensitivity results are reported]
+- [x] - Document label-informed receiver fraud-rate stratification and compare with a split strategy that does not use receiver fraud rates [AC - Split protocol and sensitivity results are reported] -- `0003-*.patch` REMOVES it (stratify by transaction count instead); no longer just documented, the strategy is retired. Pre/post sensitivity numbers still need a real-data re-run.
 - [x] - Verify that the scaler is fitted only on normal training rows and reused unchanged for validation/test [AC - Tests confirm fit-row membership and stable scaler parameters]
 - [ ] - Verify that the autoencoder optimizer receives only normal training windows [AC - Training dataset labels contain no fraud rows]
 - [ ] - Confirm that checkpoint selection uses normal-only validation reconstruction loss [AC - Selection metric and implementation agree]
@@ -82,7 +120,7 @@ pass (IMRAD narrative + editorial still queued separately).
 - [ ] - Implement last-step reconstruction error [AC - Error for the current/final transaction is available per sequence]
 - [ ] - Preserve mean reconstruction error over valid timesteps [AC - Existing masked mean score remains reproducible]
 - [ ] - Implement max reconstruction error over valid timesteps [AC - Maximum is computed over valid timesteps only]
-- [ ] - Compare last-step, mean, and max scores on the same checkpoint, rows, and labels [AC - AUC, AP, and fixed-FPR recall are reported side by side]
+- [x] - Compare last-step, mean, and max scores on the same checkpoint, rows, and labels [AC - AUC, AP, and fixed-FPR recall are reported side by side] -- already implemented in `ScoreDiagnostics`/`score-diagnostics` CLI, checkbox had drifted from the code; see `artifacts/report/.../score_diagnostics/`
 
 ### P2.1 Diagnose score behavior by history length
 

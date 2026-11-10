@@ -27,8 +27,10 @@ from lstm_autoencoder.model.config import SequenceConfig
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
-FRAUD_RATE_BINS: tuple[float, ...] = (0, 0.001, 0.01, 0.1, 1.0)
-FRAUD_RATE_LABELS: tuple[str, ...] = ("very_low", "low", "medium", "high")
+# Split stratification bins, by per-receiver transaction COUNT, matching
+# `PaySimModelTrainingPipeline`'s bins exactly (see that class for rationale).
+VOLUME_BINS: tuple[float, ...] = (0, 1, 4, 9, float("inf"))
+VOLUME_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
 @dataclass(frozen=True)
@@ -234,14 +236,18 @@ class BaselineEvaluator:
         return self._stratified_receiver_split(built)
 
     def _stratified_receiver_split(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
-        """Split receivers based on split_config fractions, stratified by per-receiver fraud rate."""
+        """Split receivers based on split_config fractions, stratified by per-receiver transaction count.
+
+        Must stay IDENTICAL to `PaySimModelTrainingPipeline._split_receiver_ids` (same
+        stratification key, same bins, same seed source) -- the pipeline audit's
+        `split_identical_in_baseline_and_ae` check depends on it. Stratified on `n`
+        (volume), not fraud_rate: see that method's docstring for why label-informed
+        stratification was removed.
+        """
         receiver_column = self._schema.receiver_column
         target_column = self._schema.target_column
         stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
-        stats["fraud_rate"] = stats["n_fraud"] / stats["n"]
-        bins = pd.cut(stats["fraud_rate"], bins=FRAUD_RATE_BINS, labels=FRAUD_RATE_LABELS, include_lowest=True).fillna(
-            FRAUD_RATE_LABELS[0]
-        )
+        bins = pd.cut(stats["n"], bins=VOLUME_BINS, labels=VOLUME_LABELS, include_lowest=True).fillna(VOLUME_LABELS[0])
 
         train_ids, rest_ids = train_test_split(
             stats.index,

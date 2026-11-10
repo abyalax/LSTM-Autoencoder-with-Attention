@@ -116,6 +116,47 @@ class TestCausalFeatureBuilder:
         second = CausalFeatureBuilder(dataset_config, schema).build(frame)
         pd.testing.assert_frame_equal(first, second)
 
+    def test_same_step_ties_break_by_input_row_order_deterministically(self, dataset_config, schema):
+        """Three R1 rows share step=5; tie order must follow input row order, every rebuild."""
+        frame = pd.DataFrame(
+            {
+                "step": [5, 5, 5, 1],
+                "nameDest": ["R1", "R1", "R1", "R1"],
+                "nameOrig": ["A", "B", "C", "D"],
+                "amount": [10.0, 20.0, 30.0, 1.0],
+                "type": ["TRANSFER"] * 4,
+                "isFraud": [0, 0, 0, 0],
+                "isFlaggedFraud": [0] * 4,
+            }
+        )
+        built = CausalFeatureBuilder(dataset_config, schema).build(frame)
+        # step=1 (nameOrig D) is first; among the step=5 tie, input order A,B,C is kept.
+        assert built["nameOrig"].tolist() == ["D", "A", "B", "C"]
+        rebuilt = CausalFeatureBuilder(dataset_config, schema).build(frame)
+        assert rebuilt["nameOrig"].tolist() == built["nameOrig"].tolist()
+
+    def test_account_identity_is_role_aware_transfer_vs_cash_out(self, dataset_config, schema):
+        """TRANSFER rows key on nameDest (funds arriving); CASH_OUT rows key on
+        nameOrig (funds leaving) -- so a mule account M1 that receives a TRANSFER
+        and later performs a CASH_OUT is windowed as ONE account history, not two
+        unrelated PaySim columns."""
+        frame = pd.DataFrame(
+            {
+                "step": [1, 2, 3],
+                "type": ["TRANSFER", "CASH_OUT", "CASH_OUT"],
+                "amount": [100.0, 40.0, 60.0],
+                "nameOrig": ["Sender1", "M1", "M1"],
+                "nameDest": ["M1", "ATM_X", "ATM_Y"],
+                "isFraud": [0, 0, 0],
+                "isFlaggedFraud": [0, 0, 0],
+            }
+        )
+        built = CausalFeatureBuilder(dataset_config, schema).build(frame)
+        assert built[ACCOUNT_CODE].nunique() == 1  # all three rows belong to M1
+        assert built["nameDest"].tolist() == ["M1", "M1", "M1"]  # role-aware identity column
+        assert built["nameDest_raw"].tolist() == ["M1", "ATM_X", "ATM_Y"]  # original value preserved
+        assert built[HISTORY_LENGTH].tolist() == [0, 1, 2]  # one continuous history for M1
+
 
 class TestSequenceBuilderCausality:
     """P0 'Audit sequence construction': windowing/padding/masking must be
@@ -167,6 +208,20 @@ class TestSequenceBuilderCausality:
         first_example_mask = batch.mask[0]
         assert first_example_mask.tolist() == [0.0, 0.0, 0.0, 0.0, 1.0]
         assert np.all(batch.sequences[0, :4, :] == 0.0)
+
+    def test_padding_mask_exhaustive_for_every_valid_length_1_through_window(self, dataset_config, schema):
+        """TODO P1.3: mask must contain EXACTLY the real (non-padded) positions,
+        left-padded, for every valid history length from 1 up to window_length --
+        not just the single length=1 case covered above."""
+        window = 5
+        built = self._built_frame(dataset_config, schema, n_receivers=1, steps_per_receiver=window + 3)
+        config = SequenceConfig(window_length=window, min_history_length=1)
+        batch = SequenceBuilder(config, schema).build(built)
+        for i, mask in enumerate(batch.mask):
+            expected_len = min(i + 1, window)
+            expected_mask = [0.0] * (window - expected_len) + [1.0] * expected_len
+            assert mask.tolist() == expected_mask, f"example {i}: expected {expected_mask}, got {mask.tolist()}"
+            assert np.all(batch.sequences[i, : window - expected_len, :] == 0.0)
 
     def test_min_history_length_filters_examples_without_enough_history(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema, n_receivers=1, steps_per_receiver=3)
@@ -235,6 +290,40 @@ class TestReceiverSplitLeakage:
         built = self._built_frame(dataset_config, schema)
         splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
         splits_b = self._evaluator(dataset_config)._stratified_receiver_split(built)
+        for key in ("train", "val", "test"):
+            np.testing.assert_array_equal(splits_a[key], splits_b[key])
+
+    def test_split_does_not_use_receiver_fraud_rate(self, dataset_config, schema):
+        """TODO P1.4: relabeling WHICH receivers are fraud (keeping each receiver's
+        transaction COUNT fixed) must not change the split, since stratification
+        is on transaction count, never on isFraud."""
+        built = self._built_frame(dataset_config, schema)
+        splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
+
+        relabeled = built.copy()
+        receivers = relabeled["nameDest"].unique()
+        rng = np.random.default_rng(99)
+        fraud_receivers = set(rng.choice(receivers, size=max(1, len(receivers) // 5), replace=False))
+        relabeled["isFraud"] = relabeled["nameDest"].isin(fraud_receivers).astype(int)
+        splits_b = self._evaluator(dataset_config)._stratified_receiver_split(relabeled)
+
+        for key in ("train", "val", "test"):
+            np.testing.assert_array_equal(splits_a[key], splits_b[key])
+
+    def test_split_does_not_use_receiver_fraud_rate(self, dataset_config, schema):
+        """TODO P1.4: relabeling WHICH receivers are fraud (keeping each receiver's
+        transaction COUNT fixed) must not change the split, since stratification
+        is on transaction count, never on isFraud."""
+        built = self._built_frame(dataset_config, schema)
+        splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
+
+        relabeled = built.copy()
+        receivers = relabeled["nameDest"].unique()
+        rng = np.random.default_rng(99)
+        fraud_receivers = set(rng.choice(receivers, size=max(1, len(receivers) // 5), replace=False))
+        relabeled["isFraud"] = relabeled["nameDest"].isin(fraud_receivers).astype(int)
+        splits_b = self._evaluator(dataset_config)._stratified_receiver_split(relabeled)
+
         for key in ("train", "val", "test"):
             np.testing.assert_array_equal(splits_a[key], splits_b[key])
 

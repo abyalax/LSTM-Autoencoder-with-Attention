@@ -1,0 +1,34 @@
+{
+  "artifact_version": "version_25_loss",
+  "selection_metric": "val_loss",
+  "architecture": "plain",
+  "window_length": 1,
+  "seeds": [
+    42
+  ],
+  "model_config": {
+    "attention": false,
+    "bottleneck": false,
+    "attention_pooling": false,
+    "hidden_dim": 64,
+    "bottleneck_dim": null,
+    "num_layers": 2,
+    "dropout": 0.1,
+    "decoder": "lstm",
+    "parameter_count": 118341
+  },
+  "train_config": {
+    "optimizer": "adam",
+    "batch_size": 16384,
+    "max_epochs": 50,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "patience": 5,
+    "min_delta": 0.01,
+    "selection_metric": "val_loss",
+    "device": "cuda"
+  },
+  "checkpoints": [
+    "lstm_ae_w1_plain_seed42_best.pt"
+  ]
+}

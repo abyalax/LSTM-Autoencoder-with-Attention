@@ -13,11 +13,13 @@ from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     ACCOUNT_CODE,
     AMOUNT_EPSILON,
+    CASH_OUT_TYPE,
     HISTORY_BUCKET,
     HISTORY_LENGTH,
     IS_NEW_RECEIVER,
     LOG_AMOUNT_RATIO,
     STEP_DIFF,
+    TIE_BREAK_RANK,
     CausalFeatureBuilder,
 )
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
@@ -521,12 +523,23 @@ class PipelineAudit:
         return self._builder.build(sample.assign(**{ROW_ID: np.arange(len(sample))}))
 
     def _reference_features(self, sample: pd.DataFrame) -> pd.DataFrame:
-        """Loop-based reimplementation of the history features, one receiver at a time."""
+        """Loop-based reimplementation of the history features, one receiver at a time.
+
+        Must match CausalFeatureBuilder's role-aware account identity: TRANSFER rows
+        use nameDest, CASH_OUT rows use nameOrig, so a mule's TRANSFER-in and CASH_OUT-out
+        history is one continuous sequence. Also must match the tie-break rank for same-step
+        transactions.
+        """
         schema = self._schema
-        rows = sample.assign(**{ROW_ID: np.arange(len(sample))})
+        row_ids = np.arange(len(sample))
+        rows = sample.assign(**{ROW_ID: row_ids})
+        # Role-aware account identity, matching CausalFeatureBuilder
+        is_cash_out = rows[schema.transaction_type_column] == CASH_OUT_TYPE
+        account_identity = rows[schema.receiver_column].where(~is_cash_out, rows[schema.sender_column])
+        rows = rows.assign(account_identity=account_identity, _tie_break_rank=row_ids)
         out: list[pd.DataFrame] = []
-        for _, group in rows.groupby(schema.receiver_column, sort=False):
-            group = group.sort_values(schema.timestamp_column, kind="stable")
+        for _, group in rows.groupby("account_identity", sort=False):
+            group = group.sort_values([schema.timestamp_column, "_tie_break_rank"], kind="stable")
             amounts = group[schema.amount_column].to_numpy(dtype="float64")
             steps = group[schema.timestamp_column].to_numpy()
             history = np.arange(len(group))

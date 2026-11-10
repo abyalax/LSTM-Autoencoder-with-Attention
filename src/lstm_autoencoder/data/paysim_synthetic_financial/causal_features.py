@@ -14,7 +14,13 @@ STEP_DIFF = "step_diff"
 LOG_AMOUNT_RATIO = "log_amount_ratio"
 IS_NEW_RECEIVER = "is_new_receiver"
 HISTORY_BUCKET = "history_bucket"
+TIE_BREAK_RANK = "_tie_break_rank"
 AMOUNT_EPSILON = 1e-9
+# Role-aware account identity: which column holds the account being analyzed,
+# keyed by transaction type. Decided so a TRANSFER-in followed by a CASH_OUT-out
+# can be linked to the SAME physical account (the money-mule hypothesis this
+# research tests), instead of two unrelated PaySim columns.
+CASH_OUT_TYPE = "CASH_OUT"
 
 DERIVED_FEATURES: tuple[str, ...] = (
     HISTORY_LENGTH,
@@ -44,11 +50,39 @@ class CausalFeatureBuilder:
         Every derived value of a transaction depends only on that transaction
         and on earlier transactions of the same account, so the same features
         can be computed in a streaming setting.
+
+        Account identity is role-aware: for a TRANSFER row the account under
+        analysis is `nameDest` (funds arriving), for a CASH_OUT row it is
+        `nameOrig` (funds leaving). This is what lets a receiver's TRANSFER-in
+        history and later CASH_OUT-out be windowed as one account history; using
+        `nameDest` uniformly for both types (the previous behavior) would window
+        CASH_OUT rows under the withdrawing merchant/ATM code instead of the
+        money-mule account itself. The original `receiver_column` value is kept
+        under `<receiver_column>_raw` for audits.
+
+        Ties on (account, step): PaySim's `step` is only hour-granular, so two
+        transactions of the same account can share a step. The tie-break is the
+        row's position in the input `frame` (stable sort), kept deterministic and
+        reproducible via an explicit rank column -- this is an arbitrary but fixed
+        ordering, not a claim that the input file encodes true sub-step chronology.
         """
-        codes = pd.factorize(frame[self._schema.receiver_column])[0]
+        receiver_col = self._schema.receiver_column
+        raw_receiver_col = f"{receiver_col}_raw"
+        is_cash_out = frame[self._schema.transaction_type_column] == CASH_OUT_TYPE
+        account_identity = frame[receiver_col].where(~is_cash_out, frame[self._schema.sender_column])
+
+        tie_break_rank = np.arange(len(frame))
+        codes = pd.factorize(account_identity)[0]
         ordered = (
-            frame.assign(**{ACCOUNT_CODE: codes})
-            .sort_values([ACCOUNT_CODE, self._schema.timestamp_column], kind="stable")
+            frame.assign(
+                **{
+                    raw_receiver_col: frame[receiver_col],
+                    receiver_col: account_identity,
+                    ACCOUNT_CODE: codes,
+                    TIE_BREAK_RANK: tie_break_rank,
+                }
+            )
+            .sort_values([ACCOUNT_CODE, self._schema.timestamp_column, TIE_BREAK_RANK], kind="stable")
             .reset_index(drop=True)
         )
         groups = ordered.groupby(ACCOUNT_CODE, sort=False)
