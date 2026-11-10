@@ -297,8 +297,8 @@ class ResultsSummarizer:
             rows = [
                 [
                     name,
-                    self._format(v["d_auc_mean"], v["d_auc_std"]),
-                    self._format(v["d_ap_mean"], v["d_ap_std"]),
+                    self._format(v["d_auc_mean"], v["d_auc_std"]) if "d_auc_mean" in v else "-",
+                    self._format(v["d_ap_mean"], v["d_ap_std"]) if "d_ap_mean" in v else "-",
                     self._ci_count(v),
                     self._ci_count(v, "seeds_ap_ci_above_0"),
                 ]
