@@ -1,0 +1,10 @@
+Run config: architecture=bottleneck | W=10 | seeds=[42, 123, 2026]
+[seed 42] best_epoch 32 (val_loss) | val loss 0.00697 | val AUC 0.6371 (peak 0.6692 @ep36) | test AUC 0.6340 | test AP 0.0043 | recall@0.1%=0.0017 | recall@1%=0.0017
+[seed 123] best_epoch 49 (val_loss) | val loss 0.00398 | val AUC 0.6244 (peak 0.6718 @ep4) | test AUC 0.6114 | test AP 0.0038 | recall@0.1%=0.0017 | recall@1%=0.0017
+[seed 2026] best_epoch 36 (val_loss) | val loss 0.00448 | val AUC 0.5163 (peak 0.6701 @ep7) | test AUC 0.5102 | test AP 0.0031 | recall@0.1%=0.0017 | recall@1%=0.0017
+
+---------------------------------------------------------------------------------------------
+LSTM-Autoencoder multi-seed summary (W=10, seeds=[42, 123, 2026])
+---------------------------------------------------------------------------------------------
+val loss 0.00515 +/- 0.00160 | val AUC 0.5926 +/- 0.0664 (peak 0.6704)
+test AUC 0.5852 +/- 0.0659 | test AP 0.0037 +/- 0.0006 | recall@0.1%=0.0017+/-0.0000 | recall@1%=0.0017+/-0.0000

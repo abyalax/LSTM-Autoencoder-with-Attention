@@ -4,6 +4,19 @@
 > Active focus: pipeline integrity, reconstruction-score diagnostics, and final evaluation gaps.  
 > Convention: `W` is the sequence window length; current grid is `W ∈ {1,3,5,10}`. Unless stated otherwise, AUC/AP refer to the held-out test split.
 
+## 2026-11-11 session (checkpoint/pipeline revision guard, see `0005-*.patch`)
+
+Audit of `artifacts/` vs. code history found that the standalone and hybrid reports of `29c985a` score
+checkpoints that were trained BEFORE the final pipeline: `score_strategy.json` binds `version_2..17` (seeds 123/2026
+of every configuration, seed 42 of 14 configurations; trained 2026-11-07/08) and only `version_28`/`version_30`
+(seed 42, attn/plain, W=1; trained 2026-11-10 15:43-16:25) are newer, yet role-aware identity, strict-earlier-step
+features, right-padding + `pack_padded_sequence` and the label-free split landed afterwards. `load_state_dict`
+accepts them because tensor shapes did not change, so the mix was silent. Patch: `model/revision.py` stamps
+`PIPELINE_REVISION` into `metadata.json` at training time and `Trainer.build_eval_model` refuses any checkpoint
+without the current stamp. **Everything AE-dependent (standalone tables, hybrid tables, score strategy) must be
+regenerated after retraining on this revision**; LR/GBM/IsolationForest reports must also be re-run on HEAD
+(`ablation 20261110_121107` and `eval-unsupervised 20261107_065750` predate it).
+
 ## 2026-11-10 session (checklist validation pass, see `0003-*.patch`)
 
 Validated the "pre-submit checklist" against the ACTUAL code (not this file's

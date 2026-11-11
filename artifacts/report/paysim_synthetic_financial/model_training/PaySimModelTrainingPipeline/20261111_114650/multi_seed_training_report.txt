@@ -1,0 +1,10 @@
+Run config: architecture=attn_pool | W=5 | seeds=[42, 123, 2026]
+[seed 42] best_epoch 34 (val_loss) | val loss 0.00640 | val AUC 0.5329 (peak 0.6750 @ep3) | test AUC 0.5267 | test AP 0.0032 | recall@0.1%=0.0017 | recall@1%=0.0017
+[seed 123] best_epoch 43 (val_loss) | val loss 0.00534 | val AUC 0.6587 (peak 0.6704 @ep34) | test AUC 0.6371 | test AP 0.0047 | recall@0.1%=0.0017 | recall@1%=0.0017
+[seed 2026] best_epoch 27 (val_loss) | val loss 0.00792 | val AUC 0.4483 (peak 0.6751 @ep5) | test AUC 0.4352 | test AP 0.0027 | recall@0.1%=0.0017 | recall@1%=0.0017
+
+---------------------------------------------------------------------------------------------
+LSTM-Autoencoder multi-seed summary (W=5, seeds=[42, 123, 2026])
+---------------------------------------------------------------------------------------------
+val loss 0.00655 +/- 0.00129 | val AUC 0.5466 +/- 0.1058 (peak 0.6735)
+test AUC 0.5330 +/- 0.1011 | test AP 0.0036 +/- 0.0011 | recall@0.1%=0.0017+/-0.0000 | recall@1%=0.0017+/-0.0000

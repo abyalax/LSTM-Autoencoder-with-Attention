@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.model.config import SCORE_STRATEGIES, ModelConfig, TrainConfig
 from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
+from lstm_autoencoder.model.revision import assert_checkpoint_compatible
 
 
 @dataclass
@@ -151,7 +152,12 @@ class Trainer:
 
     def build_eval_model(self, checkpoint_path: Path) -> LSTMAutoencoder:
         """Build the configured architecture and load trained weights, for
-        inference only (no optimizer, no training loop)."""
+        inference only (no optimizer, no training loop).
+
+        Raises `IncompatibleCheckpointError` for checkpoints trained before the
+        current pipeline revision (see `revision.py`).
+        """
+        assert_checkpoint_compatible(checkpoint_path)
         model = self._build_model()
         model.load_state_dict(torch.load(checkpoint_path, map_location=self._device))
         model.eval()

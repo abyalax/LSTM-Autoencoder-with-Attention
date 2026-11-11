@@ -1,0 +1,39 @@
+{
+  "artifact_version": "version_1_loss",
+  "pipeline_revision": "2026-11-10-role-aware-strict-step-rightpad-v1",
+  "selection_metric": "val_loss",
+  "architecture": "plain",
+  "window_length": 10,
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "model_config": {
+    "attention": false,
+    "bottleneck": false,
+    "attention_pooling": false,
+    "hidden_dim": 64,
+    "bottleneck_dim": null,
+    "num_layers": 2,
+    "dropout": 0.1,
+    "decoder": "lstm",
+    "parameter_count": 118341
+  },
+  "train_config": {
+    "optimizer": "adam",
+    "batch_size": 16384,
+    "max_epochs": 50,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "patience": 5,
+    "min_delta": 0.01,
+    "selection_metric": "val_loss",
+    "device": "cuda"
+  },
+  "checkpoints": [
+    "lstm_ae_w10_plain_seed42_best.pt",
+    "lstm_ae_w10_plain_seed123_best.pt",
+    "lstm_ae_w10_plain_seed2026_best.pt"
+  ]
+}

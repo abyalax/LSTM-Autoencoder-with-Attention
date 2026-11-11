@@ -1,0 +1,21 @@
+
+---------------------------------------------------------------------------------------------
+Score Strategy Selection (validation only, seeds=[42, 123, 2026])
+---------------------------------------------------------------------------------------------
+[plain|w1] val AP mean=0.00513 last=0.00513 -> mean
+[attn|w1] val AP mean=0.00494 last=0.00494 -> mean
+[attn_pool|w1] val AP mean=0.00557 last=0.00557 -> mean
+[bottleneck|w1] val AP mean=0.00513 last=0.00513 -> mean
+[plain|w3] val AP mean=0.00592 last=0.00569 -> mean
+[attn|w3] val AP mean=0.00464 last=0.00457 -> mean
+[attn_pool|w3] val AP mean=0.00527 last=0.00521 -> mean
+[bottleneck|w3] val AP mean=0.00480 last=0.00464 -> mean
+[plain|w5] val AP mean=0.00513 last=0.00502 -> mean
+[attn|w5] val AP mean=0.00442 last=0.00438 -> mean
+[attn_pool|w5] val AP mean=0.00419 last=0.00418 -> mean
+[bottleneck|w5] val AP mean=0.00513 last=0.00506 -> mean
+[plain|w10] val AP mean=0.00552 last=0.00513 -> mean
+[attn|w10] val AP mean=0.00366 last=0.00368 -> last
+[attn_pool|w10] val AP mean=0.00432 last=0.00430 -> mean
+[bottleneck|w10] val AP mean=0.00427 last=0.00429 -> last
+Frozen registry written to C:\Users\abya\python\lstm-autoencoder\artifacts\model\paysim_synthetic_financial\score_strategy.json

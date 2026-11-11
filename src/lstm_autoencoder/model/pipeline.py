@@ -24,6 +24,7 @@ from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConf
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
 from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
+from lstm_autoencoder.model.revision import PIPELINE_REVISION, REVISION_KEY
 from lstm_autoencoder.model.sequence_builder import SequenceBatch, SequenceBuilder
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
@@ -163,6 +164,7 @@ class PaySimModelTrainingPipeline:
         config = self._model_config
         run_config = {
             "artifact_version": self._artifact_version_dir.name,
+            REVISION_KEY: PIPELINE_REVISION,
             "selection_metric": self._train_config.selection_metric,
             "architecture": config.architecture_tag,
             "window_length": self._sequence_config.window_length,

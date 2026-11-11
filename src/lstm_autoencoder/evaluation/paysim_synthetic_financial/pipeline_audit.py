@@ -192,7 +192,6 @@ class PipelineAudit:
 
     def check_receiver_isolation(self, frame: pd.DataFrame, sample: pd.DataFrame) -> AuditFinding:
         """Features of the sampled receivers must be the same whether built alone or inside the full dataset."""
-        receiver = self._schema.receiver_column
         full = self._builder.build(frame.assign(**{ROW_ID: np.arange(len(frame))}))
         original_ids = sample.index.to_numpy()
         full_part = full[full[ROW_ID].isin(original_ids)].set_index(ROW_ID)[list(DERIVED)].sort_index()
@@ -601,7 +600,6 @@ class PipelineAudit:
         Samples based on the role-aware account identity (nameDest for TRANSFER, nameOrig for CASH_OUT)
         to match the receiver transformation done by CausalFeatureBuilder.
         """
-        receiver = self._schema.receiver_column
         account_code = account_identity(frame, self._schema)
         counts = account_code.value_counts()
         n = min(self._config.sample_receivers, len(counts))

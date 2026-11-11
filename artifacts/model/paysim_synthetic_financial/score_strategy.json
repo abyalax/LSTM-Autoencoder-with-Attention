@@ -1,0 +1,434 @@
+{
+  "frozen_at": "2026-11-11T07:39:47+00:00",
+  "selection_split": "val",
+  "selection_metric": "average_precision",
+  "candidates": [
+    "mean",
+    "last"
+  ],
+  "default_on_tie": "mean",
+  "min_gain": 0.0,
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "entries": {
+    "plain|w1": {
+      "architecture": "plain",
+      "window_length": 1,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005133562583189414,
+        "last": 0.005133562583189414
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005986058386570851,
+          0.0035475287622647837,
+          0.005867100600732606
+        ],
+        "last": [
+          0.005986058386570851,
+          0.0035475287622647837,
+          0.005867100600732606
+        ]
+      },
+      "checkpoints": [
+        "version_9_loss/lstm_ae_w1_plain_seed42_best.pt",
+        "version_9_loss/lstm_ae_w1_plain_seed123_best.pt",
+        "version_9_loss/lstm_ae_w1_plain_seed2026_best.pt"
+      ]
+    },
+    "attn|w1": {
+      "architecture": "attn",
+      "window_length": 1,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.004942392646739571,
+        "last": 0.004942392646739571
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005546433264563876,
+          0.004369043203620025,
+          0.004911701472034813
+        ],
+        "last": [
+          0.005546433264563876,
+          0.004369043203620025,
+          0.004911701472034813
+        ]
+      },
+      "checkpoints": [
+        "version_14_loss/lstm_ae_w1_attn_seed42_best.pt",
+        "version_14_loss/lstm_ae_w1_attn_seed123_best.pt",
+        "version_14_loss/lstm_ae_w1_attn_seed2026_best.pt"
+      ]
+    },
+    "attn_pool|w1": {
+      "architecture": "attn_pool",
+      "window_length": 1,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005573312786453586,
+        "last": 0.005573312786453586
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005933964239790372,
+          0.006092751629712397,
+          0.004693222489857987
+        ],
+        "last": [
+          0.005933964239790372,
+          0.006092751629712397,
+          0.004693222489857987
+        ]
+      },
+      "checkpoints": [
+        "version_15_loss/lstm_ae_w1_attn_pool_seed42_best.pt",
+        "version_15_loss/lstm_ae_w1_attn_pool_seed123_best.pt",
+        "version_15_loss/lstm_ae_w1_attn_pool_seed2026_best.pt"
+      ]
+    },
+    "bottleneck|w1": {
+      "architecture": "bottleneck",
+      "window_length": 1,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005133562583189414,
+        "last": 0.005133562583189414
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005986058386570851,
+          0.0035475287622647837,
+          0.005867100600732606
+        ],
+        "last": [
+          0.005986058386570851,
+          0.0035475287622647837,
+          0.005867100600732606
+        ]
+      },
+      "checkpoints": [
+        "version_16_loss/lstm_ae_w1_bottleneck_seed42_best.pt",
+        "version_16_loss/lstm_ae_w1_bottleneck_seed123_best.pt",
+        "version_16_loss/lstm_ae_w1_bottleneck_seed2026_best.pt"
+      ]
+    },
+    "plain|w3": {
+      "architecture": "plain",
+      "window_length": 3,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.00592261007260128,
+        "last": 0.005689939444090475
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005793248200830178,
+          0.005724859880767245,
+          0.006249722136206418
+        ],
+        "last": [
+          0.005702487605532688,
+          0.005403327576285272,
+          0.005964003150453465
+        ]
+      },
+      "checkpoints": [
+        "version_10_loss/lstm_ae_w3_plain_seed42_best.pt",
+        "version_10_loss/lstm_ae_w3_plain_seed123_best.pt",
+        "version_10_loss/lstm_ae_w3_plain_seed2026_best.pt"
+      ]
+    },
+    "attn|w3": {
+      "architecture": "attn",
+      "window_length": 3,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.004643852310709874,
+        "last": 0.004567065118440342
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.004568319592710073,
+          0.00465532446920245,
+          0.004707912870217097
+        ],
+        "last": [
+          0.004516465481456598,
+          0.004567256497050819,
+          0.0046174733768136085
+        ]
+      },
+      "checkpoints": [
+        "version_11_loss/lstm_ae_w3_attn_seed42_best.pt",
+        "version_11_loss/lstm_ae_w3_attn_seed123_best.pt",
+        "version_11_loss/lstm_ae_w3_attn_seed2026_best.pt"
+      ]
+    },
+    "attn_pool|w3": {
+      "architecture": "attn_pool",
+      "window_length": 3,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005272716976265247,
+        "last": 0.005208821792385185
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.006038978800705569,
+          0.00495018702988231,
+          0.004828985098207863
+        ],
+        "last": [
+          0.005952099999740395,
+          0.004939237059999078,
+          0.004735128317416085
+        ]
+      },
+      "checkpoints": [
+        "version_12_loss/lstm_ae_w3_attn_pool_seed42_best.pt",
+        "version_12_loss/lstm_ae_w3_attn_pool_seed123_best.pt",
+        "version_12_loss/lstm_ae_w3_attn_pool_seed2026_best.pt"
+      ]
+    },
+    "bottleneck|w3": {
+      "architecture": "bottleneck",
+      "window_length": 3,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.004804086591098226,
+        "last": 0.004643064322563631
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.004511178278703699,
+          0.004042032475142477,
+          0.005859049019448502
+        ],
+        "last": [
+          0.004347990273497496,
+          0.0038497615567241994,
+          0.005731441137469199
+        ]
+      },
+      "checkpoints": [
+        "version_13_loss/lstm_ae_w3_bottleneck_seed42_best.pt",
+        "version_13_loss/lstm_ae_w3_bottleneck_seed123_best.pt",
+        "version_13_loss/lstm_ae_w3_bottleneck_seed2026_best.pt"
+      ]
+    },
+    "plain|w5": {
+      "architecture": "plain",
+      "window_length": 5,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.00512953138558864,
+        "last": 0.005024962626747929
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005605037606697175,
+          0.004947311612648509,
+          0.004836244937420233
+        ],
+        "last": [
+          0.005411667969791962,
+          0.004687275573971344,
+          0.004975944336480481
+        ]
+      },
+      "checkpoints": [
+        "version_5_loss/lstm_ae_w5_plain_seed42_best.pt",
+        "version_5_loss/lstm_ae_w5_plain_seed123_best.pt",
+        "version_5_loss/lstm_ae_w5_plain_seed2026_best.pt"
+      ]
+    },
+    "attn|w5": {
+      "architecture": "attn",
+      "window_length": 5,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.00442248378822657,
+        "last": 0.00438382670662253
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.004254885924985091,
+          0.0035640299704832673,
+          0.005448535469211351
+        ],
+        "last": [
+          0.004227185679233031,
+          0.003509944447853302,
+          0.005414349992781257
+        ]
+      },
+      "checkpoints": [
+        "version_6_loss/lstm_ae_w5_attn_seed42_best.pt",
+        "version_6_loss/lstm_ae_w5_attn_seed123_best.pt",
+        "version_6_loss/lstm_ae_w5_attn_seed2026_best.pt"
+      ]
+    },
+    "attn_pool|w5": {
+      "architecture": "attn_pool",
+      "window_length": 5,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.004186146594893504,
+        "last": 0.004184464499064382
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.0037155467348205257,
+          0.005637886334002144,
+          0.0032050067158578433
+        ],
+        "last": [
+          0.0037201900966336017,
+          0.005636796423505499,
+          0.0031964069770540455
+        ]
+      },
+      "checkpoints": [
+        "version_7_loss/lstm_ae_w5_attn_pool_seed42_best.pt",
+        "version_7_loss/lstm_ae_w5_attn_pool_seed123_best.pt",
+        "version_7_loss/lstm_ae_w5_attn_pool_seed2026_best.pt"
+      ]
+    },
+    "bottleneck|w5": {
+      "architecture": "bottleneck",
+      "window_length": 5,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005128607355270833,
+        "last": 0.005056292412882628
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005487827615314715,
+          0.00519423575618056,
+          0.004703758694317226
+        ],
+        "last": [
+          0.005488870346568348,
+          0.005059071618582802,
+          0.0046209352734967344
+        ]
+      },
+      "checkpoints": [
+        "version_8_loss/lstm_ae_w5_bottleneck_seed42_best.pt",
+        "version_8_loss/lstm_ae_w5_bottleneck_seed123_best.pt",
+        "version_8_loss/lstm_ae_w5_bottleneck_seed2026_best.pt"
+      ]
+    },
+    "plain|w10": {
+      "architecture": "plain",
+      "window_length": 10,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.005517641038801243,
+        "last": 0.005131206184435241
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.005253018430797756,
+          0.006569363313153059,
+          0.0047305413724529136
+        ],
+        "last": [
+          0.004818305041004175,
+          0.006023511203121685,
+          0.004551802309179864
+        ]
+      },
+      "checkpoints": [
+        "version_1_loss/lstm_ae_w10_plain_seed42_best.pt",
+        "version_1_loss/lstm_ae_w10_plain_seed123_best.pt",
+        "version_1_loss/lstm_ae_w10_plain_seed2026_best.pt"
+      ]
+    },
+    "attn|w10": {
+      "architecture": "attn",
+      "window_length": 10,
+      "strategy": "last",
+      "val_ap": {
+        "mean": 0.003657894855911486,
+        "last": 0.003677614313362139
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.0030266802516845577,
+          0.00472219248978582,
+          0.0032248118262640808
+        ],
+        "last": [
+          0.0030835979690024577,
+          0.004741442720764426,
+          0.003207802250319532
+        ]
+      },
+      "checkpoints": [
+        "version_2_loss/lstm_ae_w10_attn_seed42_best.pt",
+        "version_2_loss/lstm_ae_w10_attn_seed123_best.pt",
+        "version_2_loss/lstm_ae_w10_attn_seed2026_best.pt"
+      ]
+    },
+    "attn_pool|w10": {
+      "architecture": "attn_pool",
+      "window_length": 10,
+      "strategy": "mean",
+      "val_ap": {
+        "mean": 0.004324351021666425,
+        "last": 0.004297183996562384
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.004080916357452297,
+          0.005513578556176298,
+          0.003378558151370681
+        ],
+        "last": [
+          0.004051596644253681,
+          0.005485646253840659,
+          0.0033543090915928134
+        ]
+      },
+      "checkpoints": [
+        "version_3_loss/lstm_ae_w10_attn_pool_seed42_best.pt",
+        "version_3_loss/lstm_ae_w10_attn_pool_seed123_best.pt",
+        "version_3_loss/lstm_ae_w10_attn_pool_seed2026_best.pt"
+      ]
+    },
+    "bottleneck|w10": {
+      "architecture": "bottleneck",
+      "window_length": 10,
+      "strategy": "last",
+      "val_ap": {
+        "mean": 0.0042695871504048796,
+        "last": 0.004287762764730114
+      },
+      "val_ap_per_seed": {
+        "mean": [
+          0.004862897544026787,
+          0.004401806681226028,
+          0.0035440572259618237
+        ],
+        "last": [
+          0.004867658949915912,
+          0.0044117222694146085,
+          0.003583907074859823
+        ]
+      },
+      "checkpoints": [
+        "version_4_loss/lstm_ae_w10_bottleneck_seed42_best.pt",
+        "version_4_loss/lstm_ae_w10_bottleneck_seed123_best.pt",
+        "version_4_loss/lstm_ae_w10_bottleneck_seed2026_best.pt"
+      ]
+    }
+  }
+}
