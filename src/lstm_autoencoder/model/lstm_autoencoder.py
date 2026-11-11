@@ -4,12 +4,21 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from lstm_autoencoder.model.config import compose_architecture_tag
+from lstm_autoencoder.model.config import SCORE_STRATEGIES, compose_architecture_tag
 
 
 class Encoder(nn.Module):
-    """LSTM encoder producing per-step hidden states."""
+    """LSTM encoder producing per-step hidden states, blind to padding.
+
+    Windows are right-padded (real steps first). The batch is packed by each
+    example's real length, so the recurrent state never runs over padded steps:
+    the final (hidden, cell) state is the state AFTER the last real step, and the
+    returned per-step outputs are zero at padded positions. Without packing, a
+    zero-padded step still updates the LSTM state, which makes the representation
+    of one and the same transaction history depend on how much padding follows it.
+    """
 
     def __init__(self, input_dim: int, hidden_dim: int, num_layers: int, dropout: float) -> None:
         """Create the encoder LSTM."""
@@ -22,9 +31,12 @@ class Encoder(nn.Module):
             dropout=dropout if num_layers > 1 else 0.0,
         )
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
-        """Return per-step outputs and the final (hidden, cell) state."""
-        outputs, (hidden, cell) = self.lstm(x)
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+        """Return per-step outputs (zero on padding) and the final (hidden, cell) state."""
+        lengths = mask.sum(dim=1).long().clamp(min=1).cpu()
+        packed = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
+        packed_outputs, (hidden, cell) = self.lstm(packed)
+        outputs, _ = pad_packed_sequence(packed_outputs, batch_first=True, total_length=x.size(1))
         return outputs, (hidden, cell)
 
 
@@ -196,7 +208,7 @@ class LSTMAutoencoder(nn.Module):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """Return the reconstructed sequence, same shape as `x`."""
-        encoded, (hidden, _) = self.encoder(x)
+        encoded, (hidden, _) = self.encoder(x, mask)
         if self.bottleneck_enabled:
             context = self._single_vector_context(hidden[-1], window=x.size(1))
         elif self.attention_pooling_enabled:
@@ -225,7 +237,28 @@ class LSTMAutoencoder(nn.Module):
         return ((x - reconstructed) ** 2).mean(dim=-1) * mask
 
     @staticmethod
-    def reconstruction_error(x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """Per-example mean squared error over real (non-padded) steps only."""
-        step_error = LSTMAutoencoder.stepwise_error(x, reconstructed, mask)
+    def mean_error(step_error: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Mean of the per-step error over the real (non-padded) steps: (batch,)."""
         return step_error.sum(dim=1) / mask.sum(dim=1).clamp(min=1.0)
+
+    @staticmethod
+    def last_error(step_error: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Error of the CURRENT transaction (the last real step, which carries the label): (batch,)."""
+        last_index = (mask.sum(dim=1).long() - 1).clamp(min=0)
+        return step_error.gather(1, last_index.unsqueeze(1)).squeeze(1)
+
+    @staticmethod
+    def reconstruction_error(
+        x: torch.Tensor, reconstructed: torch.Tensor, mask: torch.Tensor, strategy: str = "mean"
+    ) -> torch.Tensor:
+        """Per-example anomaly score over real steps only.
+
+        `strategy="mean"` (also the training loss) averages the error over real steps;
+        `strategy="last"` scores only the current transaction.
+        """
+        if strategy not in SCORE_STRATEGIES:
+            raise ValueError(f"strategy must be one of {SCORE_STRATEGIES}, got {strategy!r}.")
+        step_error = LSTMAutoencoder.stepwise_error(x, reconstructed, mask)
+        if strategy == "last":
+            return LSTMAutoencoder.last_error(step_error, mask)
+        return LSTMAutoencoder.mean_error(step_error, mask)

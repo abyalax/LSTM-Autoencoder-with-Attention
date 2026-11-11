@@ -11,7 +11,14 @@ from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.evaluation.bootstrap import WeightedRankingBootstrap
 from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
-from lstm_autoencoder.model.config import DEFAULT_HIDDEN_DIM, ModelConfig, SequenceConfig, TrainConfig
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_strategy_registry import FrozenScoreStrategy
+from lstm_autoencoder.model.config import (
+    DEFAULT_HIDDEN_DIM,
+    SCORE_STRATEGIES,
+    ModelConfig,
+    SequenceConfig,
+    TrainConfig,
+)
 from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
@@ -34,11 +41,19 @@ class StandaloneConfig:
     fpr_targets: tuple[float, ...] = (0.01, 0.001)
     n_bootstrap: int = 2000
     random_seed: int = 42
+    # None = use the strategy frozen on validation (`select-score-strategy`), which is
+    # REQUIRED for the test split. An explicit value is only allowed on validation.
+    score_strategy: str | None = None
 
     def __post_init__(self) -> None:
-        """Validate the split name."""
+        """Validate the split name and the strategy override."""
         if self.split not in SPLITS:
             raise ValueError(f"split must be one of {SPLITS}, got {self.split!r}.")
+        if self.score_strategy is not None:
+            if self.score_strategy not in SCORE_STRATEGIES:
+                raise ValueError(f"score_strategy must be one of {SCORE_STRATEGIES}, got {self.score_strategy!r}.")
+            if self.split == "test":
+                raise ValueError("The test split must use the frozen strategy; do not override it by hand.")
 
 
 def model_config_for(
@@ -94,7 +109,7 @@ class StandaloneEvaluator:
     def run(self) -> list[dict[str, object]]:
         """Score every configuration, write the report, and return one record per (architecture, window)."""
         self._reporter.display_section(
-            f"STANDALONE LSTM-AE EVALUATION (split={self._config.split}, seeds={list(self._config.seeds)}, "
+            f"StandAlone LSTM-AE Evaluation (split={self._config.split}, seeds={list(self._config.seeds)}, "
             f"bootstrap={self._config.n_bootstrap})"
         )
         records: list[dict[str, object]] = []
@@ -115,6 +130,7 @@ class StandaloneEvaluator:
                     "seeds": list(self._config.seeds),
                     "fpr_targets": list(self._config.fpr_targets),
                     "n_bootstrap": self._config.n_bootstrap,
+                    "score_strategy": self._config.score_strategy or "frozen (per configuration, see records)",
                     "bootstrap_mode": "receiver" if self._config.n_bootstrap > 0 else "none",
                     "hidden_dim": self._hidden_dim,
                     "bottleneck_dim": self._bottleneck_dim,
@@ -156,6 +172,8 @@ class StandaloneEvaluator:
         runs: list[dict[str, object]] = []
         missing: list[int] = []
         parameter_count: int | None = None
+        existing = [path for path in (pipeline.checkpoint_path(seed) for seed in self._config.seeds) if path.exists()]
+        strategy = self._resolve_strategy(model_config.architecture_tag, sequence_config.window_length, existing)
         for seed in self._config.seeds:
             checkpoint = pipeline.checkpoint_path(seed)
             if not checkpoint.exists():
@@ -166,7 +184,7 @@ class StandaloneEvaluator:
             )
             model = trainer.build_eval_model(checkpoint)
             parameter_count = model.parameter_count
-            errors = trainer.predict_errors(model, data.dataset)
+            errors = trainer.predict_errors(model, data.dataset, strategy)
             runs.append(self._score_run(errors, data, seed, str(checkpoint)))
         return {
             "architecture": model_config.architecture_tag,
@@ -175,12 +193,20 @@ class StandaloneEvaluator:
             "hidden_dim": model_config.hidden_dim,
             "bottleneck_dim": model_config.bottleneck_dim,
             "num_layers": model_config.num_layers,
+            "score_strategy": strategy,
             "parameter_count": parameter_count,
             "seeds_found": [int(run["seed"]) for run in runs],  # type: ignore[arg-type]
             "seeds_missing": missing,
             "runs": runs,
             "aggregate": self._aggregate(runs),
         }
+
+    def _resolve_strategy(self, architecture_tag: str, window: int, checkpoints: list) -> str:
+        """Frozen strategy (default) or the explicit validation-only override."""
+        if self._config.score_strategy is not None:
+            return self._config.score_strategy
+        frozen = FrozenScoreStrategy.load(self._dataset_config.artifacts_dir)
+        return frozen.strategy_for(architecture_tag, window, checkpoints)
 
     def _score_run(self, errors: np.ndarray, data: SplitScoringData, seed: int, checkpoint: str) -> dict[str, object]:
         """Metrics, per-bucket metrics and bootstrap CIs of one checkpoint."""

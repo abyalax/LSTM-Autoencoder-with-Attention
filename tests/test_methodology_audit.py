@@ -1,5 +1,10 @@
 """P0 pre-submit methodology audits (TODO.md P0).
 
+Semantics under test (after the pipeline-integrity fix): PaySim `step` is an hourly bucket, so
+same-step order is NOT chronology. History features use strictly earlier steps only, windows
+exclude same-step peers, windows are RIGHT-padded, and the receiver split never reads labels.
+
+
 Each test below is the automated, runnable version of one P0 checklist item:
 no future leak in `CausalFeatureBuilder`, deterministic/causal windowing in
 `SequenceBuilder`, receiver-disjoint splits, and a scaler fit only on
@@ -27,6 +32,7 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
+from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
 from lstm_autoencoder.model.config import SequenceConfig
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
 from lstm_autoencoder.model.sequence_builder import SequenceBuilder
@@ -116,30 +122,70 @@ class TestCausalFeatureBuilder:
         second = CausalFeatureBuilder(dataset_config, schema).build(frame)
         pd.testing.assert_frame_equal(first, second)
 
-    def test_same_step_ties_break_by_input_row_order_deterministically(self, dataset_config, schema):
-        """Three R1 rows share step=5; tie order must follow input row order, every rebuild."""
-        frame = pd.DataFrame(
+    @staticmethod
+    def _tied_frame() -> pd.DataFrame:
+        """One receiver with 2 transactions at step 5, then 1 at step 8, preceded by 1 at step 2."""
+        return pd.DataFrame(
             {
-                "step": [5, 5, 5, 1],
-                "nameDest": ["R1", "R1", "R1", "R1"],
+                "step": [8, 5, 2, 5],
+                "nameDest": ["R"] * 4,
                 "nameOrig": ["A", "B", "C", "D"],
-                "amount": [10.0, 20.0, 30.0, 1.0],
+                "amount": [400.0, 300.0, 100.0, 200.0],
                 "type": ["TRANSFER"] * 4,
                 "isFraud": [0, 0, 0, 0],
                 "isFlaggedFraud": [0] * 4,
             }
         )
+
+    def test_same_step_rows_share_identical_history_features(self, dataset_config, schema):
+        built = CausalFeatureBuilder(dataset_config, schema).build(self._tied_frame())
+        at5 = built[built["step"] == 5]
+        assert len(at5) == 2
+        assert at5[HISTORY_LENGTH].tolist() == [1, 1]  # only the step-2 row is "earlier"
+        assert at5[STEP_DIFF].tolist() == [3, 3]
+        # Each step-5 row is compared with the step-2 amount (100) only; the same-step peer never enters.
+        ratios = dict(zip(at5["amount"], at5[LOG_AMOUNT_RATIO], strict=True))
+        assert ratios[200.0] == pytest.approx(np.log((200.0 + 1e-9) / (100.0 + 1e-9)))
+        assert ratios[300.0] == pytest.approx(np.log((300.0 + 1e-9) / (100.0 + 1e-9)))
+        assert at5[IS_NEW_RECEIVER].tolist() == [0, 0]
+        at8 = built[built["step"] == 8]
+        assert at8[HISTORY_LENGTH].tolist() == [3]  # step 2 and both step-5 rows
+        assert at8[STEP_DIFF].tolist() == [3]
+        expected = np.log((400.0 + 1e-9) / ((100.0 + 300.0 + 200.0) / 3 + 1e-9))
+        assert at8[LOG_AMOUNT_RATIO].iloc[0] == pytest.approx(expected)
+
+    def test_first_step_of_a_receiver_is_new_even_with_same_step_peers(self, dataset_config, schema):
+        frame = pd.DataFrame(
+            {
+                "step": [4, 4],
+                "nameDest": ["R", "R"],
+                "nameOrig": ["A", "B"],
+                "amount": [10.0, 20.0],
+                "type": ["TRANSFER", "TRANSFER"],
+                "isFraud": [0, 1],
+                "isFlaggedFraud": [0, 0],
+            }
+        )
         built = CausalFeatureBuilder(dataset_config, schema).build(frame)
-        # step=1 (nameOrig D) is first; among the step=5 tie, input order A,B,C is kept.
-        assert built["nameOrig"].tolist() == ["D", "A", "B", "C"]
-        rebuilt = CausalFeatureBuilder(dataset_config, schema).build(frame)
-        assert rebuilt["nameOrig"].tolist() == built["nameOrig"].tolist()
+        assert built[IS_NEW_RECEIVER].tolist() == [1, 1]
+        assert built[HISTORY_LENGTH].tolist() == [0, 0]
+
+    def test_output_is_invariant_to_input_row_order(self, dataset_config, schema):
+        """No hidden file-order chronology: any permutation of the rows gives the same features."""
+        frame = self._tied_frame()
+        a = CausalFeatureBuilder(dataset_config, schema).build(frame).set_index("nameOrig").sort_index()
+        b = (
+            CausalFeatureBuilder(dataset_config, schema)
+            .build(frame.sample(frac=1.0, random_state=3))
+            .set_index("nameOrig")
+            .sort_index()
+        )
+        cols = [HISTORY_LENGTH, STEP_DIFF, LOG_AMOUNT_RATIO, IS_NEW_RECEIVER, "history_bucket"]
+        pd.testing.assert_frame_equal(a[cols], b[cols])
 
     def test_account_identity_is_role_aware_transfer_vs_cash_out(self, dataset_config, schema):
-        """TRANSFER rows key on nameDest (funds arriving); CASH_OUT rows key on
-        nameOrig (funds leaving) -- so a mule account M1 that receives a TRANSFER
-        and later performs a CASH_OUT is windowed as ONE account history, not two
-        unrelated PaySim columns."""
+        """TRANSFER rows key on nameDest (funds arriving); CASH_OUT rows on nameOrig (funds leaving), so a
+        mule account that receives a TRANSFER and later cashes out is ONE account history."""
         frame = pd.DataFrame(
             {
                 "step": [1, 2, 3],
@@ -152,10 +198,14 @@ class TestCausalFeatureBuilder:
             }
         )
         built = CausalFeatureBuilder(dataset_config, schema).build(frame)
-        assert built[ACCOUNT_CODE].nunique() == 1  # all three rows belong to M1
+        assert built[ACCOUNT_CODE].nunique() == 1
         assert built["nameDest"].tolist() == ["M1", "M1", "M1"]  # role-aware identity column
         assert built["nameDest_raw"].tolist() == ["M1", "ATM_X", "ATM_Y"]  # original value preserved
-        assert built[HISTORY_LENGTH].tolist() == [0, 1, 2]  # one continuous history for M1
+        assert built[HISTORY_LENGTH].tolist() == [0, 1, 2]
+
+    def test_tie_break_never_uses_the_label(self, dataset_config, schema):
+        builder = CausalFeatureBuilder(dataset_config, schema)
+        assert "isFraud" not in builder.tie_break_columns(self._tied_frame())
 
 
 class TestSequenceBuilderCausality:
@@ -199,29 +249,52 @@ class TestSequenceBuilderCausality:
                 assert amounts[i, pos] < last_amount
                 assert (amounts[i, pos] - r) % 10.0 == 0.0  # belongs to the same receiver's series
 
-    def test_padding_is_left_padding_and_mask_matches(self, dataset_config, schema):
+    def test_padding_is_right_padding_and_mask_matches(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema, n_receivers=1, steps_per_receiver=2)
         config = SequenceConfig(window_length=5, min_history_length=1)
         batch = SequenceBuilder(config, schema).build(built)
-        # history_length=0 (first txn) -> 1 real step, 4 padded; padding must be
-        # on the LEFT (mask = [0,0,0,0,1]) so the real step lands at the window's end.
-        first_example_mask = batch.mask[0]
-        assert first_example_mask.tolist() == [0.0, 0.0, 0.0, 0.0, 1.0]
-        assert np.all(batch.sequences[0, :4, :] == 0.0)
+        # First transaction -> 1 real step + 4 padded; the real step is column 0 (mask = [1,0,0,0,0]).
+        assert batch.mask[0].tolist() == [1.0, 0.0, 0.0, 0.0, 0.0]
+        assert np.all(batch.sequences[0, 1:, :] == 0.0)
+        # Second transaction -> [earlier, current, pad, pad, pad]: current is the LAST REAL column.
+        assert batch.mask[1].tolist() == [1.0, 1.0, 0.0, 0.0, 0.0]
+        assert batch.sequences[1, 1, 0] == built["amount"].iloc[1]
+        assert batch.sequences[1, 0, 0] == built["amount"].iloc[0]
 
-    def test_padding_mask_exhaustive_for_every_valid_length_1_through_window(self, dataset_config, schema):
-        """TODO P1.3: mask must contain EXACTLY the real (non-padded) positions,
-        left-padded, for every valid history length from 1 up to window_length --
-        not just the single length=1 case covered above."""
+    def test_mask_is_exact_for_every_valid_length_1_through_window(self, dataset_config, schema):
+        """Mask holds exactly the real positions (right-padded) for every length 1..W."""
         window = 5
         built = self._built_frame(dataset_config, schema, n_receivers=1, steps_per_receiver=window + 3)
-        config = SequenceConfig(window_length=window, min_history_length=1)
-        batch = SequenceBuilder(config, schema).build(built)
+        batch = SequenceBuilder(SequenceConfig(window_length=window, min_history_length=1), schema).build(built)
         for i, mask in enumerate(batch.mask):
-            expected_len = min(i + 1, window)
-            expected_mask = [0.0] * (window - expected_len) + [1.0] * expected_len
-            assert mask.tolist() == expected_mask, f"example {i}: expected {expected_mask}, got {mask.tolist()}"
-            assert np.all(batch.sequences[i, : window - expected_len, :] == 0.0)
+            length = min(i + 1, window)
+            assert mask.tolist() == [1.0] * length + [0.0] * (window - length)
+            assert np.all(batch.sequences[i, length:, :] == 0.0)
+
+    def test_window_excludes_same_step_peers_and_is_order_independent(self, dataset_config, schema):
+        frame = pd.DataFrame(
+            {
+                "step": [1, 2, 2, 2, 3],
+                "nameDest": ["R"] * 5,
+                "nameOrig": list("ABCDE"),
+                "amount": [10.0, 20.0, 30.0, 40.0, 50.0],
+                "type": ["TRANSFER"] * 5,
+                "isFraud": [0, 0, 0, 0, 0],
+                "isFlaggedFraud": [0] * 5,
+            }
+        )
+        built = CausalFeatureBuilder(dataset_config, schema).build(frame)
+        config = SequenceConfig(window_length=4, min_history_length=1, feature_columns=("amount",))
+        batch = SequenceBuilder(config, schema).build(built)
+        by_amount = {built["amount"].iloc[i]: i for i in range(len(built))}
+        # Row with amount 30 (step 2): window = [10 (step 1), 30]; peers 20 and 40 are NOT in it.
+        window = batch.sequences[by_amount[30.0], :, 0]
+        assert window.tolist() == [10.0, 30.0, 0.0, 0.0]
+        # Row with amount 50 (step 3): earlier steps = {10, 20, 30, 40}; window keeps the last 3 earlier + itself.
+        window = batch.sequences[by_amount[50.0], :, 0]
+        assert window[-1] == 50.0 and sorted(window[:3]) == [20.0, 30.0, 40.0]
+        # Every non-final real step has a strictly earlier step than the current transaction (here: amount order).
+        assert batch.mask[by_amount[50.0]].tolist() == [1.0, 1.0, 1.0, 1.0]
 
     def test_min_history_length_filters_examples_without_enough_history(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema, n_receivers=1, steps_per_receiver=3)
@@ -271,7 +344,7 @@ class TestReceiverSplitLeakage:
 
     def test_splits_partition_rows_disjointly(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema)
-        splits = self._evaluator(dataset_config)._stratified_receiver_split(built)
+        splits = self._evaluator(dataset_config)._receiver_split(built)
         train, val, test = set(splits["train"]), set(splits["val"]), set(splits["test"])
         assert train.isdisjoint(val)
         assert train.isdisjoint(test)
@@ -280,7 +353,7 @@ class TestReceiverSplitLeakage:
 
     def test_no_receiver_has_rows_in_more_than_one_split(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema)
-        splits = self._evaluator(dataset_config)._stratified_receiver_split(built)
+        splits = self._evaluator(dataset_config)._receiver_split(built)
         receivers_in = {name: set(built.iloc[idx]["nameDest"].unique()) for name, idx in splits.items()}
         assert receivers_in["train"].isdisjoint(receivers_in["val"])
         assert receivers_in["train"].isdisjoint(receivers_in["test"])
@@ -288,44 +361,46 @@ class TestReceiverSplitLeakage:
 
     def test_split_is_deterministic_for_a_fixed_seed(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema)
-        splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
-        splits_b = self._evaluator(dataset_config)._stratified_receiver_split(built)
+        splits_a = self._evaluator(dataset_config)._receiver_split(built)
+        splits_b = self._evaluator(dataset_config)._receiver_split(built)
         for key in ("train", "val", "test"):
             np.testing.assert_array_equal(splits_a[key], splits_b[key])
 
     def test_split_does_not_use_receiver_fraud_rate(self, dataset_config, schema):
-        """TODO P1.4: relabeling WHICH receivers are fraud (keeping each receiver's
-        transaction COUNT fixed) must not change the split, since stratification
-        is on transaction count, never on isFraud."""
+        """Changing WHICH receivers are fraud (transaction counts fixed) must not change the split."""
         built = self._built_frame(dataset_config, schema)
-        splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
-
+        splits_a = self._evaluator(dataset_config)._receiver_split(built)
         relabeled = built.copy()
         receivers = relabeled["nameDest"].unique()
-        rng = np.random.default_rng(99)
-        fraud_receivers = set(rng.choice(receivers, size=max(1, len(receivers) // 5), replace=False))
+        fraud_receivers = set(
+            np.random.default_rng(99).choice(receivers, size=max(1, len(receivers) // 5), replace=False)
+        )
         relabeled["isFraud"] = relabeled["nameDest"].isin(fraud_receivers).astype(int)
-        splits_b = self._evaluator(dataset_config)._stratified_receiver_split(relabeled)
-
+        splits_b = self._evaluator(dataset_config)._receiver_split(relabeled)
         for key in ("train", "val", "test"):
             np.testing.assert_array_equal(splits_a[key], splits_b[key])
 
-    def test_split_does_not_use_receiver_fraud_rate(self, dataset_config, schema):
-        """TODO P1.4: relabeling WHICH receivers are fraud (keeping each receiver's
-        transaction COUNT fixed) must not change the split, since stratification
-        is on transaction count, never on isFraud."""
+    def test_split_never_reads_labels(self, dataset_config, schema):
         built = self._built_frame(dataset_config, schema)
-        splits_a = self._evaluator(dataset_config)._stratified_receiver_split(built)
-
-        relabeled = built.copy()
-        receivers = relabeled["nameDest"].unique()
-        rng = np.random.default_rng(99)
-        fraud_receivers = set(rng.choice(receivers, size=max(1, len(receivers) // 5), replace=False))
-        relabeled["isFraud"] = relabeled["nameDest"].isin(fraud_receivers).astype(int)
-        splits_b = self._evaluator(dataset_config)._stratified_receiver_split(relabeled)
-
+        scrambled = built.assign(isFraud=np.random.default_rng(5).integers(0, 2, size=len(built)))
+        splitter = ReceiverSplitter(SplitConfig(), random_seed=42)
+        a = splitter.split(built["nameDest"])
+        b = splitter.split(scrambled["nameDest"])
         for key in ("train", "val", "test"):
-            np.testing.assert_array_equal(splits_a[key], splits_b[key])
+            assert set(a[key]) == set(b[key])
+
+    def test_split_modes_are_label_free_and_fractions_are_respected(self, dataset_config, schema):
+        built = self._built_frame(dataset_config, schema, n_receivers=400)
+        for mode in ("receiver_size", "none"):
+            groups = ReceiverSplitter(SplitConfig(stratify_by=mode), random_seed=7).split(built["nameDest"])
+            n = sum(len(ids) for ids in groups.values())
+            assert n == built["nameDest"].nunique()
+            assert abs(len(groups["train"]) / n - 0.70) < 0.02
+            assert abs(len(groups["val"]) / n - 0.15) < 0.02
+
+    def test_invalid_stratify_mode_is_rejected(self):
+        with pytest.raises(ValueError):
+            SplitConfig(stratify_by="fraud_rate")
 
 
 class TestScalerFitOnTrainNormalOnly:

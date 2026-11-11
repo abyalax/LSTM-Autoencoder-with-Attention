@@ -1,0 +1,415 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder diagnose-scores --dataset paysim_synthetic_financial --window 3 --bottleneck --seeds 42,123,2026 --split val",
+  "run_config": {
+    "architecture": "bottleneck",
+    "window_length": 3,
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "split": "val",
+    "model_config": {
+      "attention": false,
+      "bottleneck": true,
+      "attention_pooling": false,
+      "hidden_dim": 64,
+      "bottleneck_dim": null,
+      "num_layers": 2,
+      "dropout": 0.1
+    }
+  },
+  "score_diagnostics": {
+    "split": "val",
+    "window_length": 3,
+    "architecture": "bottleneck",
+    "per_seed": [
+      {
+        "seed": 42,
+        "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w3_bottleneck_seed42_best.pt",
+        "score_definitions": {
+          "mean": {
+            "auc": 0.6595452713846547,
+            "ap": 0.005283223307285704,
+            "recall@FPR1.0%": 0.004545454545454545,
+            "recall@FPR0.1%": 0.0030303030303030303
+          },
+          "last": {
+            "auc": 0.6565564732137302,
+            "ap": 0.005185491410124738,
+            "recall@FPR1.0%": 0.003787878787878788,
+            "recall@FPR0.1%": 0.0007575757575757576
+          },
+          "max": {
+            "auc": 0.6560396047810787,
+            "ap": 0.0051774723809077765,
+            "recall@FPR1.0%": 0.003787878787878788,
+            "recall@FPR0.1%": 0.0007575757575757576
+          }
+        },
+        "group_stats": {
+          "mean": {
+            "normal": {
+              "n": 414026,
+              "median": 0.12403685227036476,
+              "p90": 1.285625398159027,
+              "p99": 4.269549369812012
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.29854297637939453,
+              "p90": 1.2778180837631226,
+              "p99": 1.7633192539215088
+            }
+          },
+          "last": {
+            "normal": {
+              "n": 414026,
+              "median": 0.12403684854507446,
+              "p90": 1.7294278144836426,
+              "p99": 7.378528118133545
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.29854297637939453,
+              "p90": 1.2778180837631226,
+              "p99": 1.7633192539215088
+            }
+          }
+        },
+        "correlations": {
+          "all": {
+            "spearman_vs_valid_steps": 0.5238409656541637,
+            "spearman_vs_history_bucket": 0.5244240489806347
+          },
+          "normal": {
+            "spearman_vs_valid_steps": 0.5246884398236067,
+            "spearman_vs_history_bucket": 0.5252752476330783
+          },
+          "fraud": {
+            "spearman_vs_valid_steps": 0.06716607527614718,
+            "spearman_vs_history_bucket": 0.06716607527614718
+          }
+        },
+        "per_bucket": {
+          "1": {
+            "n": 371883,
+            "n_fraud": 1318,
+            "fraud_rate": 0.003544125437301517,
+            "auc_mean": 0.7317361656267537,
+            "ap_mean": 0.018544171739630154,
+            "auc_last": 0.7317361656267537,
+            "ap_last": 0.018544171739630154
+          },
+          "2-4": {
+            "n": 33180,
+            "n_fraud": 2,
+            "fraud_rate": 6.027727546714889e-05,
+            "auc_mean": 0.9485954548194587,
+            "ap_mean": 0.026610340283698936,
+            "auc_last": 0.952121887998071,
+            "ap_last": 0.026632145057360262
+          },
+          "5-9": {
+            "n": 9265,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          ">=10": {
+            "n": 1018,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          "pooled": {
+            "n": 415346,
+            "n_fraud": 1320,
+            "fraud_rate": 0.0031780732208809043,
+            "auc_mean": 0.6595452713846547,
+            "auc_last": 0.6565564732137302,
+            "ap_mean": 0.005283223307285704,
+            "ap_last": 0.005185491410124738
+          },
+          "within_bucket_weighted": {
+            "auc_mean": 0.7320647403073487
+          }
+        }
+      },
+      {
+        "seed": 123,
+        "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w3_bottleneck_seed123_best.pt",
+        "score_definitions": {
+          "mean": {
+            "auc": 0.6497604930095885,
+            "ap": 0.004885118519013177,
+            "recall@FPR1.0%": 0.003787878787878788,
+            "recall@FPR0.1%": 0.0030303030303030303
+          },
+          "last": {
+            "auc": 0.6476767068061455,
+            "ap": 0.004824681801609422,
+            "recall@FPR1.0%": 0.003787878787878788,
+            "recall@FPR0.1%": 0.0007575757575757576
+          },
+          "max": {
+            "auc": 0.6476457057886424,
+            "ap": 0.004823757385710605,
+            "recall@FPR1.0%": 0.003787878787878788,
+            "recall@FPR0.1%": 0.0007575757575757576
+          }
+        },
+        "group_stats": {
+          "mean": {
+            "normal": {
+              "n": 414026,
+              "median": 0.21450580656528473,
+              "p90": 1.450587809085846,
+              "p99": 4.8004971742630005
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.3682105094194412,
+              "p90": 1.2207597732543949,
+              "p99": 1.845353429317472
+            }
+          },
+          "last": {
+            "normal": {
+              "n": 414026,
+              "median": 0.21450580656528473,
+              "p90": 2.0781941413879395,
+              "p99": 8.132125854492188
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.36821049451828003,
+              "p90": 1.2207597494125366,
+              "p99": 1.8453534841537476
+            }
+          }
+        },
+        "correlations": {
+          "all": {
+            "spearman_vs_valid_steps": 0.5241581748539937,
+            "spearman_vs_history_bucket": 0.5246804061071548
+          },
+          "normal": {
+            "spearman_vs_valid_steps": 0.5249503798867287,
+            "spearman_vs_history_bucket": 0.5254773256802958
+          },
+          "fraud": {
+            "spearman_vs_valid_steps": 0.06721719101075613,
+            "spearman_vs_history_bucket": 0.06721719101075613
+          }
+        },
+        "per_bucket": {
+          "1": {
+            "n": 371883,
+            "n_fraud": 1318,
+            "fraud_rate": 0.003544125437301517,
+            "auc_mean": 0.7225518216277498,
+            "ap_mean": 0.01429216291172274,
+            "auc_last": 0.7225518216277498,
+            "ap_last": 0.01429216291172274
+          },
+          "2-4": {
+            "n": 33180,
+            "n_fraud": 2,
+            "fraud_rate": 6.027727546714889e-05,
+            "auc_mean": 0.9517752727711134,
+            "ap_mean": 0.045767828662565506,
+            "auc_last": 0.9554222677677979,
+            "ap_last": 0.045793528505392915
+          },
+          "5-9": {
+            "n": 9265,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          ">=10": {
+            "n": 1018,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          "pooled": {
+            "n": 415346,
+            "n_fraud": 1320,
+            "fraud_rate": 0.0031780732208809043,
+            "auc_mean": 0.6497604930095885,
+            "auc_last": 0.6476767068061455,
+            "ap_mean": 0.004885118519013177,
+            "ap_last": 0.004824681801609422
+          },
+          "within_bucket_weighted": {
+            "auc_mean": 0.722899129887058
+          }
+        }
+      },
+      {
+        "seed": 2026,
+        "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w3_bottleneck_seed2026_best.pt",
+        "score_definitions": {
+          "mean": {
+            "auc": 0.6686679051703531,
+            "ap": 0.005770772531913803,
+            "recall@FPR1.0%": 0.0030303030303030303,
+            "recall@FPR0.1%": 0.0007575757575757576
+          },
+          "last": {
+            "auc": 0.6642829971957551,
+            "ap": 0.005583863354386314,
+            "recall@FPR1.0%": 0.0030303030303030303,
+            "recall@FPR0.1%": 0.0007575757575757576
+          },
+          "max": {
+            "auc": 0.6633815661042514,
+            "ap": 0.005563700005574254,
+            "recall@FPR1.0%": 0.0030303030303030303,
+            "recall@FPR0.1%": 0.0007575757575757576
+          }
+        },
+        "group_stats": {
+          "mean": {
+            "normal": {
+              "n": 414026,
+              "median": 0.2843318581581116,
+              "p90": 1.279930591583252,
+              "p99": 4.681521574656169
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.5098158717155457,
+              "p90": 1.6183030724525458,
+              "p99": 2.197817802429199
+            }
+          },
+          "last": {
+            "normal": {
+              "n": 414026,
+              "median": 0.2843318581581116,
+              "p90": 1.7948905229568481,
+              "p99": 8.328672409057617
+            },
+            "fraud": {
+              "n": 1320,
+              "median": 0.5098158717155457,
+              "p90": 1.6183030605316162,
+              "p99": 2.197817802429199
+            }
+          }
+        },
+        "correlations": {
+          "all": {
+            "spearman_vs_valid_steps": 0.524787166648216,
+            "spearman_vs_history_bucket": 0.5255038333357368
+          },
+          "normal": {
+            "spearman_vs_valid_steps": 0.5257383066797671,
+            "spearman_vs_history_bucket": 0.5264584038354876
+          },
+          "fraud": {
+            "spearman_vs_valid_steps": 0.06721719101075613,
+            "spearman_vs_history_bucket": 0.06721719101075613
+          }
+        },
+        "per_bucket": {
+          "1": {
+            "n": 371883,
+            "n_fraud": 1318,
+            "fraud_rate": 0.003544125437301517,
+            "auc_mean": 0.7388398692010869,
+            "ap_mean": 0.028567173368228786,
+            "auc_last": 0.7388398692010869,
+            "ap_last": 0.028567173368228786
+          },
+          "2-4": {
+            "n": 33180,
+            "n_fraud": 2,
+            "fraud_rate": 6.027727546714889e-05,
+            "auc_mean": 0.9379257339200675,
+            "ap_mean": 0.03357682006330655,
+            "auc_last": 0.9421152570980771,
+            "ap_last": 0.03359449812831897
+          },
+          "5-9": {
+            "n": 9265,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          ">=10": {
+            "n": 1018,
+            "n_fraud": 0,
+            "fraud_rate": 0.0,
+            "auc_mean": NaN,
+            "ap_mean": NaN,
+            "auc_last": NaN,
+            "ap_last": NaN
+          },
+          "pooled": {
+            "n": 415346,
+            "n_fraud": 1320,
+            "fraud_rate": 0.0031780732208809043,
+            "auc_mean": 0.6686679051703531,
+            "auc_last": 0.6642829971957551,
+            "ap_mean": 0.005770772531913803,
+            "ap_last": 0.005583863354386314
+          },
+          "within_bucket_weighted": {
+            "auc_mean": 0.7391415144506611
+          }
+        }
+      }
+    ],
+    "aggregate": {
+      "mean": {
+        "auc_mean": 0.6593245565215321,
+        "auc_std": 0.009455638262029699,
+        "ap_mean": 0.005313038119404229,
+        "ap_std": 0.0004435791360152018,
+        "recall@FPR1.0%_mean": 0.003787878787878788,
+        "recall@FPR1.0%_std": 0.0007575757575757575,
+        "recall@FPR0.1%_mean": 0.0022727272727272726,
+        "recall@FPR0.1%_std": 0.001312159702703695
+      },
+      "last": {
+        "auc_mean": 0.656172059071877,
+        "auc_std": 0.008309816532291946,
+        "ap_mean": 0.0051980121887068255,
+        "ap_std": 0.000379745618725759,
+        "recall@FPR1.0%_mean": 0.0035353535353535356,
+        "recall@FPR1.0%_std": 0.0004373865675678984,
+        "recall@FPR0.1%_mean": 0.0007575757575757576,
+        "recall@FPR0.1%_std": 0.0
+      },
+      "max": {
+        "auc_mean": 0.6556889588913242,
+        "auc_std": 0.007873788120916781,
+        "ap_mean": 0.005188309924064212,
+        "ap_std": 0.0003700903395509278,
+        "recall@FPR1.0%_mean": 0.0035353535353535356,
+        "recall@FPR1.0%_std": 0.0004373865675678984,
+        "recall@FPR0.1%_mean": 0.0007575757575757576,
+        "recall@FPR0.1%_std": 0.0
+      }
+    }
+  }
+}

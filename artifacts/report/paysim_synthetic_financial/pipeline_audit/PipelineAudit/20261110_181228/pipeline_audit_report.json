@@ -1,0 +1,297 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder audit-pipeline --dataset paysim_synthetic_financial",
+  "pipeline_audit": {
+    "seed": 42,
+    "sample_receivers": 3000,
+    "windows": [
+      1,
+      3,
+      5,
+      10
+    ],
+    "passed": false,
+    "failed": [
+      "receiver_isolation"
+    ],
+    "findings": [
+      {
+        "name": "feature_reference",
+        "status": "pass",
+        "rows": 66105,
+        "mismatches": {
+          "history_length": 0,
+          "step_diff": 0,
+          "is_new_receiver": 0,
+          "history_bucket": 0,
+          "log_amount_ratio": 0
+        },
+        "max_abs_log_ratio_gap": 8.881784197001252e-16
+      },
+      {
+        "name": "future_independence",
+        "status": "pass",
+        "rows_checked": 58192,
+        "future_rows_perturbed": 7913,
+        "features_moved": {
+          "history_length": 0,
+          "step_diff": 0,
+          "log_amount_ratio": 0,
+          "is_new_receiver": 0,
+          "history_bucket": 0
+        }
+      },
+      {
+        "name": "receiver_isolation",
+        "status": "fail",
+        "receivers": 3000,
+        "features_moved": {
+          "history_length": 25,
+          "step_diff": 23,
+          "log_amount_ratio": 25,
+          "is_new_receiver": 19,
+          "history_bucket": 19
+        }
+      },
+      {
+        "name": "tie_invariance",
+        "status": "pass",
+        "rows": 66105,
+        "share_rows_with_same_step_peer": 0.061281294909613496,
+        "fraud_rate_rows_with_peer": 0.00024685262898049864,
+        "fraud_rate_rows_without_peer": 0.001337544719115609,
+        "share_rows_changed_when_all_rows_are_shuffled": {
+          "history_length": 0.0,
+          "step_diff": 0.0,
+          "log_amount_ratio": 0.0,
+          "is_new_receiver": 0.0,
+          "history_bucket": 0.0
+        },
+        "reading": "`step` is hourly, so the order of same-step transactions of one receiver is not observable. History features use only strictly earlier steps and windows exclude same-step peers, so shuffling the input rows must change nothing."
+      },
+      {
+        "name": "time_structure",
+        "status": "info",
+        "fraud_rate_by_hour_min": 0.0011402546568733685,
+        "fraud_rate_by_hour_max": 0.5791139240506329,
+        "fraud_rate_max_over_min": 507.8812180768376,
+        "normal_share_by_hour_max_over_min": 1258.7857142857142,
+        "fraud_share_by_hour_max_over_min": 1.3686131386861315,
+        "reading": "Baselines receive the raw `step` column; tree models can turn it into hour-of-day. A large fraud-rate spread across hours means part of their advantage is a simulator artefact the five AE features cannot use."
+      },
+      {
+        "name": "receiver_semantics",
+        "status": "info",
+        "sequence_entity": "role-aware account: nameDest for TRANSFER, nameOrig for CASH_OUT",
+        "cash_out_rows": 2237500,
+        "share_cash_out_origin_was_earlier_transfer_receiver": 5.184357541899441e-05,
+        "fraud_cash_out_rows": 4116,
+        "share_fraud_cash_out_origin_was_earlier_transfer_receiver": 0.0,
+        "reading": "A low share means most CASH_OUT rows have no earlier TRANSFER-in on the same account, so their windows hold no mule-path context; state this coverage in Methods/Limitations."
+      },
+      {
+        "name": "sequences_w1",
+        "status": "pass",
+        "examples": 66105,
+        "deterministic_rebuild": true,
+        "example_count_matches_eligible_rows": true,
+        "structure": {
+          "mask_is_binary": true,
+          "padding_is_right_only": true,
+          "first_step_is_always_real": true,
+          "padded_features_are_zero": true,
+          "real_steps_equal_earlier_steps_plus_current": true
+        },
+        "sampled_examples_checked": 2000,
+        "sampled_examples_wrong": 0
+      },
+      {
+        "name": "sequences_w3",
+        "status": "pass",
+        "examples": 66105,
+        "deterministic_rebuild": true,
+        "example_count_matches_eligible_rows": true,
+        "structure": {
+          "mask_is_binary": true,
+          "padding_is_right_only": true,
+          "first_step_is_always_real": true,
+          "padded_features_are_zero": true,
+          "real_steps_equal_earlier_steps_plus_current": true
+        },
+        "sampled_examples_checked": 2000,
+        "sampled_examples_wrong": 0
+      },
+      {
+        "name": "sequences_w5",
+        "status": "pass",
+        "examples": 66105,
+        "deterministic_rebuild": true,
+        "example_count_matches_eligible_rows": true,
+        "structure": {
+          "mask_is_binary": true,
+          "padding_is_right_only": true,
+          "first_step_is_always_real": true,
+          "padded_features_are_zero": true,
+          "real_steps_equal_earlier_steps_plus_current": true
+        },
+        "sampled_examples_checked": 2000,
+        "sampled_examples_wrong": 0
+      },
+      {
+        "name": "sequences_w10",
+        "status": "pass",
+        "examples": 66105,
+        "deterministic_rebuild": true,
+        "example_count_matches_eligible_rows": true,
+        "structure": {
+          "mask_is_binary": true,
+          "padding_is_right_only": true,
+          "first_step_is_always_real": true,
+          "padded_features_are_zero": true,
+          "real_steps_equal_earlier_steps_plus_current": true
+        },
+        "sampled_examples_checked": 2000,
+        "sampled_examples_wrong": 0
+      },
+      {
+        "name": "split_disjoint",
+        "status": "pass",
+        "receiver_overlaps": {
+          "train&val": 0,
+          "train&test": 0,
+          "val&test": 0
+        },
+        "every_receiver_assigned": true,
+        "rows": {
+          "train": 1939247,
+          "val": 415346,
+          "test": 415816
+        },
+        "fraud_rows": {
+          "train": 5693,
+          "val": 1320,
+          "test": 1200
+        },
+        "fraud_rate": {
+          "train": 0.0029356755482927138,
+          "val": 0.0031780732208809043,
+          "test": 0.0028858918367739577
+        }
+      },
+      {
+        "name": "scaler_fit_on_train_normal_only",
+        "status": "pass",
+        "train_normal_mean_abs_max": 8.579632821394288e-16,
+        "train_normal_std_minus_1_abs_max": 2.220446049250313e-16,
+        "scaled_normal_rows_per_split": {
+          "train": {
+            "mean_abs_max": 8.579632821394288e-16,
+            "std_ratio_range": [
+              0.9999999999999998,
+              1.0
+            ]
+          },
+          "val": {
+            "mean_abs_max": 0.001646017539621885,
+            "std_ratio_range": [
+              0.9924469110113762,
+              1.003096405457848
+            ]
+          },
+          "test": {
+            "mean_abs_max": 0.0030414257856490154,
+            "std_ratio_range": [
+              0.9862204596981489,
+              1.0075627758734094
+            ]
+          }
+        }
+      },
+      {
+        "name": "training_context_contamination_w1",
+        "status": "info",
+        "normal_train_windows": 1933554,
+        "share_with_fraud_in_context": 0.0
+      },
+      {
+        "name": "training_context_contamination_w3",
+        "status": "info",
+        "normal_train_windows": 1933554,
+        "share_with_fraud_in_context": 0.00040857405585776246
+      },
+      {
+        "name": "training_context_contamination_w5",
+        "status": "info",
+        "normal_train_windows": 1933554,
+        "share_with_fraud_in_context": 0.0005301119079167171
+      },
+      {
+        "name": "training_context_contamination_w10",
+        "status": "info",
+        "normal_train_windows": 1933554,
+        "share_with_fraud_in_context": 0.0006009658897553417
+      },
+      {
+        "name": "split_is_label_free",
+        "status": "pass",
+        "receiver_sets_equal_under_random_labels": {
+          "train": true,
+          "val": true,
+          "test": true
+        }
+      },
+      {
+        "name": "split_identical_in_baseline_and_ae",
+        "status": "pass",
+        "receiver_sets_equal": {
+          "train": true,
+          "val": true,
+          "test": true
+        }
+      },
+      {
+        "name": "metric_implementation_lr_full_test",
+        "status": "pass",
+        "abs_gap_auc": 1.1102230246251565e-16,
+        "abs_gap_ap": 6.938893903907228e-18,
+        "n": 415816,
+        "prevalence": 0.0028858918367739577
+      },
+      {
+        "name": "feature_set_comparability",
+        "status": "info",
+        "ae_features": [
+          "amount",
+          "history_length",
+          "is_new_receiver",
+          "log_amount_ratio",
+          "step_diff"
+        ],
+        "baseline_features": [
+          "amount",
+          "history_bucket_1",
+          "history_bucket_2-4",
+          "history_bucket_5-9",
+          "history_bucket_>=10",
+          "history_length",
+          "is_new_receiver",
+          "log_amount_ratio",
+          "step",
+          "step_diff",
+          "type_CASH_OUT",
+          "type_TRANSFER"
+        ],
+        "seen_only_by_baselines": [
+          "history_bucket_1",
+          "history_bucket_2-4",
+          "history_bucket_5-9",
+          "history_bucket_>=10",
+          "step",
+          "type_CASH_OUT",
+          "type_TRANSFER"
+        ],
+        "seen_only_by_ae": [],
+        "reading": "LR, gradient boosting and Isolation Forest see columns the LSTM-AE does not (raw `step`, transaction type). Compare the AE with the `ae_features` baseline variants (same five columns) for a feature-matched comparison."
+      }
+    ]
+  }
+}

@@ -92,24 +92,54 @@ def test_broken_sequence_builder_is_detected(tmp_path, monkeypatch):
     assert finding.status == FAIL
 
 
-def test_ties_are_reported_and_change_features_only_when_ties_exist(tmp_path):
+class _FileOrderBuilder(CausalFeatureBuilder):
+    """The OLD behaviour: same-step rows are ordered by file order and counted as earlier history."""
+
+    def build(self, frame: pd.DataFrame) -> pd.DataFrame:
+        codes = pd.factorize(frame["nameDest"])[0]
+        ordered = frame.assign(**{ACCOUNT_CODE: codes}).sort_values([ACCOUNT_CODE, "step"], kind="stable")
+        ordered = ordered.reset_index(drop=True)
+        groups = ordered.groupby(ACCOUNT_CODE, sort=False)
+        history = groups.cumcount()
+        ordered["history_length"] = history
+        ordered["step_diff"] = groups["step"].diff().fillna(0).astype("int32")
+        prior = (groups["amount"].cumsum() - ordered["amount"]) / history.replace(0, np.nan)
+        ordered["log_amount_ratio"] = np.log((ordered["amount"] + 1e-9) / (prior + 1e-9)).fillna(0)
+        ordered["is_new_receiver"] = (history == 0).astype("int8")
+        ordered["history_bucket"] = np.select([history == 0, history < 4, history < 9], ["1", "2-4", "5-9"], ">=10")
+        return ordered
+
+
+def test_features_are_invariant_to_same_step_order(tmp_path):
     audit = _audit(tmp_path)
     finding = audit.check_tie_sensitivity(_frame(), np.random.default_rng(0))
-    assert finding.status == INFO and finding.detail["share_rows_with_same_step_predecessor"] > 0
+    assert finding.status == PASS
+    assert finding.detail["share_rows_with_same_step_peer"] > 0  # the fixture really has ties
+    assert all(v == 0 for v in finding.detail["share_rows_changed_when_all_rows_are_shuffled"].values())
 
-    untied = pd.DataFrame(
+
+def test_file_order_dependence_is_detected(tmp_path):
+    audit = _audit(tmp_path)
+    audit._builder = _FileOrderBuilder(audit._dataset_config, audit._schema)
+    assert audit.check_tie_sensitivity(_frame(), np.random.default_rng(0)).status == FAIL
+    assert audit.check_feature_reference(_frame()).status == FAIL
+
+
+def test_receiver_semantics_reports_the_mule_path_coverage(tmp_path):
+    frame = pd.DataFrame(
         {
-            "step": np.arange(1, 13),
-            "type": "CASH_OUT",
-            "amount": np.arange(1, 13) * 10.0,
-            "nameOrig": [f"O{i}" for i in range(12)],
-            "nameDest": ["A"] * 6 + ["B"] * 6,
-            "isFraud": 0,
+            "step": [1, 5, 6, 7],
+            "type": ["TRANSFER", "CASH_OUT", "CASH_OUT", "CASH_OUT"],
+            "amount": [100.0, 90.0, 50.0, 20.0],
+            "nameOrig": ["S", "M", "X", "Y"],
+            "nameDest": ["M", "Z", "Z", "Z"],
+            "isFraud": [1, 1, 0, 0],
         }
     )
-    clean = audit.check_tie_sensitivity(untied, np.random.default_rng(0))
-    assert clean.detail["share_rows_with_same_step_predecessor"] == 0
-    assert all(value == 0 for value in clean.detail["share_rows_changed_when_ties_reordered"].values())
+    finding = _audit(tmp_path).check_receiver_semantics(frame)
+    assert finding.status == INFO
+    assert finding.detail["share_cash_out_origin_was_earlier_transfer_receiver"] == pytest.approx(1 / 3)
+    assert finding.detail["share_fraud_cash_out_origin_was_earlier_transfer_receiver"] == 1.0
 
 
 def _random_split(built: pd.DataFrame, leak: bool = False) -> dict[str, pd.Index]:
@@ -139,11 +169,11 @@ def test_context_contamination_matches_brute_force(tmp_path):
         label = built["isFraud"].to_numpy()
         code = built[ACCOUNT_CODE].to_numpy()
         hits = 0
+        step = built["step"].to_numpy()
         for row in normal_rows:
-            start = row
-            while start > 0 and code[start - 1] == code[row] and row - (start - 1) < window:
-                start -= 1
-            hits += int(label[start:row].sum() > 0)
+            same = np.flatnonzero((code == code[row]) & (step < step[row]))  # strictly earlier steps only
+            context = same[-(window - 1) :]
+            hits += int(label[context].sum() > 0)
         assert measured == pytest.approx(hits / len(normal_rows))
 
 

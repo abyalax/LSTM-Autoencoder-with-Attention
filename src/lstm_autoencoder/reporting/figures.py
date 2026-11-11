@@ -93,7 +93,7 @@ class FigureBuilder:
                 "model",
                 [
                     "Scaler fit on\ntrain-normal rows only",
-                    "Windows of the last W\ntransactions of the receiver\n(left padding + mask)",
+                    "Windows of the last W\ntransactions of the receiver\n(right padding + packed encoder)",
                     "LSTM-Autoencoder\ntrained on normal\nwindows only",
                     "Reconstruction error e\nmean squared error over\nreal steps",
                 ],

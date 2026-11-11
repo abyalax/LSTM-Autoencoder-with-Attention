@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
@@ -23,14 +22,11 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
+from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
 from lstm_autoencoder.model.config import SequenceConfig
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
-# Split stratification bins, by per-receiver transaction COUNT, matching
-# `PaySimModelTrainingPipeline`'s bins exactly (see that class for rationale).
-VOLUME_BINS: tuple[float, ...] = (0, 1, 4, 9, float("inf"))
-VOLUME_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
 @dataclass(frozen=True)
@@ -110,7 +106,7 @@ class BaselineEvaluator:
         loaded = self._loader.load()
         built = CausalFeatureBuilder(self._dataset_config, self._schema).build(loaded.frame)
         labels = built[self._schema.target_column].to_numpy()
-        splits = self._stratified_receiver_split(built)
+        splits = self._receiver_split(built)
 
         encoded = self._encode(built)
         modeling_columns = [c for c in encoded.columns if c != ACCOUNT_CODE]
@@ -135,7 +131,7 @@ class BaselineEvaluator:
             features=encoded[modeling_columns],
             labels=built[self._schema.target_column].to_numpy(),
             buckets=built[HISTORY_BUCKET].to_numpy(),
-            splits=self._stratified_receiver_split(built),
+            splits=self._receiver_split(built),
             account_code=built[ACCOUNT_CODE].to_numpy(),
         )
 
@@ -145,7 +141,7 @@ class BaselineEvaluator:
         built = CausalFeatureBuilder(self._dataset_config, self._schema).build(loaded.frame)
         labels = built[self._schema.target_column].to_numpy()
         buckets = built[HISTORY_BUCKET].to_numpy()
-        splits = self._stratified_receiver_split(built)
+        splits = self._receiver_split(built)
 
         self._reporter.display_section("ABLATION: full vs no-history vs history-only vs non-linear controls")
         self._reporter.display_text(f"Baris {len(built):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)")
@@ -233,39 +229,12 @@ class BaselineEvaluator:
 
     def split_rows(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
         """Row positions of the train/val/test receiver split the baselines use (public for audits)."""
-        return self._stratified_receiver_split(built)
+        return self._receiver_split(built)
 
-    def _stratified_receiver_split(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
-        """Split receivers based on split_config fractions, stratified by per-receiver transaction count.
-
-        Must stay IDENTICAL to `PaySimModelTrainingPipeline._split_receiver_ids` (same
-        stratification key, same bins, same seed source) -- the pipeline audit's
-        `split_identical_in_baseline_and_ae` check depends on it. Stratified on `n`
-        (volume), not fraud_rate: see that method's docstring for why label-informed
-        stratification was removed.
-        """
-        receiver_column = self._schema.receiver_column
-        target_column = self._schema.target_column
-        stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
-        bins = pd.cut(stats["n"], bins=VOLUME_BINS, labels=VOLUME_LABELS, include_lowest=True).fillna(VOLUME_LABELS[0])
-
-        train_ids, rest_ids = train_test_split(
-            stats.index,
-            test_size=1 - self._split_config.train_fraction,
-            random_state=self._probe.random_seed,
-            stratify=bins,
-        )
-        val_ratio = self._split_config.validation_fraction / (1 - self._split_config.train_fraction)
-        val_ids, test_ids = train_test_split(
-            rest_ids, test_size=1 - val_ratio, random_state=self._probe.random_seed, stratify=bins.loc[rest_ids]
-        )
-
-        receivers = built[receiver_column]
-        return {
-            "train": np.flatnonzero(receivers.isin(train_ids).to_numpy()),
-            "val": np.flatnonzero(receivers.isin(val_ids).to_numpy()),
-            "test": np.flatnonzero(receivers.isin(test_ids).to_numpy()),
-        }
+    def _receiver_split(self, built: pd.DataFrame) -> dict[str, np.ndarray]:
+        """Row positions of the label-free receiver split (same splitter and seed as the LSTM-AE pipeline)."""
+        splitter = ReceiverSplitter(self._split_config, random_seed=self._probe.random_seed)
+        return splitter.split_rows(built[self._schema.receiver_column])
 
     def _fit(
         self, features: pd.DataFrame, labels: np.ndarray, train_idx: np.ndarray

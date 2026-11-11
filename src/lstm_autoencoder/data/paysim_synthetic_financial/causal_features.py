@@ -14,12 +14,10 @@ STEP_DIFF = "step_diff"
 LOG_AMOUNT_RATIO = "log_amount_ratio"
 IS_NEW_RECEIVER = "is_new_receiver"
 HISTORY_BUCKET = "history_bucket"
-TIE_BREAK_RANK = "_tie_break_rank"
 AMOUNT_EPSILON = 1e-9
-# Role-aware account identity: which column holds the account being analyzed,
-# keyed by transaction type. Decided so a TRANSFER-in followed by a CASH_OUT-out
-# can be linked to the SAME physical account (the money-mule hypothesis this
-# research tests), instead of two unrelated PaySim columns.
+# Role-aware account identity: the account under analysis is the DESTINATION of a TRANSFER
+# (funds arriving) and the ORIGIN of a CASH_OUT (funds leaving), so a mule's TRANSFER-in and
+# later CASH_OUT-out belong to one account history.
 CASH_OUT_TYPE = "CASH_OUT"
 
 DERIVED_FEATURES: tuple[str, ...] = (
@@ -31,12 +29,32 @@ DERIVED_FEATURES: tuple[str, ...] = (
 )
 
 
+def account_identity(frame: pd.DataFrame, schema: PaySimSchema | None = None) -> pd.Series:
+    """Account under analysis per row: `nameDest` for TRANSFER, `nameOrig` for CASH_OUT."""
+    schema = schema or PaySimSchema()
+    is_cash_out = frame[schema.transaction_type_column] == CASH_OUT_TYPE
+    return frame[schema.receiver_column].where(~is_cash_out, frame[schema.sender_column])
+
+
 class CausalFeatureBuilder:
     """Derive features per receiver account without looking at future transactions.
 
-    PaySim-specific implementation that handles step-based timestamps rather than
-    datetime-based timestamps. The step column represents discrete time steps in the
-    simulation, not actual wall-clock time.
+    Account identity is role-aware (see `account_identity`): the identity is written into the
+    receiver column and the original `nameDest` is kept as `nameDest_raw` for audits.
+
+    PaySim's `step` is an hourly bucket, so the order of two transactions of the same
+    receiver inside one step is NOT observable. This builder therefore never treats
+    it as chronology:
+
+    * `history_length`, `step_diff`, `log_amount_ratio`, `is_new_receiver` and
+      `history_bucket` of a transaction are computed ONLY from the same receiver's
+      transactions at STRICTLY EARLIER steps. Every transaction of one receiver in
+      the same step gets identical history features, whatever the file order.
+    * Rows are still sorted deterministically (account, step, then the label-free
+      tie-break columns type, amount, sender), so frames built from any row
+      permutation are identical and window construction is reproducible. That tie
+      order carries no chronological meaning; `SequenceBuilder` never lets it
+      decide which transactions appear in a window.
     """
 
     def __init__(self, config: DatasetConfig, schema: PaySimSchema | None = None) -> None:
@@ -44,62 +62,69 @@ class CausalFeatureBuilder:
         self._config = config
         self._schema = schema or PaySimSchema()
 
+    def account_identity(self, frame: pd.DataFrame) -> pd.Series:
+        """Account under analysis per row: `nameDest` for TRANSFER, `nameOrig` for CASH_OUT."""
+        return account_identity(frame, self._schema)
+
+    def tie_break_columns(self, frame: pd.DataFrame) -> list[str]:
+        """Label-free columns that order same-(account, step) rows deterministically."""
+        schema = self._schema
+        candidates = (schema.transaction_type_column, schema.amount_column, schema.sender_column)
+        return [column for column in candidates if column in frame.columns]
+
     def build(self, frame: pd.DataFrame) -> pd.DataFrame:
-        """Return a copy ordered by account and step with causal features added.
+        """Return a copy ordered by (account, step, tie-break) with causal features added.
 
-        Every derived value of a transaction depends only on that transaction
-        and on earlier transactions of the same account, so the same features
-        can be computed in a streaming setting.
-
-        Account identity is role-aware: for a TRANSFER row the account under
-        analysis is `nameDest` (funds arriving), for a CASH_OUT row it is
-        `nameOrig` (funds leaving). This is what lets a receiver's TRANSFER-in
-        history and later CASH_OUT-out be windowed as one account history; using
-        `nameDest` uniformly for both types (the previous behavior) would window
-        CASH_OUT rows under the withdrawing merchant/ATM code instead of the
-        money-mule account itself. The original `receiver_column` value is kept
-        under `<receiver_column>_raw` for audits.
-
-        Ties on (account, step): PaySim's `step` is only hour-granular, so two
-        transactions of the same account can share a step. The tie-break is the
-        row's position in the input `frame` (stable sort), kept deterministic and
-        reproducible via an explicit rank column -- this is an arbitrary but fixed
-        ordering, not a claim that the input file encodes true sub-step chronology.
+        The features of a transaction depend only on that transaction and on
+        earlier-STEP transactions of the same account, so they can be computed in
+        a streaming setting where same-hour order is unknown.
         """
-        receiver_col = self._schema.receiver_column
-        raw_receiver_col = f"{receiver_col}_raw"
-        is_cash_out = frame[self._schema.transaction_type_column] == CASH_OUT_TYPE
-        account_identity = frame[receiver_col].where(~is_cash_out, frame[self._schema.sender_column])
-
-        tie_break_rank = np.arange(len(frame))
-        codes = pd.factorize(account_identity)[0]
+        schema = self._schema
+        identity = self.account_identity(frame)
+        raw_receiver = f"{schema.receiver_column}_raw"
+        codes = pd.factorize(identity)[0]
         ordered = (
-            frame.assign(
-                **{
-                    raw_receiver_col: frame[receiver_col],
-                    receiver_col: account_identity,
-                    ACCOUNT_CODE: codes,
-                    TIE_BREAK_RANK: tie_break_rank,
-                }
+            frame.assign(**{raw_receiver: frame[schema.receiver_column], schema.receiver_column: identity})
+            .assign(**{ACCOUNT_CODE: codes})
+            .sort_values(
+                [ACCOUNT_CODE, schema.timestamp_column, *self.tie_break_columns(frame)],
+                kind="stable",
             )
-            .sort_values([ACCOUNT_CODE, self._schema.timestamp_column, TIE_BREAK_RANK], kind="stable")
             .reset_index(drop=True)
         )
-        groups = ordered.groupby(ACCOUNT_CODE, sort=False)
-        amount = ordered[self._schema.amount_column]
 
-        history = groups.cumcount()
+        n_rows = len(ordered)
+        position = np.arange(n_rows)
+        code = ordered[ACCOUNT_CODE].to_numpy()
+        step = ordered[schema.timestamp_column].to_numpy().astype("int64")
+        amount = ordered[schema.amount_column].to_numpy(dtype="float64")
+
+        new_account = np.ones(n_rows, dtype=bool)
+        new_step = np.ones(n_rows, dtype=bool)
+        if n_rows > 1:
+            new_account[1:] = code[1:] != code[:-1]
+            new_step[1:] = new_account[1:] | (step[1:] != step[:-1])
+        account_start = np.maximum.accumulate(np.where(new_account, position, 0))
+        step_start = np.maximum.accumulate(np.where(new_step, position, 0))
+
+        # Rows of the same account at strictly earlier steps = rows before this step group.
+        history = step_start - account_start
+        has_history = history > 0
+        previous = np.maximum(step_start - 1, 0)
+
         ordered[HISTORY_LENGTH] = history
-        step_diff = groups[self._schema.timestamp_column].diff()
-        ordered[STEP_DIFF] = step_diff.fillna(0).astype("int32")
+        ordered[STEP_DIFF] = np.where(has_history, step - step[previous], 0).astype("int32")
 
-        prior_total = groups[self._schema.amount_column].cumsum() - amount
-        prior_mean = prior_total / history.replace(0, np.nan)
+        # Per-account running sum keeps the numbers small (float precision); the
+        # prior total is the running sum at the last row of the previous step group.
+        running = ordered.groupby(ACCOUNT_CODE, sort=False)[schema.amount_column].cumsum().to_numpy(dtype="float64")
+        prior_total = np.where(has_history, running[previous], 0.0)
+        prior_mean = np.where(has_history, prior_total / np.maximum(history, 1), np.nan)
         ratio = (amount + AMOUNT_EPSILON) / (prior_mean + AMOUNT_EPSILON)
-        ordered[LOG_AMOUNT_RATIO] = np.log(ratio).fillna(0)
+        ordered[LOG_AMOUNT_RATIO] = np.nan_to_num(np.log(ratio), nan=0.0)
 
-        # is_new_receiver: receiver has no prior transactions (history_len == 0)
-        ordered[IS_NEW_RECEIVER] = (history == 0).astype("int8")
+        # is_new_receiver: no transaction of this receiver at an earlier step
+        ordered[IS_NEW_RECEIVER] = (~has_history).astype("int8")
 
         # history_bucket: categorical grouping for stratified reporting
         history_bucket_bins = [0, 1, 4, 9, np.inf]

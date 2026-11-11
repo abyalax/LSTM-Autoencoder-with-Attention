@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
+from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.metrics import (
     UnivariateSignalChecker,
 )
@@ -57,67 +57,13 @@ class PaySimSignalProbe(BaseSignalProbe):
         return self._schema
 
     def _prepare_data(self, loaded: LoadedDataset) -> tuple[pd.DataFrame, np.ndarray, dict[str, np.ndarray]]:
-        """Prepare the data for signal probe using stratified split by receiver."""
-        from sklearn.model_selection import train_test_split
+        """Prepare the data for signal probe using a label-free split by receiver."""
+        from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import account_identity
+        from lstm_autoencoder.evaluation.config import SplitConfig
+        from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
 
         df = loaded.frame
-
-        # Get unique receivers and their fraud rates
-        receiver_stats = (
-            df.groupby("nameDest")
-            .agg(
-                n_transactions=(self._schema.target_column, "size"),
-                n_fraud=(self._schema.target_column, "sum"),
-            )
-            .reset_index()
-        )
-        receiver_stats["fraud_rate"] = receiver_stats["n_fraud"] / receiver_stats["n_transactions"]
-
-        # Split receivers into train/val/test (stratified by fraud rate)
-        ratios = (0.7, 0.15, 0.15)
-        stratify_bins = pd.cut(
-            receiver_stats["fraud_rate"],
-            bins=[0, 0.001, 0.01, 0.1, 1.0],
-            labels=["very_low", "low", "medium", "high"],
-            include_lowest=True,
-        ).fillna("very_low")
-        receivers_train, receivers_valtest = train_test_split(
-            receiver_stats["nameDest"],
-            test_size=ratios[1] + ratios[2],
-            random_state=42,
-            stratify=stratify_bins,
-        )
-
-        val_ratio = ratios[1] / (ratios[1] + ratios[2])
-        receivers_valtest_df = receiver_stats[receiver_stats["nameDest"].isin(receivers_valtest)]
-        stratify_bins_valtest = pd.cut(
-            receivers_valtest_df["fraud_rate"],
-            bins=[0, 0.001, 0.01, 0.1, 1.0],
-            labels=["very_low", "low", "medium", "high"],
-            include_lowest=True,
-        ).fillna("very_low")
-        receivers_val, receivers_test = train_test_split(
-            receivers_valtest_df["nameDest"],
-            test_size=1 - val_ratio,
-            random_state=42,
-            stratify=stratify_bins_valtest,
-        )
-
-        # Assign transactions to splits based on receiver
-        train_mask = df["nameDest"].isin(receivers_train)
-        val_mask = df["nameDest"].isin(receivers_val)
-        test_mask = df["nameDest"].isin(receivers_test)
-
-        # Create split indices
-        train_indices = np.where(train_mask.values)[0]
-        val_indices = np.where(val_mask.values)[0]
-        test_indices = np.where(test_mask.values)[0]
-
-        splits = {
-            "train": train_indices,
-            "val": val_indices,
-            "test": test_indices,
-        }
+        splits = ReceiverSplitter(SplitConfig(), random_seed=42).split_rows(account_identity(df, self._schema))
 
         # Combine all splits with original order for consistent indexing
         ordered = df.reset_index(drop=True)
@@ -249,7 +195,6 @@ class PaySimSignalProbe(BaseSignalProbe):
         splits: dict[str, np.ndarray],
     ) -> dict[str, dict[str, float]]:
         """Evaluate the features using supervised model with pre-computed splits."""
-        from sklearn.ensemble import HistGradientBoostingClassifier
 
         rng = np.random.default_rng(self._probe.random_seed)
         train = splits["train"]
@@ -280,6 +225,7 @@ class PaySimSignalProbe(BaseSignalProbe):
     ) -> dict[str, float]:
         """Fit model and compute metrics on validation and test sets."""
         from sklearn.ensemble import HistGradientBoostingClassifier
+
         from lstm_autoencoder.evaluation.metrics import RankingMetrics
 
         model = HistGradientBoostingClassifier(

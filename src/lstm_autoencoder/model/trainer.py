@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
-from lstm_autoencoder.model.config import ModelConfig, TrainConfig
+from lstm_autoencoder.model.config import SCORE_STRATEGIES, ModelConfig, TrainConfig
 from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
 
 
@@ -70,7 +70,7 @@ class Trainer:
 
         for epoch in range(1, self._train_config.max_epochs + 1):
             train_loss = self._train_epoch(model, train_loader, optimizer)
-            val_errors = self._predict_errors(model, val_loader)
+            val_errors = self._predict_errors(model, val_loader, "mean")
             val_auc = float(RankingMetrics.roc_auc(val_errors, val_labels))
             normal = val_labels == 0
             val_loss = float(val_errors[normal].mean() if normal.any() else val_errors.mean())
@@ -111,7 +111,9 @@ class Trainer:
 
         return model, result
 
-    def score(self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray) -> dict[str, float]:
+    def score(
+        self, model: LSTMAutoencoder, dataset: Dataset, labels: np.ndarray, strategy: str = "mean"
+    ) -> dict[str, float]:
         """Return AUC, average precision, and recall@FPR (per `TrainConfig.fpr_targets`)
         of reconstruction error against labels.
 
@@ -119,17 +121,25 @@ class Trainer:
         standalone test-set report with the same Recall@FPR targets the hybrid
         classifier already reports, so the two are comparable metric-for-metric.
         """
-        return self._score_errors(self.predict_errors(model, dataset), labels)
+        return self._score_errors(self.predict_errors(model, dataset, strategy), labels)
 
-    def predict_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
-        """Run inference and return per-example reconstruction error, in dataset order."""
-        return self._predict_errors(model, self._make_loader(dataset, shuffle=False))
+    def predict_errors(self, model: LSTMAutoencoder, dataset: Dataset, strategy: str = "mean") -> np.ndarray:
+        """Run inference and return the per-example anomaly score, in dataset order.
+
+        `strategy` is `mean` (average error over real steps, the training loss) or
+        `last` (error of the current transaction only). Which one is reported is
+        chosen on validation and frozen before test (`select-score-strategy`).
+        """
+        if strategy not in SCORE_STRATEGIES:
+            raise ValueError(f"strategy must be one of {SCORE_STRATEGIES}, got {strategy!r}.")
+        return self._predict_errors(model, self._make_loader(dataset, shuffle=False), strategy)
 
     def predict_step_errors(self, model: LSTMAutoencoder, dataset: Dataset) -> np.ndarray:
         """Return the per-step reconstruction error, shape (n, window), in dataset order.
 
-        Padded steps are 0. Windows are left-padded, so the LAST column is always the
-        current transaction; the mean over real steps equals `predict_errors`.
+        Padded steps are 0. Windows are RIGHT-padded: the current transaction is the
+        last REAL column (index `valid_steps - 1`), not the last column. The mean over
+        real steps equals `predict_errors(strategy="mean")`.
         """
         return self._predict_step_errors(model, self._make_loader(dataset, shuffle=False))
 
@@ -221,13 +231,13 @@ class Trainer:
         return np.concatenate(chunks)
 
     @torch.no_grad()
-    def _predict_errors(self, model: LSTMAutoencoder, loader: DataLoader) -> np.ndarray:
-        """Run inference and return per-example reconstruction error."""
+    def _predict_errors(self, model: LSTMAutoencoder, loader: DataLoader, strategy: str = "mean") -> np.ndarray:
+        """Run inference and return the per-example anomaly score under `strategy`."""
         model.eval()
         errors = []
         for sequence, mask, _ in loader:
             sequence = sequence.to(self._device, non_blocking=True)
             mask = mask.to(self._device, non_blocking=True)
             reconstructed = model(sequence, mask)
-            errors.append(model.reconstruction_error(sequence, reconstructed, mask).cpu().numpy())
+            errors.append(model.reconstruction_error(sequence, reconstructed, mask, strategy).cpu().numpy())
         return np.concatenate(errors)

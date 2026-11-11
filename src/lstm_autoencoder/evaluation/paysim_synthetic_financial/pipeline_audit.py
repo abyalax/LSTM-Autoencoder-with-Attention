@@ -19,8 +19,8 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     IS_NEW_RECEIVER,
     LOG_AMOUNT_RATIO,
     STEP_DIFF,
-    TIE_BREAK_RANK,
     CausalFeatureBuilder,
+    account_identity,
 )
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
@@ -70,15 +70,18 @@ class PipelineAudit:
                         the features of all earlier transactions of that receiver unchanged
                         (the operational definition of "uses only past information");
       3. *isolation*    a receiver's features do not depend on other receivers' rows;
-      4. *sequences*    windows, left padding and masks equal a naive reimplementation, the
-                        build is deterministic, and masks are structurally valid;
-      5. *split*        receiver sets are disjoint, scaler statistics come from normal
-                        train rows only, and training windows end in a normal transaction.
+      4. *sequences*    windows, right padding and masks equal a naive reimplementation, windows
+                        never contain a same-step peer, the build is deterministic, and masks
+                        are structurally valid;
+      5. *ties*         transactions share an hourly `step`, so their relative order is not
+                        observable: features must not change when same-step rows are reordered;
+      6. *split*        receiver sets are disjoint, the split does not depend on any label,
+                        scaler statistics come from normal train rows only.
 
     and a few measurements that bound what the pipeline can claim:
 
-      - tie sensitivity: transactions share an hourly `step`, so their relative order is not
-        observable; how many features change if ties are ordered differently?
+      - receiver semantics: how much of the TRANSFER -> CASH_OUT mule path the receiver-keyed
+        sequences actually cover (the sequence entity is `nameDest` for every row);
       - context contamination: normal training windows may contain earlier FRAUD steps;
       - metric implementation vs scikit-learn; feature-set mismatch between baselines and the AE;
       - hour-of-day structure of fraud (a simulator artefact tree models can exploit).
@@ -109,10 +112,10 @@ class PipelineAudit:
         rng = np.random.default_rng(self._config.seed)
         sample = self._sample_receivers(frame, rng)
 
-        self._reporter.display_section("PIPELINE AUDIT (P0)")
+        self._reporter.display_section("Pipeline Audit (P0)")
         self._reporter.display_text(
             f"rows {len(frame):,} | sampled rows {len(sample):,} "
-            f"({sample[self._schema.receiver_column].nunique():,} receivers) | seed {self._config.seed}"
+            f"({account_identity(sample, self._schema).nunique():,} receivers) | seed {self._config.seed}"
         )
 
         findings: list[AuditFinding] = [
@@ -121,6 +124,7 @@ class PipelineAudit:
             self.check_receiver_isolation(frame, sample),
             self.check_tie_sensitivity(sample, rng),
             self.check_time_structure(frame),
+            self.check_receiver_semantics(frame),
         ]
         built = self._builder.build(sample.assign(**{ROW_ID: np.arange(len(sample))}))
         for window in self._config.windows:
@@ -139,7 +143,7 @@ class PipelineAudit:
         """Compare the vectorised features with a per-receiver Python loop (independent reimplementation)."""
         built = self._build(sample)
         expected = self._reference_features(sample)
-        merged = built.set_index(ROW_ID)[list(DERIVED)].join(expected, suffixes=("", "_ref"))
+        merged = built.set_index(ROW_ID)[list(DERIVED)].join(expected.add_suffix("_ref"))
         mismatches: dict[str, int] = {}
         for column in (HISTORY_LENGTH, STEP_DIFF, IS_NEW_RECEIVER, HISTORY_BUCKET):
             mismatches[column] = int((merged[column].astype(str) != merged[f"{column}_ref"].astype(str)).sum())
@@ -208,47 +212,87 @@ class PipelineAudit:
         return AuditFinding(
             "receiver_isolation",
             PASS if same_index and sum(moved.values()) == 0 else FAIL,
-            {"receivers": int(sample[receiver].nunique()), "features_moved": moved},
+            {"receivers": int(account_identity(sample, self._schema).nunique()), "features_moved": moved},
         )
 
     def check_tie_sensitivity(self, sample: pd.DataFrame, rng: np.random.Generator) -> AuditFinding:
-        """Measure how much the features depend on the unobservable order of same-`step` transactions."""
+        """Hard check: features must NOT depend on the unobservable order of same-`step` transactions."""
         base = sample.assign(**{ROW_ID: np.arange(len(sample))})
         built = self._builder.build(base)
         shuffled = base.iloc[rng.permutation(len(base))]
         rebuilt = self._builder.build(shuffled)
 
-        tied = (built[STEP_DIFF] == 0) & (built[HISTORY_LENGTH] > 0)
+        step = self._schema.timestamp_column
+        account = account_identity(base, self._schema)
+        peers = base.groupby([account, base[step]])[step].transform("size") > 1
         a = built.set_index(ROW_ID).sort_index()
         b = rebuilt.set_index(ROW_ID).sort_index()
         changed = {
             HISTORY_LENGTH: float((a[HISTORY_LENGTH] != b[HISTORY_LENGTH]).mean()),
             STEP_DIFF: float((a[STEP_DIFF] != b[STEP_DIFF]).mean()),
             LOG_AMOUNT_RATIO: float(((a[LOG_AMOUNT_RATIO] - b[LOG_AMOUNT_RATIO]).abs() > self._config.atol).mean()),
+            IS_NEW_RECEIVER: float((a[IS_NEW_RECEIVER] != b[IS_NEW_RECEIVER]).mean()),
             HISTORY_BUCKET: float((a[HISTORY_BUCKET] != b[HISTORY_BUCKET]).mean()),
         }
         target = self._schema.target_column
         return AuditFinding(
-            "tie_sensitivity",
-            INFO,
+            "tie_invariance",
+            PASS if all(value == 0.0 for value in changed.values()) else FAIL,
             {
                 "rows": len(built),
-                "share_rows_with_same_step_predecessor": float(tied.mean()),
-                "fraud_rate_tied_rows": float(built.loc[tied, target].mean()) if tied.any() else float("nan"),
-                "fraud_rate_untied_rows": float(built.loc[~tied, target].mean()),
-                "share_rows_changed_when_ties_reordered": changed,
+                "share_rows_with_same_step_peer": float(peers.mean()),
+                "fraud_rate_rows_with_peer": float(base.loc[peers, target].mean()) if peers.any() else float("nan"),
+                "fraud_rate_rows_without_peer": float(base.loc[~peers, target].mean()),
+                "share_rows_changed_when_all_rows_are_shuffled": changed,
                 "reading": (
                     "`step` is hourly, so the order of same-step transactions of one receiver is not observable. "
-                    "A non-zero change share means history_length/log_amount_ratio of those rows depend on "
-                    "file order; the order is deterministic (stable sort) but is not a real chronology."
+                    "History features use only strictly earlier steps and windows exclude same-step peers, so "
+                    "shuffling the input rows must change nothing."
+                ),
+            },
+        )
+
+    def check_receiver_semantics(self, frame: pd.DataFrame) -> AuditFinding:
+        """How often the TRANSFER -> CASH_OUT mule path is actually visible to the role-aware sequences.
+
+        The sequence entity is role-aware (nameDest for TRANSFER, nameOrig for CASH_OUT), so a CASH_OUT
+        row can only inherit history from an earlier TRANSFER-in when its origin account earlier received
+        a TRANSFER. The shares below bound how much of the mule narrative the data can support; the paper
+        must not claim more than that coverage.
+        """
+        schema = self._schema
+        type_col = schema.transaction_type_column
+        if type_col not in frame.columns:
+            return AuditFinding("receiver_semantics", INFO, {"skipped": f"no {type_col} column"})
+        step, label = schema.timestamp_column, schema.target_column
+        transfers = frame.loc[frame[type_col] == "TRANSFER"]
+        first_received = transfers.groupby(schema.receiver_column)[step].min()
+        cash_out = frame.loc[frame[type_col] == "CASH_OUT"]
+        seen_at = cash_out[schema.sender_column].map(first_received)
+        earlier_receiver = (seen_at < cash_out[step]).fillna(False)
+        fraud = cash_out[label] == 1
+        return AuditFinding(
+            "receiver_semantics",
+            INFO,
+            {
+                "sequence_entity": "role-aware account: nameDest for TRANSFER, nameOrig for CASH_OUT",
+                "cash_out_rows": int(len(cash_out)),
+                "share_cash_out_origin_was_earlier_transfer_receiver": float(earlier_receiver.mean()),
+                "fraud_cash_out_rows": int(fraud.sum()),
+                "share_fraud_cash_out_origin_was_earlier_transfer_receiver": (
+                    float(earlier_receiver[fraud].mean()) if fraud.any() else float("nan")
+                ),
+                "reading": (
+                    "A low share means most CASH_OUT rows have no earlier TRANSFER-in on the same account, so "
+                    "their windows hold no mule-path context; state this coverage in Methods/Limitations."
                 ),
             },
         )
 
     def check_time_structure(self, frame: pd.DataFrame) -> AuditFinding:
         """
-            Hour-of-day profile of fraud vs normal; 
-            a flat fraud profile against a diurnal normal one is a simulator artefact.
+        Hour-of-day profile of fraud vs normal;
+        a flat fraud profile against a diurnal normal one is a simulator artefact.
         """
         step = frame[self._schema.timestamp_column].to_numpy()
         label = frame[self._schema.target_column].to_numpy()
@@ -275,6 +319,25 @@ class PipelineAudit:
 
     # ------------------------------------------------------------------ sequence checks
 
+    @staticmethod
+    def _step_positions(built: pd.DataFrame, step_column: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """(account_start, step_start, earlier) row positions of a frame sorted by (account, step).
+
+        `earlier` = number of rows of the same account at STRICTLY earlier steps.
+        """
+        codes = built[ACCOUNT_CODE].to_numpy()
+        step = built[step_column].to_numpy()
+        n = len(built)
+        position = np.arange(n)
+        new_account = np.ones(n, dtype=bool)
+        new_step = np.ones(n, dtype=bool)
+        if n > 1:
+            new_account[1:] = codes[1:] != codes[:-1]
+            new_step[1:] = new_account[1:] | (step[1:] != step[:-1])
+        account_start = np.maximum.accumulate(np.where(new_account, position, 0))
+        step_start = np.maximum.accumulate(np.where(new_step, position, 0))
+        return account_start, step_start, step_start - account_start
+
     def check_sequences(self, built: pd.DataFrame, window: int, rng: np.random.Generator) -> AuditFinding:
         """Windows, padding and masks vs a naive reimplementation; determinism; structural validity."""
         config = SequenceConfig(window_length=window)
@@ -287,32 +350,37 @@ class PipelineAudit:
             for name in ("sequences", "mask", "labels", "history_bucket", "receiver")
         )
 
-        history = built.groupby(ACCOUNT_CODE).cumcount().to_numpy()
-        eligible = np.flatnonzero(history >= config.min_history_length - 1)
+        step_column = self._schema.timestamp_column
+        _, step_start, earlier = self._step_positions(built, step_column)
+        eligible = np.flatnonzero(earlier >= config.min_history_length - 1)
         count_ok = len(batch.labels) == len(eligible)
 
         mask = batch.mask
         structure = {
             "mask_is_binary": bool(np.isin(mask, (0.0, 1.0)).all()),
-            "padding_is_left_only": bool((np.diff(mask, axis=1) >= 0).all()),
-            "last_step_is_always_real": bool((mask[:, -1] == 1.0).all()),
+            "padding_is_right_only": bool((np.diff(mask, axis=1) <= 0).all()),
+            "first_step_is_always_real": bool((mask[:, 0] == 1.0).all()),
             "padded_features_are_zero": bool((batch.sequences[mask == 0.0] == 0.0).all()),
-            "real_steps_equal_min_history_window": bool(
-                (mask.sum(axis=1) == np.minimum(history[eligible] + 1, window)).all()
+            "real_steps_equal_earlier_steps_plus_current": bool(
+                (mask.sum(axis=1) == np.minimum(earlier[eligible] + 1, window)).all()
             ),
         }
 
         features = built[columns].to_numpy(dtype="float32")
         codes = built[ACCOUNT_CODE].to_numpy()
-        first = pd.Series(np.arange(len(built))).groupby(codes).transform("min").to_numpy()
+        step = built[step_column].to_numpy()
         picks = rng.choice(len(eligible), size=min(2000, len(eligible)), replace=False)
         wrong = 0
         for k in picks:
             end = eligible[k]
-            start = max(first[end], end - window + 1)
+            n_prior = int(min(earlier[end], window - 1))
+            prior_rows = np.arange(step_start[end] - n_prior, step_start[end])
+            rows = np.concatenate([prior_rows, [end]]).astype(int)
             expected = np.zeros((window, len(columns)), dtype="float32")
-            expected[window - (end - start + 1) :] = features[start : end + 1]
+            expected[: len(rows)] = features[rows]
             ok = np.array_equal(batch.sequences[k], expected)
+            ok &= bool((step[prior_rows] < step[end]).all())  # no same-step peer, no later row
+            ok &= bool((codes[rows] == codes[end]).all())  # one receiver only
             ok &= batch.labels[k] == built[self._schema.target_column].iloc[end]
             ok &= batch.history_bucket[k] == built[HISTORY_BUCKET].iloc[end]
             ok &= batch.receiver[k] == built[self._schema.receiver_column].iloc[end]
@@ -420,13 +488,16 @@ class PipelineAudit:
             return {"normal_train_windows": int(len(normal_rows)), "share_with_fraud_in_context": 0.0}
         label = built[self._schema.target_column].to_numpy().astype("int64")
         codes = built[ACCOUNT_CODE].to_numpy()
-        history = built.groupby(ACCOUNT_CODE).cumcount().to_numpy()
-        end = np.arange(len(built))  # min_history_length == 1: every row ends one window
+        _, step_start, earlier = self._step_positions(built, self._schema.timestamp_column)
         cumulative = pd.Series(label).groupby(codes).cumsum().to_numpy()  # inclusive, per receiver
-        in_window_before = np.minimum(history, window - 1)  # earlier real steps inside the window
-        has_row_before_window = history - in_window_before > 0
-        before_window = np.where(has_row_before_window, cumulative[end - in_window_before - 1], 0)
-        fraud_in_context = cumulative[end] - before_window - label[end]
+        in_window_before = np.minimum(earlier, window - 1)  # earlier-step rows inside the window
+        last_prior = step_start - 1  # last row of the previous step group
+        has_prior = in_window_before > 0
+        before_window = np.where(
+            earlier - in_window_before > 0, cumulative[np.maximum(last_prior - in_window_before, 0)], 0
+        )
+        prior_fraud = np.where(has_prior, cumulative[np.maximum(last_prior, 0)] - before_window, 0)
+        fraud_in_context = prior_fraud
         return {
             "normal_train_windows": int(len(normal_rows)),
             "share_with_fraud_in_context": float((fraud_in_context[normal_rows] > 0).mean()),
@@ -445,6 +516,8 @@ class PipelineAudit:
         receiver_ids = pipeline.split_receivers(built)
         findings = self.check_split(built, receiver_ids, self._config.windows)
 
+        findings.append(self._label_independence(built, pipeline, receiver_ids))
+
         baseline = BaselineEvaluator(self._dataset_config)  # own reporter: sharing ours would redirect the report path
         rows = baseline.split_rows(built)
         receiver = built[self._schema.receiver_column]
@@ -457,6 +530,21 @@ class PipelineAudit:
             )
         )
         return findings
+
+    def _label_independence(
+        self, built: pd.DataFrame, pipeline: object, receiver_ids: dict[str, pd.Index]
+    ) -> AuditFinding:
+        """The receiver split must be identical when every label is replaced by random labels."""
+        target = self._schema.target_column
+        rng = np.random.default_rng(self._config.seed + 11)
+        scrambled = built.assign(**{target: rng.integers(0, 2, size=len(built))})
+        again = pipeline.split_receivers(scrambled)
+        same = {name: set(again[name]) == set(receiver_ids[name]) for name in receiver_ids}
+        return AuditFinding(
+            "split_is_label_free",
+            PASS if all(same.values()) else FAIL,
+            {"receiver_sets_equal_under_random_labels": same},
+        )
 
     # ------------------------------------------------------------------ metric / comparability checks
 
@@ -508,15 +596,20 @@ class PipelineAudit:
     # ------------------------------------------------------------------ helpers
 
     def _sample_receivers(self, frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-        """All rows of a receiver sample: half uniformly random, half the receivers with the longest history."""
+        """All rows of a receiver sample: half uniformly random, half the receivers with the longest history.
+
+        Samples based on the role-aware account identity (nameDest for TRANSFER, nameOrig for CASH_OUT)
+        to match the receiver transformation done by CausalFeatureBuilder.
+        """
         receiver = self._schema.receiver_column
-        counts = frame[receiver].value_counts()
+        account_code = account_identity(frame, self._schema)
+        counts = account_code.value_counts()
         n = min(self._config.sample_receivers, len(counts))
         longest = counts.index[: n // 2]
         rest = counts.index.difference(longest)
         random_part = rng.choice(rest.to_numpy(), size=min(n - len(longest), len(rest)), replace=False)
         chosen = set(longest) | set(random_part)
-        return frame[frame[receiver].isin(chosen)]
+        return frame[account_code.isin(chosen)]
 
     def _build(self, sample: pd.DataFrame) -> pd.DataFrame:
         """Build features with a stable row id carried through the builder's re-sorting."""
@@ -525,32 +618,27 @@ class PipelineAudit:
     def _reference_features(self, sample: pd.DataFrame) -> pd.DataFrame:
         """Loop-based reimplementation of the history features, one receiver at a time.
 
-        Must match CausalFeatureBuilder's role-aware account identity: TRANSFER rows
-        use nameDest, CASH_OUT rows use nameOrig, so a mule's TRANSFER-in and CASH_OUT-out
-        history is one continuous sequence. Also must match the tie-break rank for same-step
-        transactions.
+        A transaction's history is the set of the same ACCOUNT's rows (role-aware identity: nameDest for
+        TRANSFER, nameOrig for CASH_OUT) at STRICTLY earlier steps.
         """
         schema = self._schema
-        row_ids = np.arange(len(sample))
-        rows = sample.assign(**{ROW_ID: row_ids})
-        # Role-aware account identity, matching CausalFeatureBuilder
+        rows = sample.assign(**{ROW_ID: np.arange(len(sample))})
         is_cash_out = rows[schema.transaction_type_column] == CASH_OUT_TYPE
-        account_identity = rows[schema.receiver_column].where(~is_cash_out, rows[schema.sender_column])
-        rows = rows.assign(account_identity=account_identity, _tie_break_rank=row_ids)
+        rows = rows.assign(_account=rows[schema.receiver_column].where(~is_cash_out, rows[schema.sender_column]))
         out: list[pd.DataFrame] = []
-        for _, group in rows.groupby("account_identity", sort=False):
-            group = group.sort_values([schema.timestamp_column, "_tie_break_rank"], kind="stable")
+        for _, group in rows.groupby("_account", sort=False):
+            group = group.sort_values(schema.timestamp_column, kind="stable")
             amounts = group[schema.amount_column].to_numpy(dtype="float64")
             steps = group[schema.timestamp_column].to_numpy()
-            history = np.arange(len(group))
+            history = np.zeros(len(group), dtype="int64")
             diff = np.zeros(len(group), dtype="int64")
             ratio = np.zeros(len(group))
-            running = 0.0
             for i in range(len(group)):
-                if i > 0:
-                    diff[i] = steps[i] - steps[i - 1]
-                    ratio[i] = np.log((amounts[i] + AMOUNT_EPSILON) / (running / i + AMOUNT_EPSILON))
-                running += amounts[i]
+                earlier = np.flatnonzero(steps < steps[i])
+                history[i] = len(earlier)
+                if len(earlier):
+                    diff[i] = steps[i] - steps[earlier].max()
+                    ratio[i] = np.log((amounts[i] + AMOUNT_EPSILON) / (amounts[earlier].mean() + AMOUNT_EPSILON))
             bucket = np.select([history == 0, history < 4, history < 9], ["1", "2-4", "5-9"], default=">=10")
             out.append(
                 pd.DataFrame(

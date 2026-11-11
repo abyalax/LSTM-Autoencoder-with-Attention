@@ -11,6 +11,15 @@ class SplitConfig:
 
     train_fraction: float = 0.70
     validation_fraction: float = 0.15
+    # Receivers are assigned to train/val/test without ever looking at labels.
+    # "receiver_size" balances the number of transactions per receiver across splits
+    # (label-free); "none" is a plain random receiver split.
+    stratify_by: str = "receiver_size"
+
+    def __post_init__(self) -> None:
+        """Validate the stratification mode."""
+        if self.stratify_by not in ("receiver_size", "none"):
+            raise ValueError(f"stratify_by must be 'receiver_size' or 'none', got {self.stratify_by!r}.")
 
 
 @dataclass(frozen=True)

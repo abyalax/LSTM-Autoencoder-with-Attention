@@ -42,6 +42,42 @@ results built on the OLD split/identity must be redone):
 numbers) is built on the pre-fix split/identity and is not valid until
 re-run** -- see the command list at the end of this file.
 
+## 2026-11-10 session B (pipeline integrity + frozen score strategy, see `0004-*.patch`)
+
+Built on top of `0682e5b` (role-aware account identity, volume-stratified split). New in this patch:
+
+- **Ties (P1.1):** `step` is hourly, so same-step order is not chronology. History features now use only STRICTLY
+  EARLIER steps; same-step rows get identical features; rows are sorted by (account, step, type, amount, sender)
+  only for reproducibility; windows EXCLUDE same-step peers. Replaces the row-order tie-break of `0003`.
+- **Padding (P1.3):** windows are RIGHT-padded and the encoder uses `pack_padded_sequence`, so padding never enters
+  the LSTM state (old: left zero-padding ran through the LSTM). `tests/test_padding_invariance.py` needs real PyTorch
+  (not run in the sandbox that produced this patch -- run `uv run pytest` locally).
+- **Split (P1.4):** one shared label-free `ReceiverSplitter` (`evaluation/receiver_split.py`) used by pipeline,
+  baselines, probe and EDA; `SplitConfig.stratify_by = receiver_size | none`; audit check `split_is_label_free`.
+- **Scoring (P2.0):** `select-score-strategy` picks `mean` vs `last` per architecture x window from VALIDATION AP,
+  writes an immutable registry bound to the checkpoints; `eval-standalone` (test) and `eval-hybrid` refuse to run
+  without it. Reports record the strategy used.
+- **Audit:** `tie_invariance` is now a hard check; new `split_is_label_free`; `receiver_semantics` (INFO) reports
+  how often a CASH_OUT origin was an earlier TRANSFER receiver (coverage of the mule narrative).
+
+**All checkpoints and reports older than this patch are stale** (features, windows, encoder and split changed).
+
+Final-run command order (heavy; run on the training machine, not in the session):
+
+```
+uv run pytest
+uv run python -m lstm_autoencoder audit-pipeline --dataset paysim_synthetic_financial
+uv run python -m lstm_autoencoder train-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures plain,attention
+uv run python -m lstm_autoencoder select-score-strategy --dataset paysim_synthetic_financial --windows 1,3,5,10 --architectures plain,attention --seeds 42,123,2026
+uv run python -m lstm_autoencoder ablation --dataset paysim_synthetic_financial
+uv run python -m lstm_autoencoder eval-standalone --dataset paysim_synthetic_financial --windows 1,3,5,10 --architectures plain,attention --bootstrap 2000
+uv run python -m lstm_autoencoder eval-hybrid-all-configs --dataset paysim_synthetic_financial --windows 1,3,5,10 --seeds 42,123,2026 --architectures plain,attention --bootstrap 2000
+uv run python -m lstm_autoencoder summarize-results --dataset paysim_synthetic_financial
+```
+
+Check the flags of `train-all-configs` with `--help` first; `audit-pipeline` must report ALL HARD CHECKS PASSED before
+training.
+
 ## 2026-11-09 session (pre-submit P0/P1 pass, see `0001-*.patch`)
 
 Checked off above are the items this session actually verified with new
@@ -100,7 +136,7 @@ pass (IMRAD narrative + editorial still queued separately).
 ### P1.3 Audit padding and recurrent-state handling
 
 - [x] - Add tests for left-padding masks at each valid sequence length from 1 through W [AC - Mask contains exactly the real positions] -- `0003-*.patch`; existing vectorized logic found already correct
-- [ ] - Measure whether zero-valued left-padding changes LSTM hidden/cell states for otherwise identical valid sequences [AC - A regression test detects padding-induced state changes]
+- [x] - Measure whether zero-valued left-padding changes LSTM hidden/cell states for otherwise identical valid sequences [AC - A regression test detects padding-induced state changes]
 - [ ] - Compare current left-padding with right-padding plus `pack_padded_sequence`, or an equivalent recurrent mask [AC - Both approaches are evaluated on identical data]
 - [ ] - Verify that attention and reconstruction loss ignore padding while the encoder state does not encode padding length unintentionally [AC - Padding-invariance tests pass for the selected implementation]
 - [ ] - Retrain affected checkpoints if sequence representation changes [AC - Checkpoints are not evaluated with incompatible sequence semantics]
@@ -117,7 +153,7 @@ pass (IMRAD narrative + editorial still queued separately).
 
 ### P2.0 Compare reconstruction-score definitions
 
-- [ ] - Implement last-step reconstruction error [AC - Error for the current/final transaction is available per sequence]
+- [x] - Implement last-step reconstruction error [AC - Error for the current/final transaction is available per sequence]
 - [ ] - Preserve mean reconstruction error over valid timesteps [AC - Existing masked mean score remains reproducible]
 - [ ] - Implement max reconstruction error over valid timesteps [AC - Maximum is computed over valid timesteps only]
 - [x] - Compare last-step, mean, and max scores on the same checkpoint, rows, and labels [AC - AUC, AP, and fixed-FPR recall are reported side by side] -- already implemented in `ScoreDiagnostics`/`score-diagnostics` CLI, checkbox had drifted from the code; see `artifacts/report/.../score_diagnostics/`

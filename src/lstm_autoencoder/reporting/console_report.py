@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -64,7 +65,11 @@ class ConsoleReporter:
         path.write_text(self.transcript, encoding="utf-8")
 
     def _emit(self, text: str) -> None:
-        print(text)
+        try:
+            print(text)
+        except UnicodeEncodeError:
+            # Fallback for Windows console encoding issues: replace unsupported chars
+            print(text.encode(sys.stdout.encoding, errors='replace').decode(sys.stdout.encoding))
         self._lines.append(self._strip_ansi(text))
 
     @staticmethod

@@ -10,7 +10,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.loader import DatasetLoader
@@ -20,6 +19,7 @@ from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
 )
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.config import SplitConfig
+from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
@@ -27,11 +27,6 @@ from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
 from lstm_autoencoder.model.sequence_builder import SequenceBatch, SequenceBuilder
 from lstm_autoencoder.model.trainer import Trainer
 from lstm_autoencoder.reporting.reporter import ReportWritter
-
-# Split stratification bins, by per-receiver transaction COUNT (not fraud_rate/label --
-# see `_split_receiver_ids` docstring). Mirrors the `history_bucket` reporting buckets.
-VOLUME_BINS: tuple[float, ...] = (0, 1, 4, 9, float("inf"))
-VOLUME_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
 @dataclass(frozen=True)
@@ -513,31 +508,9 @@ class PaySimModelTrainingPipeline:
         return self._split_receiver_ids(built)
 
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
-        """Split receivers by split_config fractions, stratified by per-receiver transaction count.
-
-        Stratified on `n` (transaction volume), NOT on fraud_rate/n_fraud: binning
-        receivers by their own `isFraud` outcome before the split uses label
-        information to decide split membership, which can inflate validation/test
-        fraud prevalence toward the training prevalence. Volume-based bins still
-        keep thin-history and long-history receivers proportionally represented
-        across splits without touching the label.
-        """
-        receiver_column = self._schema.receiver_column
-        target_column = self._schema.target_column
-        stats = built.groupby(receiver_column).agg(n=(target_column, "size"), n_fraud=(target_column, "sum"))
-        bins = pd.cut(stats["n"], bins=VOLUME_BINS, labels=VOLUME_LABELS, include_lowest=True).fillna(VOLUME_LABELS[0])
-
-        train_ids, rest_ids = train_test_split(
-            stats.index,
-            test_size=1 - self._split_config.train_fraction,
-            random_state=self._seed,
-            stratify=bins,
-        )
-        val_ratio = self._split_config.validation_fraction / (1 - self._split_config.train_fraction)
-        val_ids, test_ids = train_test_split(
-            rest_ids, test_size=1 - val_ratio, random_state=self._seed, stratify=bins.loc[rest_ids]
-        )
-        return {"train": train_ids, "val": val_ids, "test": test_ids}
+        """Split receivers by split_config fractions WITHOUT reading any label."""
+        splitter = ReceiverSplitter(self._split_config, random_seed=self._seed)
+        return splitter.split(built[self._schema.receiver_column])
 
     def _rows_by_receiver(self, batch: SequenceBatch, receiver_ids: dict[str, pd.Index]) -> dict[str, np.ndarray]:
         """Map receiver-id splits onto sequence-batch row indices."""

@@ -266,69 +266,26 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         ratios: tuple[float, float, float] = (0.7, 0.15, 0.15),
     ) -> dict[str, dict[str, float]]:
         """
-        Simulate a stratified 70/15/15 split respecting account-level leakage; report fraud rate per split.
-        Split by receiver (nameDest) to ensure no receiver appears in multiple splits,
-        then stratify by fraud rate to ensure comparable base rates across splits.
+        Simulate the 70/15/15 receiver-level split; report fraud rate per split.
+        Split by receiver (nameDest) so no receiver appears in multiple splits. The
+        split never reads labels (receiver-size stratification only), so per-split
+        fraud rates are an OUTCOME to inspect, not something the split forces equal.
         """
-        from sklearn.model_selection import train_test_split
+        from lstm_autoencoder.evaluation.config import SplitConfig
+        from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
 
-        # Get unique receivers and their fraud rates
-        receiver_stats = (
-            df.groupby("nameDest")
-            .agg(
-                n_transactions=(TARGET_COLUMN, "size"),
-                n_fraud=(TARGET_COLUMN, "sum"),
-            )
-            .reset_index()
-        )
-        receiver_stats["fraud_rate"] = receiver_stats["n_fraud"] / receiver_stats["n_transactions"]
+        split_config = SplitConfig(train_fraction=ratios[0], validation_fraction=ratios[1])
+        from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import account_identity
 
-        # Split receivers into train/val/test (stratified by fraud rate)
-        # First split: train vs (val+test)
-        stratify_bins = pd.cut(
-            receiver_stats["fraud_rate"],
-            bins=[0, 0.001, 0.01, 0.1, 1.0],
-            labels=["very_low", "low", "medium", "high"],
-            include_lowest=True,
-        ).fillna("very_low")
-        receivers_train, receivers_valtest = train_test_split(
-            receiver_stats["nameDest"],
-            test_size=ratios[1] + ratios[2],
-            random_state=42,
-            stratify=stratify_bins,
-        )
+        account = account_identity(df)
+        groups = ReceiverSplitter(split_config, random_seed=42).split(account)
 
-        # Second split: val vs test
-        val_ratio = ratios[1] / (ratios[1] + ratios[2])
-        receivers_valtest_df = receiver_stats[receiver_stats["nameDest"].isin(receivers_valtest)]
-        stratify_bins_valtest = pd.cut(
-            receivers_valtest_df["fraud_rate"],
-            bins=[0, 0.001, 0.01, 0.1, 1.0],
-            labels=["very_low", "low", "medium", "high"],
-            include_lowest=True,
-        ).fillna("very_low")
-        receivers_val, receivers_test = train_test_split(
-            receivers_valtest_df["nameDest"],
-            test_size=1 - val_ratio,
-            random_state=42,
-            stratify=stratify_bins_valtest,
-        )
-
-        # Assign transactions to splits based on receiver
-        train_mask = df["nameDest"].isin(receivers_train)
-        val_mask = df["nameDest"].isin(receivers_val)
-        test_mask = df["nameDest"].isin(receivers_test)
-
-        parts = {
-            "train": df[train_mask],
-            "val": df[val_mask],
-            "test": df[test_mask],
-        }
+        parts = {name: df[account.isin(ids)] for name, ids in groups.items()}
 
         return {
             name: {
                 "n": len(part),
-                "n_receivers": int(part["nameDest"].nunique()),
+                "n_receivers": int(account.loc[part.index].nunique()),
                 "fraud_rate": float(part[TARGET_COLUMN].mean()),
             }
             for name, part in parts.items()

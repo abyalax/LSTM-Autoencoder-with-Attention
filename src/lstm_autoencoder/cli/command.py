@@ -104,6 +104,17 @@ class CommandCLI:
                 [int(seed) for seed in arguments.seeds.split(",")],
                 arguments.split,
             ),
+            "select-score-strategy": lambda: RunnerCLI.run_select_score_strategy(
+                project_root,
+                arguments.dataset,
+                arguments.nrows,
+                arguments.windows,
+                arguments.architectures,
+                arguments.seeds,
+                arguments.hidden_dim,
+                arguments.bottleneck_dim,
+                arguments.force,
+            ),
             "make-figures": lambda: RunnerCLI.run_make_figures(
                 project_root,
                 arguments.dataset,

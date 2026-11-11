@@ -451,6 +451,29 @@ class ParserArgs:
             help="Receiver-cluster bootstrap resamples per run for the 95%% CIs (0 to skip).",
         )
 
+        strategy_parser = subparsers.add_parser(
+            "select-score-strategy",
+            help=(
+                "Choose the reconstruction-score strategy (mean vs last) per architecture x window from VALIDATION "
+                "AP only and freeze it. Must run after training and before eval-standalone / eval-hybrid on test."
+            ),
+        )
+        ParserArgs._add_dataset_arguments(strategy_parser)
+        strategy_parser.add_argument("--windows", type=str, default="1,3,5,10")
+        strategy_parser.add_argument(
+            "--architectures",
+            type=str,
+            default="attention,bottleneck,plain,attention_pooling",
+            help="Comma-separated architectures. Choices: attention, bottleneck, plain, attention_pooling.",
+        )
+        strategy_parser.add_argument("--seeds", type=str, default="42,123,2026")
+        ParserArgs._add_capacity_arguments(strategy_parser)
+        strategy_parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Overwrite an existing frozen registry (only after retraining the checkpoints).",
+        )
+
         figures_parser = subparsers.add_parser(
             "make-figures",
             help=(

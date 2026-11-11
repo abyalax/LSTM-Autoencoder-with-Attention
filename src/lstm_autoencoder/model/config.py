@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 DEFAULT_HIDDEN_DIM = 64
 SELECTION_METRICS: tuple[str, ...] = ("val_loss", "val_auc")
+# Anomaly-score definitions over a window: `mean` over real steps, or `last` = current transaction only.
+SCORE_STRATEGIES: tuple[str, ...] = ("mean", "last")
 
 
 def compose_architecture_tag(base: str, hidden_dim: int, bottleneck_dim: int | None) -> str:

@@ -21,42 +21,45 @@ Mean ± std over seeds. 'CI' is the mean over seeds of each run's 95% receiver-c
 
 | architecture | W | split | AUC | AUC CI | AP | AP CI | recall@FPR 1% | recall@FPR 0.1% | params | report |
 |---|---|---|---|---|---|---|---|---|---|---|
-| attn | W=1 | test | 0.5366 ± 0.0274 | [0.5174, 0.5557] | 0.0134 ± 0.0014 | [0.0094, 0.0186] | 0.102 ± 0.010 | 0.015 ± 0.000 | 130629 | 20261109_232321 |
-| bottleneck | W=1 | test | 0.5903 ± 0.0282 | [0.5730, 0.6073] | 0.0133 ± 0.0008 | [0.0093, 0.0186] | 0.100 ± 0.005 | 0.017 ± 0.002 | 118341 | 20261109_232321 |
-| plain | W=1 | test | 0.5903 ± 0.0282 | [0.5730, 0.6073] | 0.0133 ± 0.0008 | [0.0093, 0.0186] | 0.100 ± 0.005 | 0.017 ± 0.002 | 118341 | 20261109_232321 |
-| attn_pool | W=1 | test | 0.5952 ± 0.0409 | [0.5771, 0.6131] | 0.0131 ± 0.0012 | [0.0093, 0.0182] | 0.097 ± 0.013 | 0.014 ± 0.001 | 126597 | 20261109_232321 |
-| attn | W=3 | test | 0.4755 ± 0.0569 | [0.4553, 0.4952] | 0.0090 ± 0.0008 | [0.0060, 0.0132] | 0.054 ± 0.019 | 0.009 ± 0.001 | 130629 | 20261109_232321 |
-| bottleneck | W=3 | test | 0.4493 ± 0.0254 | [0.4285, 0.4701] | 0.0101 ± 0.0005 | [0.0070, 0.0145] | 0.086 ± 0.001 | 0.009 ± 0.000 | 118341 | 20261109_232321 |
-| plain | W=3 | test | 0.4702 ± 0.0342 | [0.4507, 0.4903] | 0.0089 ± 0.0005 | [0.0060, 0.0132] | 0.068 ± 0.004 | 0.010 ± 0.001 | 118341 | 20261109_232321 |
-| attn_pool | W=3 | test | 0.4525 ± 0.0388 | [0.4320, 0.4734] | 0.0090 ± 0.0005 | [0.0060, 0.0133] | 0.049 ± 0.018 | 0.009 ± 0.000 | 126597 | 20261109_232321 |
-| attn | W=5 | test | 0.4327 ± 0.0458 | [0.4138, 0.4517] | 0.0074 ± 0.0001 | [0.0046, 0.0115] | 0.031 ± 0.000 | 0.007 ± 0.000 | 130629 | 20261109_232321 |
-| bottleneck | W=5 | test | 0.5117 ± 0.0395 | [0.4953, 0.5282] | 0.0079 ± 0.0009 | [0.0050, 0.0120] | 0.039 ± 0.019 | 0.009 ± 0.000 | 118341 | 20261109_232321 |
-| plain | W=5 | test | 0.4819 ± 0.0019 | [0.4619, 0.5013] | 0.0091 ± 0.0003 | [0.0062, 0.0134] | 0.076 ± 0.005 | 0.010 ± 0.000 | 118341 | 20261109_232321 |
-| attn_pool | W=5 | test | 0.3667 ± 0.0436 | [0.3494, 0.3837] | 0.0058 ± 0.0003 | [0.0031, 0.0097] | 0.021 ± 0.004 | 0.007 ± 0.001 | 126597 | 20261109_232321 |
-| attn | W=10 | test | 0.3734 ± 0.0308 | [0.3558, 0.3915] | 0.0063 ± 0.0001 | [0.0036, 0.0103] | 0.030 ± 0.005 | 0.008 ± 0.001 | 130629 | 20261109_232321 |
-| bottleneck | W=10 | test | 0.3245 ± 0.0092 | [0.3084, 0.3409] | 0.0055 ± 0.0002 | [0.0029, 0.0093] | 0.013 ± 0.002 | 0.006 ± 0.000 | 118341 | 20261109_232321 |
-| plain | W=10 | test | 0.4366 ± 0.0276 | [0.4174, 0.4557] | 0.0085 ± 0.0005 | [0.0055, 0.0127] | 0.069 ± 0.005 | 0.011 ± 0.000 | 118341 | 20261109_232321 |
-| attn_pool | W=10 | test | 0.3480 ± 0.0197 | [0.3310, 0.3656] | 0.0057 ± 0.0005 | [0.0034, 0.0092] | 0.036 ± 0.017 | 0.009 ± 0.004 | 126597 | 20261109_232321 |
+| attn | W=1 | test | 0.5332 ± 0.1756 | [0.5174, 0.5494] | 0.0036 ± 0.0015 | [0.0034, 0.0040] | 0.001 ± 0.001 | 0.001 ± 0.001 | 130629 | 20261110_213747 |
+| bottleneck | W=1 | test | 0.4991 ± 0.2091 | [0.4828, 0.5166] | 0.0035 ± 0.0016 | [0.0033, 0.0038] | 0.001 ± 0.001 | 0.000 ± 0.000 | 118341 | 20261110_213747 |
+| plain | W=1 | test | 0.4730 ± 0.1942 | [0.4561, 0.4907] | 0.0033 ± 0.0015 | [0.0031, 0.0038] | 0.001 ± 0.002 | 0.001 ± 0.001 | 118341 | 20261110_213747 |
+| attn_pool | W=1 | test | 0.3162 ± 0.0842 | [0.3002, 0.3322] | 0.0019 ± 0.0003 | [0.0018, 0.0021] | 0.000 ± 0.000 | 0.000 ± 0.000 | 126597 | 20261110_213747 |
+| attn | W=3 | test | 0.5749 ± 0.2373 | [0.5562, 0.5938] | 0.0223 ± 0.0166 | [0.0188, 0.0270] | 0.162 ± 0.127 | 0.002 ± 0.003 | 130629 | 20261110_213747 |
+| bottleneck | W=3 | test | 0.6512 ± 0.0110 | [0.6355, 0.6666] | 0.0046 ± 0.0004 | [0.0043, 0.0050] | 0.002 ± 0.000 | 0.001 ± 0.001 | 118341 | 20261110_213747 |
+| plain | W=3 | test | 0.2640 ± 0.0094 | [0.2470, 0.2803] | 0.0018 ± 0.0000 | [0.0017, 0.0019] | 0.000 ± 0.000 | 0.000 ± 0.000 | 118341 | 20261110_213747 |
+| attn_pool | W=3 | test | 0.3738 ± 0.1584 | [0.3571, 0.3902] | 0.0024 ± 0.0006 | [0.0022, 0.0030] | 0.007 ± 0.005 | 0.002 ± 0.001 | 126597 | 20261110_213747 |
+| attn | W=5 | test | 0.6744 ± 0.0008 | [0.6568, 0.6930] | 0.0076 ± 0.0003 | [0.0069, 0.0085] | 0.013 ± 0.021 | 0.000 ± 0.000 | 130629 | 20261110_213747 |
+| bottleneck | W=5 | test | 0.6527 ± 0.0058 | [0.6374, 0.6677] | 0.0046 ± 0.0002 | [0.0042, 0.0049] | 0.002 ± 0.000 | 0.001 ± 0.001 | 118341 | 20261110_213747 |
+| plain | W=5 | test | 0.2881 ± 0.0397 | [0.2713, 0.3046] | 0.0018 ± 0.0001 | [0.0017, 0.0020] | 0.002 ± 0.000 | 0.001 ± 0.001 | 118341 | 20261110_213747 |
+| attn_pool | W=5 | test | 0.3305 ± 0.0509 | [0.3132, 0.3472] | 0.0020 ± 0.0001 | [0.0019, 0.0022] | 0.003 ± 0.002 | 0.001 ± 0.001 | 126597 | 20261110_213747 |
+| attn | W=10 | test | 0.4067 ± 0.2026 | [0.3889, 0.4240] | 0.0029 ± 0.0017 | [0.0027, 0.0033] | 0.006 ± 0.004 | 0.001 ± 0.001 | 130629 | 20261110_213747 |
+| bottleneck | W=10 | test | 0.6511 ± 0.0062 | [0.6359, 0.6660] | 0.0045 ± 0.0002 | [0.0042, 0.0049] | 0.002 ± 0.000 | 0.000 ± 0.000 | 118341 | 20261110_213747 |
+| plain | W=10 | test | 0.4133 ± 0.1969 | [0.3959, 0.4307] | 0.0029 ± 0.0017 | [0.0027, 0.0031] | 0.002 ± 0.000 | 0.001 ± 0.001 | 118341 | 20261110_213747 |
+| attn_pool | W=10 | test | 0.6519 ± 0.0029 | [0.6366, 0.6676] | 0.0046 ± 0.0002 | [0.0043, 0.0050] | 0.002 ± 0.000 | 0.001 ± 0.001 | 126597 | 20261110_213747 |
 
 ## 2. Baselines (test split)
 
-Supervised ablation (report 20261107_000439):
+Supervised ablation (report 20261110_121107):
 
 | model | test AUC | test AP |
 |---|---|---|
-| full | 0.8661 | 0.0426 |
-| no_history | 0.8027 | 0.0211 |
-| history_only | 0.7618 | 0.0087 |
-| full_gbm | 0.8592 | 0.2938 |
+| full | 0.8758 | 0.0535 |
+| no_history | 0.8590 | 0.0367 |
+| history_only | 0.5541 | 0.0032 |
+| full_gbm | 0.8700 | 0.2816 |
+| full_gbm_no_step | 0.8681 | 0.0420 |
+| ae_features | 0.7388 | 0.0449 |
+| ae_features_gbm | 0.7804 | 0.0444 |
 
 ### Baseline per history bucket (side-by-side)
 
-| bucket | full_n | full_n_fraud | full_AUC | full_AP | no_history_n | no_history_n_fraud | no_history_AUC | no_history_AP | history_only_n | history_only_n_fraud | history_only_AUC | history_only_AP | full_gbm_n | full_gbm_n_fraud | full_gbm_AUC | full_gbm_AP |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 0 | 0.8469 | 0.1063 | 76436 | 0 | 0.8642 | 0.1160 | 76436 | 0 | 0.5000 | 0.0106 | 76436 | 0 | 0.8411 | 0.3105 |
-| 2-4 | 139439 | 0 | 0.7722 | 0.0166 | 139439 | 0 | 0.7201 | 0.0077 | 139439 | 0 | 0.5175 | 0.0018 | 139439 | 0 | 0.8465 | 0.2771 |
-| 5-9 | 110007 | 0 | 0.7587 | 0.0072 | 110007 | 0 | 0.6811 | 0.0036 | 110007 | 0 | 0.5558 | 0.0012 | 110007 | 0 | 0.8055 | 0.2898 |
-| >=10 | 89161 | 0 | 0.7206 | 0.0038 | 89161 | 0 | 0.6485 | 0.0020 | 89161 | 0 | 0.4885 | 0.0008 | 89161 | 0 | 0.7721 | 0.1889 |
+| bucket | full_n | full_n_fraud | full_AUC | full_AP | no_history_n | no_history_n_fraud | no_history_AUC | no_history_AP | history_only_n | history_only_n_fraud | history_only_AUC | history_only_AP | full_gbm_n | full_gbm_n_fraud | full_gbm_AUC | full_gbm_AP | full_gbm_no_step_n | full_gbm_no_step_n_fraud | full_gbm_no_step_AUC | full_gbm_no_step_AP | ae_features_n | ae_features_n_fraud | ae_features_AUC | ae_features_AP | ae_features_gbm_n | ae_features_gbm_n_fraud | ae_features_gbm_AUC | ae_features_gbm_AP |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 370968 | 0 | 0.8613 | 0.0582 | 370968 | 0 | 0.8585 | 0.0604 | 370968 | 0 | 0.5000 | 0.0032 | 370968 | 0 | 0.8614 | 0.2826 | 370968 | 0 | 0.8527 | 0.0451 | 370968 | 0 | 0.7077 | 0.0483 | 370968 | 0 | 0.7541 | 0.0474 |
+| 2-4 | 34242 | 0 | - | - | 34242 | 0 | - | - | 34242 | 0 | - | - | 34242 | 0 | - | - | 34242 | 0 | - | - | 34242 | 0 | - | - | 34242 | 0 | - | - |
+| 5-9 | 9552 | 0 | - | - | 9552 | 0 | - | - | 9552 | 0 | - | - | 9552 | 0 | - | - | 9552 | 0 | - | - | 9552 | 0 | - | - | 9552 | 0 | - | - |
+| >=10 | 1054 | 0 | - | - | 1054 | 0 | - | - | 1054 | 0 | - | - | 1054 | 0 | - | - | 1054 | 0 | - | - | 1054 | 0 | - | - | 1054 | 0 | - | - |
 
 Unsupervised baselines (report 20261107_065750, 3 seeds):
 
@@ -68,191 +71,68 @@ Unsupervised baselines (report 20261107_065750, 3 seeds):
 
 ## 3. Hybrid classifier (LR features + LSTM-AE reconstruction error)
 
-### W=1, attn (report 20261109_235744, seeds=[42, 123, 2026])
+### W=1, attn (report 20261110_221030, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8676 ± 0.0002 | 0.0430 ± 0.0007 | 0.232 |
-| hybrid_val_norm | 0.8674 ± 0.0003 | 0.0434 ± 0.0008 | 0.234 |
-| stack_val | 0.8689 ± 0.0002 | 0.0407 ± 0.0001 | 0.222 |
-| hybrid_train_naive | 0.8675 ± 0.0003 | 0.0448 ± 0.0010 | 0.257 |
-| null_hybrid_val | 0.8657 ± 0.0002 | 0.0413 ± 0.0000 | 0.226 |
-| null_stack_val | 0.8661 ± 0.0002 | 0.0426 ± 0.0000 | 0.248 |
-| ae_error_only | 0.5366 ± 0.0274 | 0.0134 ± 0.0014 | 0.102 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8721 ± 0.0031 | 0.0409 ± 0.0004 | 0.233 |
+| hybrid_val_norm | 0.8720 ± 0.0032 | 0.0409 ± 0.0004 | 0.232 |
+| stack_val | 0.8730 ± 0.0034 | 0.0405 ± 0.0005 | 0.231 |
+| hybrid_train_naive | 0.8724 ± 0.0028 | 0.0407 ± 0.0006 | 0.233 |
+| null_hybrid_val | 0.8706 ± 0.0001 | 0.0413 ± 0.0000 | 0.240 |
+| null_stack_val | 0.8706 ± 0.0002 | 0.0413 ± 0.0000 | 0.238 |
+| ae_error_only | 0.5332 ± 0.1756 | 0.0036 ± 0.0015 | 0.001 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 1/3 | 3/3 |
+| hybrid_val_vs_lr_val_control | - | - | 1/3 | 0/3 |
 | hybrid_val_vs_baseline_train | - | - | 1/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 3/3 |
+| stack_val_vs_baseline_train | - | - | 1/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 1/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8537 ± 0.0018 | [0.8382, 0.8679] | 0.1080 ± 0.0004 | [0.0945, 0.1263] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7773 ± 0.0019 | [0.7400, 0.8132] | 0.0181 ± 0.0004 | [0.0133, 0.0270] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7646 ± 0.0020 | [0.7111, 0.8147] | 0.0072 ± 0.0000 | [0.0047, 0.0121] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7190 ± 0.0049 | [0.6488, 0.7843] | 0.0039 ± 0.0001 | [0.0026, 0.0071] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8576 ± 0.0035 | [0.8448, 0.8698] | 0.0442 ± 0.0008 | [0.0388, 0.0512] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6988 ± 0.0270 | - | 0.0526 ± 0.0050 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7475 ± 0.0177 | - | 0.0185 ± 0.0005 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7510 ± 0.0170 | - | 0.0077 ± 0.0005 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6999 ± 0.0149 | - | 0.0294 ± 0.0002 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.5956 ± 0.1958 | - | 0.0194 ± 0.0196 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=1, bottleneck (report 20261110_003144, seeds=[42, 123, 2026])
+### W=1, bottleneck (report 20261110_224301, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8678 ± 0.0008 | 0.0427 ± 0.0005 | 0.233 |
-| hybrid_val_norm | 0.8673 ± 0.0004 | 0.0437 ± 0.0007 | 0.236 |
-| stack_val | 0.8690 ± 0.0004 | 0.0407 ± 0.0005 | 0.221 |
-| hybrid_train_naive | 0.8685 ± 0.0015 | 0.0442 ± 0.0007 | 0.253 |
-| null_hybrid_val | 0.8656 ± 0.0004 | 0.0413 ± 0.0001 | 0.228 |
-| null_stack_val | 0.8660 ± 0.0004 | 0.0426 ± 0.0001 | 0.248 |
-| ae_error_only | 0.5903 ± 0.0282 | 0.0133 ± 0.0008 | 0.100 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8714 ± 0.0017 | 0.0395 ± 0.0021 | 0.229 |
+| hybrid_val_norm | 0.8714 ± 0.0018 | 0.0400 ± 0.0016 | 0.230 |
+| stack_val | 0.8711 ± 0.0006 | 0.0403 ± 0.0004 | 0.232 |
+| hybrid_train_naive | 0.8718 ± 0.0014 | 0.0401 ± 0.0011 | 0.231 |
+| null_hybrid_val | 0.8708 ± 0.0004 | 0.0413 ± 0.0000 | 0.240 |
+| null_stack_val | 0.8708 ± 0.0005 | 0.0412 ± 0.0000 | 0.238 |
+| ae_error_only | 0.4991 ± 0.2091 | 0.0035 ± 0.0016 | 0.001 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 2/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 2/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 3/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8513 ± 0.0006 | [0.8353, 0.8654] | 0.1081 ± 0.0022 | [0.0946, 0.1262] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7810 ± 0.0020 | [0.7441, 0.8163] | 0.0179 ± 0.0004 | [0.0133, 0.0262] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7609 ± 0.0034 | [0.7071, 0.8125] | 0.0072 ± 0.0002 | [0.0047, 0.0120] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7229 ± 0.0014 | [0.6522, 0.7875] | 0.0040 ± 0.0000 | [0.0026, 0.0073] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6711 ± 0.0616 | - | 0.0545 ± 0.0033 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7484 ± 0.0292 | - | 0.0182 ± 0.0003 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7450 ± 0.0142 | - | 0.0082 ± 0.0021 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.7105 ± 0.0036 | - | 0.0297 ± 0.0004 | - |
-
-### W=1, plain (report 20261110_010548, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8678 ± 0.0008 | 0.0427 ± 0.0005 | 0.233 |
-| hybrid_val_norm | 0.8673 ± 0.0004 | 0.0437 ± 0.0007 | 0.236 |
-| stack_val | 0.8690 ± 0.0004 | 0.0407 ± 0.0005 | 0.221 |
-| hybrid_train_naive | 0.8685 ± 0.0015 | 0.0442 ± 0.0007 | 0.253 |
-| null_hybrid_val | 0.8656 ± 0.0004 | 0.0413 ± 0.0001 | 0.228 |
-| null_stack_val | 0.8660 ± 0.0004 | 0.0426 ± 0.0001 | 0.248 |
-| ae_error_only | 0.5903 ± 0.0282 | 0.0133 ± 0.0008 | 0.100 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 2/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 2/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 3/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8513 ± 0.0006 | [0.8353, 0.8654] | 0.1081 ± 0.0022 | [0.0946, 0.1262] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7810 ± 0.0020 | [0.7441, 0.8163] | 0.0179 ± 0.0004 | [0.0133, 0.0262] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7609 ± 0.0034 | [0.7071, 0.8125] | 0.0072 ± 0.0002 | [0.0047, 0.0120] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7229 ± 0.0014 | [0.6522, 0.7875] | 0.0040 ± 0.0000 | [0.0026, 0.0073] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6711 ± 0.0616 | - | 0.0545 ± 0.0033 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7484 ± 0.0292 | - | 0.0182 ± 0.0003 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7450 ± 0.0142 | - | 0.0082 ± 0.0021 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.7105 ± 0.0036 | - | 0.0297 ± 0.0004 | - |
-
-### W=1, attn_pool (report 20261110_013951, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8697 ± 0.0001 | 0.0438 ± 0.0005 | 0.237 |
-| hybrid_val_norm | 0.8692 ± 0.0002 | 0.0452 ± 0.0016 | 0.246 |
-| stack_val | 0.8705 ± 0.0003 | 0.0402 ± 0.0001 | 0.222 |
-| hybrid_train_naive | 0.8705 ± 0.0005 | 0.0458 ± 0.0004 | 0.260 |
-| null_hybrid_val | 0.8657 ± 0.0002 | 0.0413 ± 0.0000 | 0.227 |
-| null_stack_val | 0.8661 ± 0.0002 | 0.0426 ± 0.0000 | 0.249 |
-| ae_error_only | 0.5952 ± 0.0409 | 0.0131 ± 0.0012 | 0.097 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 3/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 3/3 | 2/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 3/3 | 3/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8512 ± 0.0009 | [0.8361, 0.8657] | 0.1061 ± 0.0018 | [0.0925, 0.1242] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7839 ± 0.0009 | [0.7467, 0.8196] | 0.0186 ± 0.0001 | [0.0137, 0.0280] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7738 ± 0.0021 | [0.7211, 0.8238] | 0.0073 ± 0.0000 | [0.0049, 0.0124] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7254 ± 0.0072 | [0.6560, 0.7898] | 0.0040 ± 0.0001 | [0.0026, 0.0072] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.7184 ± 0.0056 | - | 0.0553 ± 0.0095 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7617 ± 0.0100 | - | 0.0172 ± 0.0009 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7883 ± 0.0038 | - | 0.0070 ± 0.0004 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.7220 ± 0.0296 | - | 0.0292 ± 0.0007 | - |
-
-### W=3, attn (report 20261110_021351, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8663 ± 0.0002 | 0.0417 ± 0.0003 | 0.223 |
-| hybrid_val_norm | 0.8661 ± 0.0003 | 0.0418 ± 0.0004 | 0.224 |
-| stack_val | 0.8675 ± 0.0005 | 0.0412 ± 0.0008 | 0.229 |
-| hybrid_train_naive | 0.8671 ± 0.0005 | 0.0428 ± 0.0003 | 0.242 |
-| null_hybrid_val | 0.8657 ± 0.0000 | 0.0413 ± 0.0001 | 0.226 |
-| null_stack_val | 0.8660 ± 0.0000 | 0.0425 ± 0.0001 | 0.250 |
-| ae_error_only | 0.4755 ± 0.0569 | 0.0090 ± 0.0008 | 0.054 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 1/3 | 1/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 1/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 1/3 | 0/3 |
 | hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 0/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
@@ -260,40 +140,122 @@ Paired deltas (candidate - reference); the CI columns count the seeds whose boot
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8527 ± 0.0018 | [0.8372, 0.8673] | 0.1079 ± 0.0010 | [0.0948, 0.1261] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7729 ± 0.0016 | [0.7351, 0.8101] | 0.0170 ± 0.0001 | [0.0127, 0.0246] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7555 ± 0.0042 | [0.7012, 0.8079] | 0.0071 ± 0.0000 | [0.0047, 0.0117] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7192 ± 0.0038 | [0.6484, 0.7842] | 0.0040 ± 0.0001 | [0.0026, 0.0072] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8568 ± 0.0019 | [0.8439, 0.8689] | 0.0432 ± 0.0020 | [0.0379, 0.0501] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.5720 ± 0.0877 | - | 0.0483 ± 0.0121 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7113 ± 0.0125 | - | 0.0108 ± 0.0007 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7150 ± 0.0202 | - | 0.0048 ± 0.0002 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.7045 ± 0.0077 | - | 0.0273 ± 0.0027 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.5581 ± 0.2339 | - | 0.0169 ± 0.0123 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=3, bottleneck (report 20261110_024752, seeds=[42, 123, 2026])
+### W=1, plain (report 20261110_231501, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8664 ± 0.0005 | 0.0424 ± 0.0002 | 0.220 |
-| hybrid_val_norm | 0.8662 ± 0.0002 | 0.0431 ± 0.0010 | 0.221 |
-| stack_val | 0.8678 ± 0.0005 | 0.0411 ± 0.0004 | 0.225 |
-| hybrid_train_naive | 0.8671 ± 0.0005 | 0.0435 ± 0.0002 | 0.239 |
-| null_hybrid_val | 0.8658 ± 0.0001 | 0.0413 ± 0.0001 | 0.225 |
-| null_stack_val | 0.8661 ± 0.0001 | 0.0425 ± 0.0001 | 0.250 |
-| ae_error_only | 0.4493 ± 0.0254 | 0.0101 ± 0.0005 | 0.086 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8708 ± 0.0007 | 0.0411 ± 0.0013 | 0.234 |
+| hybrid_val_norm | 0.8708 ± 0.0008 | 0.0413 ± 0.0010 | 0.234 |
+| stack_val | 0.8711 ± 0.0006 | 0.0409 ± 0.0009 | 0.232 |
+| hybrid_train_naive | 0.8712 ± 0.0005 | 0.0413 ± 0.0010 | 0.234 |
+| null_hybrid_val | 0.8707 ± 0.0002 | 0.0413 ± 0.0000 | 0.240 |
+| null_stack_val | 0.8706 ± 0.0003 | 0.0413 ± 0.0000 | 0.239 |
+| ae_error_only | 0.4730 ± 0.1942 | 0.0033 ± 0.0015 | 0.001 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 3/3 |
+| hybrid_val_vs_lr_val_control | - | - | 0/3 | 1/3 |
+| hybrid_val_vs_baseline_train | - | - | 0/3 | 1/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 1/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 1/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8562 ± 0.0008 | [0.8431, 0.8687] | 0.0447 ± 0.0014 | [0.0394, 0.0517] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.5267 ± 0.2163 | - | 0.0177 ± 0.0125 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=1, attn_pool (report 20261110_234656, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8719 ± 0.0009 | 0.0417 ± 0.0006 | 0.237 |
+| hybrid_val_norm | 0.8718 ± 0.0008 | 0.0417 ± 0.0005 | 0.237 |
+| stack_val | 0.8706 ± 0.0001 | 0.0409 ± 0.0002 | 0.235 |
+| hybrid_train_naive | 0.8716 ± 0.0008 | 0.0417 ± 0.0006 | 0.237 |
+| null_hybrid_val | 0.8708 ± 0.0003 | 0.0414 ± 0.0000 | 0.239 |
+| null_stack_val | 0.8707 ± 0.0004 | 0.0413 ± 0.0000 | 0.239 |
+| ae_error_only | 0.3162 ± 0.0842 | 0.0019 ± 0.0003 | 0.000 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 1/3 | 1/3 |
+| hybrid_val_vs_baseline_train | - | - | 1/3 | 1/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 1/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8573 ± 0.0010 | [0.8442, 0.8698] | 0.0456 ± 0.0005 | [0.0402, 0.0524] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.3535 ± 0.0942 | - | 0.0042 ± 0.0004 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=3, attn (report 20261111_001848, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8711 ± 0.0003 | 0.0415 ± 0.0001 | 0.238 |
+| hybrid_val_norm | 0.8711 ± 0.0003 | 0.0415 ± 0.0001 | 0.238 |
+| stack_val | 0.8708 ± 0.0001 | 0.0414 ± 0.0001 | 0.238 |
+| hybrid_train_naive | 0.8714 ± 0.0004 | 0.0417 ± 0.0003 | 0.238 |
+| null_hybrid_val | 0.8707 ± 0.0004 | 0.0413 ± 0.0001 | 0.238 |
+| null_stack_val | 0.8707 ± 0.0005 | 0.0412 ± 0.0001 | 0.236 |
+| ae_error_only | 0.5749 ± 0.2373 | 0.0223 ± 0.0166 | 0.162 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 0/3 | 1/3 |
 | hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 2/3 |
 | hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 3/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
@@ -301,319 +263,155 @@ Paired deltas (candidate - reference); the CI columns count the seeds whose boot
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8547 ± 0.0015 | [0.8391, 0.8698] | 0.1078 ± 0.0008 | [0.0946, 0.1259] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7734 ± 0.0057 | [0.7362, 0.8108] | 0.0173 ± 0.0002 | [0.0127, 0.0254] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7523 ± 0.0009 | [0.6981, 0.8044] | 0.0071 ± 0.0001 | [0.0047, 0.0119] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7202 ± 0.0024 | [0.6497, 0.7851] | 0.0040 ± 0.0001 | [0.0027, 0.0073] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8565 ± 0.0003 | [0.8433, 0.8690] | 0.0453 ± 0.0002 | [0.0399, 0.0521] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6486 ± 0.0571 | - | 0.0567 ± 0.0069 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7081 ± 0.0257 | - | 0.0111 ± 0.0004 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6927 ± 0.0024 | - | 0.0043 ± 0.0002 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6791 ± 0.0223 | - | 0.0228 ± 0.0031 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.5769 ± 0.2366 | - | 0.0287 ± 0.0213 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=3, plain (report 20261110_032154, seeds=[42, 123, 2026])
+### W=3, bottleneck (report 20261111_005028, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8667 ± 0.0007 | 0.0423 ± 0.0006 | 0.223 |
-| hybrid_val_norm | 0.8666 ± 0.0006 | 0.0425 ± 0.0007 | 0.224 |
-| stack_val | 0.8680 ± 0.0010 | 0.0411 ± 0.0005 | 0.226 |
-| hybrid_train_naive | 0.8671 ± 0.0007 | 0.0434 ± 0.0006 | 0.240 |
-| null_hybrid_val | 0.8656 ± 0.0001 | 0.0413 ± 0.0002 | 0.225 |
-| null_stack_val | 0.8659 ± 0.0002 | 0.0425 ± 0.0001 | 0.248 |
-| ae_error_only | 0.4702 ± 0.0342 | 0.0089 ± 0.0005 | 0.068 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8760 ± 0.0007 | 0.0416 ± 0.0005 | 0.230 |
+| hybrid_val_norm | 0.8760 ± 0.0007 | 0.0416 ± 0.0005 | 0.230 |
+| stack_val | 0.8780 ± 0.0010 | 0.0408 ± 0.0004 | 0.229 |
+| hybrid_train_naive | 0.8760 ± 0.0006 | 0.0411 ± 0.0008 | 0.228 |
+| null_hybrid_val | 0.8706 ± 0.0003 | 0.0413 ± 0.0000 | 0.240 |
+| null_stack_val | 0.8706 ± 0.0004 | 0.0413 ± 0.0000 | 0.238 |
+| ae_error_only | 0.6512 ± 0.0110 | 0.0046 ± 0.0004 | 0.002 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| hybrid_val_vs_lr_val_control | - | - | 3/3 | 1/3 |
+| hybrid_val_vs_baseline_train | - | - | 3/3 | 1/3 |
 | stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 2/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 3/3 | 0/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8552 ± 0.0009 | [0.8398, 0.8694] | 0.1065 ± 0.0015 | [0.0931, 0.1246] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7741 ± 0.0043 | [0.7360, 0.8108] | 0.0175 ± 0.0004 | [0.0128, 0.0259] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7545 ± 0.0042 | [0.7013, 0.8074] | 0.0070 ± 0.0001 | [0.0046, 0.0119] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7218 ± 0.0039 | [0.6517, 0.7872] | 0.0040 ± 0.0001 | [0.0027, 0.0074] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8619 ± 0.0008 | [0.8492, 0.8734] | 0.0440 ± 0.0012 | [0.0386, 0.0510] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6804 ± 0.0294 | - | 0.0521 ± 0.0072 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.6901 ± 0.0209 | - | 0.0110 ± 0.0003 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6859 ± 0.0256 | - | 0.0037 ± 0.0004 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6764 ± 0.0136 | - | 0.0224 ± 0.0040 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.7234 ± 0.0103 | - | 0.0172 ± 0.0062 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=3, attn_pool (report 20261110_035601, seeds=[42, 123, 2026])
+### W=3, plain (report 20261111_012258, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8663 ± 0.0010 | 0.0430 ± 0.0012 | 0.234 |
-| hybrid_val_norm | 0.8665 ± 0.0009 | 0.0430 ± 0.0002 | 0.231 |
-| stack_val | 0.8680 ± 0.0001 | 0.0407 ± 0.0003 | 0.225 |
-| hybrid_train_naive | 0.8669 ± 0.0009 | 0.0440 ± 0.0009 | 0.252 |
-| null_hybrid_val | 0.8656 ± 0.0001 | 0.0413 ± 0.0001 | 0.227 |
-| null_stack_val | 0.8660 ± 0.0002 | 0.0425 ± 0.0001 | 0.249 |
-| ae_error_only | 0.4525 ± 0.0388 | 0.0090 ± 0.0005 | 0.049 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8714 ± 0.0008 | 0.0416 ± 0.0002 | 0.237 |
+| hybrid_val_norm | 0.8714 ± 0.0008 | 0.0416 ± 0.0003 | 0.237 |
+| stack_val | 0.8706 ± 0.0001 | 0.0409 ± 0.0005 | 0.236 |
+| hybrid_train_naive | 0.8715 ± 0.0007 | 0.0415 ± 0.0002 | 0.237 |
+| null_hybrid_val | 0.8708 ± 0.0004 | 0.0413 ± 0.0000 | 0.240 |
+| null_stack_val | 0.8708 ± 0.0005 | 0.0412 ± 0.0000 | 0.238 |
+| ae_error_only | 0.2640 ± 0.0094 | 0.0018 ± 0.0000 | 0.000 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 1/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 1/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 3/3 |
+| hybrid_val_vs_lr_val_control | - | - | 1/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 1/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 2/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8520 ± 0.0059 | [0.8369, 0.8665] | 0.1056 ± 0.0060 | [0.0923, 0.1240] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7755 ± 0.0005 | [0.7387, 0.8124] | 0.0176 ± 0.0003 | [0.0129, 0.0260] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7516 ± 0.0032 | [0.6971, 0.8051] | 0.0070 ± 0.0001 | [0.0046, 0.0118] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7154 ± 0.0081 | [0.6422, 0.7829] | 0.0041 ± 0.0001 | [0.0027, 0.0075] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8569 ± 0.0009 | [0.8434, 0.8697] | 0.0455 ± 0.0004 | [0.0401, 0.0524] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6644 ± 0.0799 | - | 0.0613 ± 0.0107 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7309 ± 0.0061 | - | 0.0114 ± 0.0003 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6929 ± 0.0276 | - | 0.0042 ± 0.0004 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6712 ± 0.0302 | - | 0.0293 ± 0.0035 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.2952 ± 0.0105 | - | 0.0039 ± 0.0000 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=5, attn (report 20261110_042919, seeds=[42, 123, 2026])
+### W=3, attn_pool (report 20261111_015545, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8664 ± 0.0014 | 0.0419 ± 0.0007 | 0.226 |
-| hybrid_val_norm | 0.8662 ± 0.0015 | 0.0424 ± 0.0009 | 0.230 |
-| stack_val | 0.8670 ± 0.0008 | 0.0411 ± 0.0005 | 0.229 |
-| hybrid_train_naive | 0.8670 ± 0.0014 | 0.0431 ± 0.0007 | 0.246 |
-| null_hybrid_val | 0.8657 ± 0.0001 | 0.0413 ± 0.0001 | 0.226 |
-| null_stack_val | 0.8660 ± 0.0001 | 0.0426 ± 0.0001 | 0.250 |
-| ae_error_only | 0.4327 ± 0.0458 | 0.0074 ± 0.0001 | 0.031 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8725 ± 0.0014 | 0.0419 ± 0.0003 | 0.238 |
+| hybrid_val_norm | 0.8725 ± 0.0014 | 0.0419 ± 0.0004 | 0.238 |
+| stack_val | 0.8715 ± 0.0013 | 0.0415 ± 0.0001 | 0.237 |
+| hybrid_train_naive | 0.8730 ± 0.0012 | 0.0422 ± 0.0002 | 0.237 |
+| null_hybrid_val | 0.8708 ± 0.0002 | 0.0413 ± 0.0001 | 0.240 |
+| null_stack_val | 0.8708 ± 0.0003 | 0.0413 ± 0.0001 | 0.239 |
+| ae_error_only | 0.3738 ± 0.1584 | 0.0024 ± 0.0006 | 0.007 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 1/3 | 2/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 2/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 2/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8535 ± 0.0050 | [0.8381, 0.8681] | 0.1076 ± 0.0011 | [0.0945, 0.1258] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7767 ± 0.0040 | [0.7391, 0.8133] | 0.0170 ± 0.0001 | [0.0127, 0.0247] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7539 ± 0.0020 | [0.6980, 0.8075] | 0.0069 ± 0.0001 | [0.0046, 0.0115] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7119 ± 0.0005 | [0.6397, 0.7789] | 0.0040 ± 0.0000 | [0.0026, 0.0072] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6187 ± 0.0681 | - | 0.0529 ± 0.0010 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7306 ± 0.0175 | - | 0.0131 ± 0.0004 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6929 ± 0.0106 | - | 0.0025 ± 0.0003 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6840 ± 0.0070 | - | 0.0233 ± 0.0038 | - |
-
-### W=5, bottleneck (report 20261110_045815, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8662 ± 0.0002 | 0.0412 ± 0.0006 | 0.220 |
-| hybrid_val_norm | 0.8657 ± 0.0004 | 0.0426 ± 0.0023 | 0.227 |
-| stack_val | 0.8669 ± 0.0005 | 0.0410 ± 0.0006 | 0.228 |
-| hybrid_train_naive | 0.8668 ± 0.0001 | 0.0424 ± 0.0004 | 0.241 |
-| null_hybrid_val | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.225 |
-| null_stack_val | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.249 |
-| ae_error_only | 0.5117 ± 0.0395 | 0.0079 ± 0.0009 | 0.039 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 1/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 0/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8532 ± 0.0000 | [0.8377, 0.8674] | 0.1076 ± 0.0004 | [0.0943, 0.1255] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7768 ± 0.0021 | [0.7393, 0.8136] | 0.0172 ± 0.0002 | [0.0128, 0.0251] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7512 ± 0.0034 | [0.6948, 0.8045] | 0.0070 ± 0.0001 | [0.0046, 0.0116] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7138 ± 0.0011 | [0.6410, 0.7802] | 0.0040 ± 0.0001 | [0.0026, 0.0072] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6378 ± 0.0481 | - | 0.0501 ± 0.0217 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7249 ± 0.0367 | - | 0.0135 ± 0.0003 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6698 ± 0.0225 | - | 0.0024 ± 0.0001 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6638 ± 0.0194 | - | 0.0238 ± 0.0028 | - |
-
-### W=5, plain (report 20261110_053459, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8649 ± 0.0004 | 0.0424 ± 0.0004 | 0.227 |
-| hybrid_val_norm | 0.8648 ± 0.0005 | 0.0427 ± 0.0003 | 0.230 |
-| stack_val | 0.8672 ± 0.0002 | 0.0408 ± 0.0002 | 0.225 |
-| hybrid_train_naive | 0.8652 ± 0.0007 | 0.0434 ± 0.0003 | 0.245 |
-| null_hybrid_val | 0.8657 ± 0.0001 | 0.0414 ± 0.0001 | 0.225 |
-| null_stack_val | 0.8660 ± 0.0001 | 0.0426 ± 0.0001 | 0.249 |
-| ae_error_only | 0.4819 ± 0.0019 | 0.0091 ± 0.0003 | 0.076 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 2/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 1/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8546 ± 0.0006 | [0.8393, 0.8688] | 0.1052 ± 0.0012 | [0.0919, 0.1233] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7729 ± 0.0027 | [0.7339, 0.8093] | 0.0177 ± 0.0001 | [0.0129, 0.0264] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7427 ± 0.0016 | [0.6851, 0.7978] | 0.0068 ± 0.0000 | [0.0045, 0.0115] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7125 ± 0.0027 | [0.6411, 0.7786] | 0.0040 ± 0.0001 | [0.0026, 0.0073] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6963 ± 0.0062 | - | 0.0523 ± 0.0009 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7002 ± 0.0099 | - | 0.0139 ± 0.0001 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6279 ± 0.0087 | - | 0.0021 ± 0.0001 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6388 ± 0.0177 | - | 0.0183 ± 0.0007 | - |
-
-### W=5, attn_pool (report 20261110_061318, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8654 ± 0.0007 | 0.0416 ± 0.0003 | 0.231 |
-| hybrid_val_norm | 0.8651 ± 0.0006 | 0.0421 ± 0.0012 | 0.237 |
-| stack_val | 0.8660 ± 0.0004 | 0.0425 ± 0.0008 | 0.247 |
-| hybrid_train_naive | 0.8657 ± 0.0009 | 0.0428 ± 0.0002 | 0.251 |
-| null_hybrid_val | 0.8656 ± 0.0001 | 0.0413 ± 0.0001 | 0.225 |
-| null_stack_val | 0.8660 ± 0.0002 | 0.0426 ± 0.0001 | 0.249 |
-| ae_error_only | 0.3667 ± 0.0436 | 0.0058 ± 0.0003 | 0.021 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 2/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| hybrid_val_vs_lr_val_control | - | - | 3/3 | 2/3 |
+| hybrid_val_vs_baseline_train | - | - | 2/3 | 1/3 |
 | stack_val_vs_baseline_train | - | - | 0/3 | 2/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 1/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 3/3 | 3/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8491 ± 0.0043 | [0.8334, 0.8638] | 0.1059 ± 0.0009 | [0.0927, 0.1239] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7723 ± 0.0016 | [0.7348, 0.8098] | 0.0169 ± 0.0001 | [0.0126, 0.0245] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7582 ± 0.0014 | [0.7045, 0.8099] | 0.0069 ± 0.0001 | [0.0045, 0.0114] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7120 ± 0.0031 | [0.6382, 0.7786] | 0.0039 ± 0.0000 | [0.0025, 0.0071] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8581 ± 0.0016 | [0.8446, 0.8705] | 0.0457 ± 0.0003 | [0.0404, 0.0526] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.5302 ± 0.1691 | - | 0.0425 ± 0.0279 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.6831 ± 0.0129 | - | 0.0110 ± 0.0007 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6499 ± 0.0067 | - | 0.0023 ± 0.0002 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6047 ± 0.0077 | - | 0.0239 ± 0.0061 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.4039 ± 0.1867 | - | 0.0049 ± 0.0013 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=10, attn (report 20261110_065258, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8664 ± 0.0003 | 0.0420 ± 0.0006 | 0.224 |
-| hybrid_val_norm | 0.8665 ± 0.0002 | 0.0425 ± 0.0003 | 0.224 |
-| stack_val | 0.8670 ± 0.0002 | 0.0410 ± 0.0001 | 0.225 |
-| hybrid_train_naive | 0.8670 ± 0.0003 | 0.0432 ± 0.0005 | 0.237 |
-| null_hybrid_val | 0.8657 ± 0.0002 | 0.0413 ± 0.0001 | 0.226 |
-| null_stack_val | 0.8660 ± 0.0002 | 0.0426 ± 0.0001 | 0.249 |
-| ae_error_only | 0.3734 ± 0.0308 | 0.0063 ± 0.0001 | 0.030 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 2/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 2/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8566 ± 0.0002 | [0.8414, 0.8710] | 0.1074 ± 0.0007 | [0.0940, 0.1255] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7758 ± 0.0024 | [0.7378, 0.8126] | 0.0172 ± 0.0001 | [0.0128, 0.0250] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7503 ± 0.0022 | [0.6938, 0.8042] | 0.0068 ± 0.0000 | [0.0045, 0.0114] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7100 ± 0.0030 | [0.6369, 0.7790] | 0.0039 ± 0.0000 | [0.0025, 0.0070] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6806 ± 0.0148 | - | 0.0457 ± 0.0056 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7169 ± 0.0303 | - | 0.0139 ± 0.0031 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6583 ± 0.0225 | - | 0.0029 ± 0.0002 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6426 ± 0.0225 | - | 0.0217 ± 0.0040 | - |
-
-### W=10, bottleneck (report 20261110_072928, seeds=[42, 123, 2026])
+### W=5, attn (report 20261111_022849, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8665 ± 0.0003 | 0.0419 ± 0.0009 | 0.223 |
-| hybrid_val_norm | 0.8666 ± 0.0002 | 0.0421 ± 0.0009 | 0.221 |
-| stack_val | 0.8664 ± 0.0002 | 0.0417 ± 0.0002 | 0.234 |
-| hybrid_train_naive | 0.8670 ± 0.0002 | 0.0429 ± 0.0008 | 0.240 |
-| null_hybrid_val | 0.8656 ± 0.0002 | 0.0413 ± 0.0001 | 0.226 |
-| null_stack_val | 0.8660 ± 0.0003 | 0.0425 ± 0.0001 | 0.248 |
-| ae_error_only | 0.3245 ± 0.0092 | 0.0055 ± 0.0002 | 0.013 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8708 ± 0.0002 | 0.0414 ± 0.0001 | 0.237 |
+| hybrid_val_norm | 0.8708 ± 0.0002 | 0.0414 ± 0.0002 | 0.237 |
+| stack_val | 0.8710 ± 0.0002 | 0.0412 ± 0.0001 | 0.237 |
+| hybrid_train_naive | 0.8711 ± 0.0003 | 0.0416 ± 0.0002 | 0.238 |
+| null_hybrid_val | 0.8705 ± 0.0004 | 0.0413 ± 0.0001 | 0.240 |
+| null_stack_val | 0.8704 ± 0.0004 | 0.0413 ± 0.0001 | 0.238 |
+| ae_error_only | 0.6744 ± 0.0008 | 0.0076 ± 0.0003 | 0.013 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
@@ -622,47 +420,6 @@ Paired deltas (candidate - reference); the CI columns count the seeds whose boot
 | hybrid_val_vs_lr_val_control | - | - | 0/3 | 1/3 |
 | hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 | stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 1/3 |
-| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
-| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-
-#### hybrid_val per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8546 ± 0.0017 | [0.8394, 0.8690] | 0.1073 ± 0.0005 | [0.0940, 0.1254] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7746 ± 0.0013 | [0.7370, 0.8113] | 0.0171 ± 0.0001 | [0.0127, 0.0248] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7555 ± 0.0015 | [0.6995, 0.8073] | 0.0069 ± 0.0000 | [0.0046, 0.0115] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7132 ± 0.0008 | [0.6394, 0.7812] | 0.0039 ± 0.0000 | [0.0026, 0.0071] |
-
-#### ae_error_only per history bucket (mean ± std across seeds)
-| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
-|---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6337 ± 0.0395 | - | 0.0473 ± 0.0102 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.6849 ± 0.0223 | - | 0.0121 ± 0.0005 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6314 ± 0.0051 | - | 0.0021 ± 0.0001 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.5633 ± 0.0084 | - | 0.0193 ± 0.0017 | - |
-
-### W=10, plain (report 20261110_075627, seeds=[42, 123, 2026])
-
-| variant | test AUC | test AP | recall@FPR 1% |
-|---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8660 ± 0.0003 | 0.0421 ± 0.0004 | 0.226 |
-| hybrid_val_norm | 0.8659 ± 0.0003 | 0.0424 ± 0.0004 | 0.227 |
-| stack_val | 0.8671 ± 0.0004 | 0.0413 ± 0.0004 | 0.227 |
-| hybrid_train_naive | 0.8663 ± 0.0003 | 0.0434 ± 0.0004 | 0.241 |
-| null_hybrid_val | 0.8657 ± 0.0002 | 0.0413 ± 0.0001 | 0.226 |
-| null_stack_val | 0.8661 ± 0.0002 | 0.0425 ± 0.0001 | 0.249 |
-| ae_error_only | 0.4366 ± 0.0276 | 0.0085 ± 0.0005 | 0.069 |
-
-Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
-
-| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
-|---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 2/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
-| stack_val_vs_baseline_train | - | - | 2/3 | 0/3 |
 | hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 2/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
@@ -670,71 +427,319 @@ Paired deltas (candidate - reference); the CI columns count the seeds whose boot
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8542 ± 0.0011 | [0.8389, 0.8685] | 0.1068 ± 0.0012 | [0.0934, 0.1250] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7746 ± 0.0011 | [0.7374, 0.8117] | 0.0176 ± 0.0004 | [0.0130, 0.0259] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7544 ± 0.0011 | [0.6991, 0.8062] | 0.0069 ± 0.0001 | [0.0046, 0.0117] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7113 ± 0.0010 | [0.6393, 0.7802] | 0.0038 ± 0.0000 | [0.0025, 0.0069] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8561 ± 0.0002 | [0.8429, 0.8687] | 0.0450 ± 0.0003 | [0.0397, 0.0519] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6642 ± 0.0432 | - | 0.0500 ± 0.0052 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7140 ± 0.0113 | - | 0.0147 ± 0.0013 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.6652 ± 0.0152 | - | 0.0031 ± 0.0004 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.5716 ± 0.0048 | - | 0.0168 ± 0.0000 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.7090 ± 0.0001 | - | 0.0411 ± 0.0001 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
-### W=10, attn_pool (report 20261110_082319, seeds=[42, 123, 2026])
+### W=5, bottleneck (report 20261111_030134, seeds=[42, 123, 2026])
 
 | variant | test AUC | test AP | recall@FPR 1% |
 |---|---|---|---|
-| baseline_train | 0.8661 ± 0.0000 | 0.0426 ± 0.0000 | 0.247 |
-| lr_val_control | 0.8658 ± 0.0000 | 0.0414 ± 0.0000 | 0.224 |
-| hybrid_val | 0.8664 ± 0.0004 | 0.0430 ± 0.0009 | 0.236 |
-| hybrid_val_norm | 0.8667 ± 0.0009 | 0.0432 ± 0.0003 | 0.242 |
-| stack_val | 0.8671 ± 0.0006 | 0.0407 ± 0.0003 | 0.225 |
-| hybrid_train_naive | 0.8667 ± 0.0002 | 0.0439 ± 0.0009 | 0.251 |
-| null_hybrid_val | 0.8656 ± 0.0002 | 0.0413 ± 0.0001 | 0.230 |
-| null_stack_val | 0.8659 ± 0.0002 | 0.0425 ± 0.0001 | 0.249 |
-| ae_error_only | 0.3480 ± 0.0197 | 0.0057 ± 0.0005 | 0.036 |
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8767 ± 0.0003 | 0.0414 ± 0.0003 | 0.228 |
+| hybrid_val_norm | 0.8766 ± 0.0003 | 0.0414 ± 0.0004 | 0.228 |
+| stack_val | 0.8787 ± 0.0003 | 0.0407 ± 0.0002 | 0.229 |
+| hybrid_train_naive | 0.8766 ± 0.0003 | 0.0408 ± 0.0005 | 0.225 |
+| null_hybrid_val | 0.8705 ± 0.0005 | 0.0414 ± 0.0001 | 0.240 |
+| null_stack_val | 0.8704 ± 0.0005 | 0.0413 ± 0.0000 | 0.238 |
+| ae_error_only | 0.6527 ± 0.0058 | 0.0046 ± 0.0002 | 0.002 |
 
 Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
 
 | comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
 |---|---|---|---|---|
-| hybrid_val_vs_lr_val_control | - | - | 0/3 | 3/3 |
-| hybrid_val_vs_baseline_train | - | - | 0/3 | 1/3 |
-| stack_val_vs_baseline_train | - | - | 2/3 | 0/3 |
-| hybrid_train_naive_vs_baseline_train | - | - | 0/3 | 3/3 |
+| hybrid_val_vs_lr_val_control | - | - | 3/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 3/3 | 0/3 |
 | null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
 | null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
 
 #### hybrid_val per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.8495 ± 0.0039 | [0.8338, 0.8648] | 0.1049 ± 0.0011 | [0.0913, 0.1228] |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7762 ± 0.0021 | [0.7389, 0.8135] | 0.0171 ± 0.0001 | [0.0127, 0.0249] |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7565 ± 0.0039 | [0.7012, 0.8091] | 0.0070 ± 0.0001 | [0.0046, 0.0116] |
-| >=10 | 89161 | 76 | 0.0852% | 0.7125 ± 0.0007 | [0.6393, 0.7815] | 0.0039 ± 0.0000 | [0.0026, 0.0072] |
+| 1 | 371882 | 1200 | 0.3227% | 0.8626 ± 0.0003 | [0.8501, 0.8741] | 0.0438 ± 0.0007 | [0.0386, 0.0509] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 #### ae_error_only per history bucket (mean ± std across seeds)
 | bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
 |---|---|---|---|---|---|---|---|
-| 1 | 76436 | 810 | 1.0597% | 0.6938 ± 0.0055 | - | 0.0559 ± 0.0018 | - |
-| 2-4 | 139439 | 239 | 0.1714% | 0.7124 ± 0.0409 | - | 0.0129 ± 0.0023 | - |
-| 5-9 | 110007 | 109 | 0.0991% | 0.7063 ± 0.0408 | - | 0.0034 ± 0.0007 | - |
-| >=10 | 89161 | 76 | 0.0852% | 0.6546 ± 0.0125 | - | 0.0180 ± 0.0007 | - |
+| 1 | 371882 | 1200 | 0.3227% | 0.7280 ± 0.0066 | - | 0.0170 ± 0.0033 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=5, plain (report 20261111_033442, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8721 ± 0.0011 | 0.0416 ± 0.0003 | 0.238 |
+| hybrid_val_norm | 0.8721 ± 0.0011 | 0.0416 ± 0.0004 | 0.238 |
+| stack_val | 0.8709 ± 0.0001 | 0.0409 ± 0.0004 | 0.235 |
+| hybrid_train_naive | 0.8724 ± 0.0013 | 0.0416 ± 0.0005 | 0.237 |
+| null_hybrid_val | 0.8708 ± 0.0004 | 0.0414 ± 0.0000 | 0.239 |
+| null_stack_val | 0.8707 ± 0.0005 | 0.0412 ± 0.0000 | 0.238 |
+| ae_error_only | 0.2881 ± 0.0397 | 0.0018 ± 0.0001 | 0.002 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 2/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 2/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 1/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8577 ± 0.0012 | [0.8446, 0.8703] | 0.0454 ± 0.0005 | [0.0400, 0.0524] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.3221 ± 0.0444 | - | 0.0041 ± 0.0002 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=5, attn_pool (report 20261111_040747, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8717 ± 0.0002 | 0.0418 ± 0.0002 | 0.238 |
+| hybrid_val_norm | 0.8717 ± 0.0002 | 0.0418 ± 0.0002 | 0.238 |
+| stack_val | 0.8707 ± 0.0000 | 0.0415 ± 0.0001 | 0.239 |
+| hybrid_train_naive | 0.8722 ± 0.0002 | 0.0422 ± 0.0002 | 0.236 |
+| null_hybrid_val | 0.8708 ± 0.0001 | 0.0413 ± 0.0001 | 0.240 |
+| null_stack_val | 0.8708 ± 0.0001 | 0.0412 ± 0.0001 | 0.239 |
+| ae_error_only | 0.3305 ± 0.0509 | 0.0020 ± 0.0001 | 0.003 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 2/3 | 2/3 |
+| hybrid_val_vs_baseline_train | - | - | 1/3 | 2/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 3/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 3/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8571 ± 0.0003 | [0.8438, 0.8697] | 0.0456 ± 0.0002 | [0.0403, 0.0525] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.3645 ± 0.0623 | - | 0.0044 ± 0.0002 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=10, attn (report 20261111_044038, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8711 ± 0.0004 | 0.0415 ± 0.0004 | 0.237 |
+| hybrid_val_norm | 0.8711 ± 0.0004 | 0.0414 ± 0.0004 | 0.237 |
+| stack_val | 0.8711 ± 0.0006 | 0.0413 ± 0.0003 | 0.237 |
+| hybrid_train_naive | 0.8715 ± 0.0007 | 0.0416 ± 0.0008 | 0.235 |
+| null_hybrid_val | 0.8708 ± 0.0001 | 0.0414 ± 0.0000 | 0.239 |
+| null_stack_val | 0.8707 ± 0.0001 | 0.0413 ± 0.0000 | 0.238 |
+| ae_error_only | 0.4067 ± 0.2026 | 0.0029 ± 0.0017 | 0.006 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 1/3 | 1/3 |
+| hybrid_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 1/3 | 2/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 2/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8565 ± 0.0005 | [0.8432, 0.8691] | 0.0451 ± 0.0006 | [0.0397, 0.0520] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.4486 ± 0.2313 | - | 0.0165 ± 0.0213 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=10, bottleneck (report 20261111_052319, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8767 ± 0.0002 | 0.0414 ± 0.0002 | 0.226 |
+| hybrid_val_norm | 0.8767 ± 0.0002 | 0.0414 ± 0.0002 | 0.226 |
+| stack_val | 0.8788 ± 0.0001 | 0.0407 ± 0.0002 | 0.228 |
+| hybrid_train_naive | 0.8766 ± 0.0001 | 0.0408 ± 0.0003 | 0.226 |
+| null_hybrid_val | 0.8705 ± 0.0004 | 0.0413 ± 0.0001 | 0.239 |
+| null_stack_val | 0.8705 ± 0.0005 | 0.0413 ± 0.0000 | 0.238 |
+| ae_error_only | 0.6511 ± 0.0062 | 0.0045 ± 0.0002 | 0.002 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 3/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 3/3 | 0/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8626 ± 0.0002 | [0.8501, 0.8742] | 0.0438 ± 0.0006 | [0.0385, 0.0508] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.7279 ± 0.0070 | - | 0.0169 ± 0.0033 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=10, plain (report 20261111_060213, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8711 ± 0.0005 | 0.0414 ± 0.0002 | 0.238 |
+| hybrid_val_norm | 0.8711 ± 0.0005 | 0.0414 ± 0.0002 | 0.237 |
+| stack_val | 0.8709 ± 0.0002 | 0.0413 ± 0.0002 | 0.237 |
+| hybrid_train_naive | 0.8715 ± 0.0006 | 0.0416 ± 0.0002 | 0.240 |
+| null_hybrid_val | 0.8708 ± 0.0004 | 0.0412 ± 0.0001 | 0.239 |
+| null_stack_val | 0.8708 ± 0.0005 | 0.0412 ± 0.0001 | 0.239 |
+| ae_error_only | 0.4133 ± 0.1969 | 0.0029 ± 0.0017 | 0.002 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 1/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 1/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 0/3 | 1/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 1/3 | 3/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8565 ± 0.0006 | [0.8432, 0.8690] | 0.0451 ± 0.0003 | [0.0398, 0.0520] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.4620 ± 0.2203 | - | 0.0163 ± 0.0200 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+### W=10, attn_pool (report 20261111_063401, seeds=[42, 123, 2026])
+
+| variant | test AUC | test AP | recall@FPR 1% |
+|---|---|---|---|
+| baseline_train | 0.8708 ± 0.0000 | 0.0413 ± 0.0000 | 0.237 |
+| lr_val_control | 0.8709 ± 0.0000 | 0.0414 ± 0.0000 | 0.237 |
+| hybrid_val | 0.8757 ± 0.0018 | 0.0412 ± 0.0004 | 0.229 |
+| hybrid_val_norm | 0.8757 ± 0.0018 | 0.0412 ± 0.0005 | 0.229 |
+| stack_val | 0.8778 ± 0.0018 | 0.0406 ± 0.0002 | 0.229 |
+| hybrid_train_naive | 0.8757 ± 0.0017 | 0.0406 ± 0.0005 | 0.228 |
+| null_hybrid_val | 0.8707 ± 0.0003 | 0.0414 ± 0.0000 | 0.238 |
+| null_stack_val | 0.8706 ± 0.0004 | 0.0413 ± 0.0000 | 0.237 |
+| ae_error_only | 0.6519 ± 0.0029 | 0.0046 ± 0.0002 | 0.002 |
+
+Paired deltas (candidate - reference); the CI columns count the seeds whose bootstrap CI for d AUC / d AP is entirely above 0 ('-' when the report predates it or for point-estimate rows). Null-control rows (`null_*`) give the noise floor of both deltas:
+
+| comparison | d AUC | d AP | AUC CI>0 | AP CI>0 |
+|---|---|---|---|---|
+| hybrid_val_vs_lr_val_control | - | - | 2/3 | 0/3 |
+| hybrid_val_vs_baseline_train | - | - | 2/3 | 0/3 |
+| stack_val_vs_baseline_train | - | - | 3/3 | 0/3 |
+| hybrid_train_naive_vs_baseline_train | - | - | 2/3 | 0/3 |
+| null_hybrid_val_vs_lr_val_control | - | - | 0/3 | 0/3 |
+| null_stack_val_vs_baseline_train | - | - | 0/3 | 0/3 |
+
+#### hybrid_val per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.8616 ± 0.0021 | [0.8491, 0.8732] | 0.0437 ± 0.0006 | [0.0384, 0.0508] |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
+
+#### ae_error_only per history bucket (mean ± std across seeds)
+| bucket | n | n_fraud | fraud rate | AUC | AUC 95% CI | AP | AP 95% CI |
+|---|---|---|---|---|---|---|---|
+| 1 | 371882 | 1200 | 0.3227% | 0.7269 ± 0.0034 | - | 0.0187 ± 0.0055 | - |
+| 2-4 | 33536 | 0 | 0.0000% | - | - | - | - |
+| 5-9 | 9363 | 0 | 0.0000% | - | - | - | - |
+| >=10 | 1035 | 0 | 0.0000% | - | - | - | - |
 
 
 ## 4. Model and training parameters (`run_config` of the latest training report per configuration)
 
 | architecture | W | hidden | layers | latent dim | decoder | parameters | optimizer | lr | batch | patience | min_delta | selection |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| attn | W=1 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
+| attn | W=1 | 64 | 2 | - | lstm | 130629 | adam | 0.001 | 16384 | 5 | 0.01 | val_loss |
 | bottleneck | W=1 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
-| plain | W=1 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
+| plain | W=1 | 64 | 2 | - | lstm | 118341 | adam | 0.001 | 16384 | 5 | 0.01 | val_loss |
 | attn_pool | W=1 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
 | bottleneck_z2_h16 | W=1 | 16 | 2 | 2 | - | - | - | 0.001 | 16384 | 5 | 0.01 | val_loss |
 | bottleneck_z3_h16 | W=1 | 16 | 2 | 3 | - | - | - | 0.001 | 16384 | 5 | 0.01 | val_auc |
+| bottleneck_z3 | W=1 | 64 | 2 | 3 | lstm | 118792 | adam | 0.001 | 16384 | 5 | 0.01 | val_loss |
+| attn_pool_z3 | W=1 | 64 | 2 | 3 | lstm | 127048 | adam | 0.001 | 16384 | 5 | 0.01 | val_loss |
 | attn | W=3 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
 | bottleneck | W=3 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |
 | plain | W=3 | 64 | 2 | - | - | - | - | 0.001 | 16384 | 5 | - | val_loss |

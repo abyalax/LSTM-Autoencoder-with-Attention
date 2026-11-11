@@ -30,6 +30,10 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_diagnostics im
     ScoreDiagnostics,
     ScoreDiagnosticsConfig,
 )
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_strategy import (
+    ScoreStrategyConfig,
+    ScoreStrategySelector,
+)
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.signal_probe import (
     PaySimSignalProbe,
 )
@@ -259,6 +263,34 @@ class RunnerCLI:
             config=StandaloneConfig(
                 seeds=tuple(int(seed) for seed in seeds.split(",")), split=split, n_bootstrap=bootstrap
             ),
+        ).run()
+        return 0
+
+    @staticmethod
+    def run_select_score_strategy(
+        project_root: Path,
+        dataset: str,
+        nrows: int | None,
+        windows: str,
+        architectures: str,
+        seeds: str,
+        hidden_dim: int,
+        bottleneck_dim: int | None,
+        force: bool,
+    ) -> int:
+        """Freeze the mean-vs-last reconstruction-score strategy per configuration from validation AP."""
+        architecture_list = tuple(name.strip() for name in architectures.split(","))
+        unknown = [name for name in architecture_list if name not in STANDALONE_ARCHITECTURES]
+        if unknown:
+            raise ValueError(f"Unknown architecture(s): {unknown}. Choose from: {list(STANDALONE_ARCHITECTURES)}")
+        config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
+        ScoreStrategySelector(
+            dataset_config=config,
+            windows=tuple(int(window) for window in windows.split(",")),
+            architectures=architecture_list,
+            hidden_dim=hidden_dim,
+            bottleneck_dim=bottleneck_dim,
+            config=ScoreStrategyConfig(seeds=tuple(int(seed) for seed in seeds.split(",")), force=force),
         ).run()
         return 0
 

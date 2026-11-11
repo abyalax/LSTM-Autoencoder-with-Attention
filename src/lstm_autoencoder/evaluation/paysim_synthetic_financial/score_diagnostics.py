@@ -153,12 +153,13 @@ class ScoreDiagnostics:
     def _scores(steps: np.ndarray, valid_steps: np.ndarray) -> dict[str, np.ndarray]:
         """Turn per-step errors (n, W) into one score per window.
 
-        Windows are left-padded and padded steps carry 0 error, so the last column is
-        always the current transaction and the max over all columns equals the max over real steps.
+        Windows are right-padded and padded steps carry 0 error, so the current
+        transaction is column `valid_steps - 1` and the max over all columns equals the
+        max over real steps.
         """
         return {
             "mean": steps.sum(axis=1) / np.maximum(valid_steps, 1),
-            "last": steps[:, -1],
+            "last": steps[np.arange(len(steps)), np.maximum(valid_steps, 1) - 1],
             "max": steps.max(axis=1),
         }
 

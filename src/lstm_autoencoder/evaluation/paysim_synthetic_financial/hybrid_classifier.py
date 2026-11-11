@@ -19,6 +19,7 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
     BaselineEvaluator,
     FullFeatureData,
 )
+from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_strategy_registry import FrozenScoreStrategy
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
 from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
@@ -216,9 +217,13 @@ class HybridClassifierEvaluator:
                 f"`train-model --window {self._sequence_config.window_length} --seeds {seed}` "
                 "(add --bottleneck if that is the architecture you want)."
             )
+        frozen = FrozenScoreStrategy.load(self._dataset_config.artifacts_dir)
+        strategy = frozen.strategy_for(
+            self._model_config.architecture_tag, self._sequence_config.window_length, [checkpoint]
+        )
         trainer = Trainer(self._model_config, TrainConfig(seed=seed), checkpoint.parent)
         model = trainer.build_eval_model(checkpoint)
-        return {name: trainer.predict_errors(model, split.dataset) for name, split in scoring.items()}
+        return {name: trainer.predict_errors(model, split.dataset, strategy) for name, split in scoring.items()}
 
     def _run_seed(
         self,
@@ -539,6 +544,10 @@ class HybridClassifierEvaluator:
             },
             "bootstrap_mode": self._config.bootstrap_mode,
             "n_bootstrap": self._config.n_bootstrap,
+            "score_strategy": FrozenScoreStrategy.load(self._dataset_config.artifacts_dir).strategy_for(
+                config.architecture_tag, self._sequence_config.window_length
+            ),
+            "split_stratify_by": self._split_config.stratify_by,
             "checkpoints": [self._checkpoint_name(seed) for seed in self._config.seeds],
         }
         self._reporter.update_summary({"run_config": run_config})
