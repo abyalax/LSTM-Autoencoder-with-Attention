@@ -1,9 +1,0 @@
-Run config: architecture=plain | W=3 | seeds=[42, 123, 2026]
-[seed 42] best_epoch 1 | val AUC 0.5988 | test AUC 0.6096 | test AP 0.0105
-[seed 123] best_epoch 1 | val AUC 0.5928 | test AUC 0.6039 | test AP 0.0103
-[seed 2026] best_epoch 1 | val AUC 0.6302 | test AUC 0.6394 | test AP 0.0121
-
---------------------------------------------------------------------------------
-LSTM-Autoencoder multi-seed summary (W=3, seeds=[42, 123, 2026])
---------------------------------------------------------------------------------
-test AUC 0.6176 +/- 0.0191 | test AP 0.0110 +/- 0.0010

@@ -1,6 +1,0 @@
-﻿{
-  "artifact_version": "version_1_auc",
-  "selection_metric": "val_auc",
-  "description": "Legacy checkpoints selected/trained under the previous AUC-based mechanism. Original reports contain run-specific training metadata where available.",
-  "checkpoint_count": 48
-}
