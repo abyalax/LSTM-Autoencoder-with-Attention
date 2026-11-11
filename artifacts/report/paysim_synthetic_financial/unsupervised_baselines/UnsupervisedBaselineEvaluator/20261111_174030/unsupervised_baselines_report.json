@@ -1,0 +1,391 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder eval-unsupervised --dataset paysim_synthetic_financial --seeds 42,123,2026",
+  "unsupervised_baselines": {
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "dropped_columns": [
+      "account_code"
+    ],
+    "dense_latent_dim": 3,
+    "per_seed": [
+      {
+        "seed": 42,
+        "models": {
+          "isolation_forest_all": {
+            "auc": 0.8272087254632399,
+            "ap": 0.010711632505246574,
+            "recall_at_fpr_0.01": 0.013333333333333334,
+            "recall_at_fpr_0.001": 0.0
+          },
+          "isolation_forest_seq5": {
+            "auc": 0.6866199407001499,
+            "ap": 0.012822376756712302,
+            "recall_at_fpr_0.01": 0.12416666666666666,
+            "recall_at_fpr_0.001": 0.0025
+          },
+          "dense_ae_seq5": {
+            "auc": 0.6302229191187347,
+            "ap": 0.004452727616824533,
+            "recall_at_fpr_0.01": 0.0,
+            "recall_at_fpr_0.001": 0.0
+          }
+        },
+        "by_bucket": {
+          "isolation_forest_all": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.8908606366103561,
+              "ap": 0.10780059439463435
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "isolation_forest_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.7397053291860228,
+              "ap": 0.04090435316733239
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "dense_ae_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.7004222779453368,
+              "ap": 0.033716959606060394
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          }
+        },
+        "dense_ae_best_epoch": 50,
+        "dense_ae_best_val_loss": 0.00307864579372108
+      },
+      {
+        "seed": 123,
+        "models": {
+          "isolation_forest_all": {
+            "auc": 0.8221965073304777,
+            "ap": 0.009684857487369414,
+            "recall_at_fpr_0.01": 0.006666666666666667,
+            "recall_at_fpr_0.001": 0.0
+          },
+          "isolation_forest_seq5": {
+            "auc": 0.6887166006216193,
+            "ap": 0.011372622057105475,
+            "recall_at_fpr_0.01": 0.10833333333333334,
+            "recall_at_fpr_0.001": 0.0
+          },
+          "dense_ae_seq5": {
+            "auc": 0.6155234994549174,
+            "ap": 0.004049638178508324,
+            "recall_at_fpr_0.01": 0.0,
+            "recall_at_fpr_0.001": 0.0
+          }
+        },
+        "by_bucket": {
+          "isolation_forest_all": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.8903582147231319,
+              "ap": 0.0839772380364605
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "isolation_forest_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.7417919818514702,
+              "ap": 0.04128870739307418
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "dense_ae_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.6858930307289447,
+              "ap": 0.03168880696548471
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          }
+        },
+        "dense_ae_best_epoch": 22,
+        "dense_ae_best_val_loss": 0.0043292720802128315
+      },
+      {
+        "seed": 2026,
+        "models": {
+          "isolation_forest_all": {
+            "auc": 0.8247929871656344,
+            "ap": 0.010194543327228087,
+            "recall_at_fpr_0.01": 0.015,
+            "recall_at_fpr_0.001": 0.0
+          },
+          "isolation_forest_seq5": {
+            "auc": 0.686263398944244,
+            "ap": 0.010426152260918283,
+            "recall_at_fpr_0.01": 0.09083333333333334,
+            "recall_at_fpr_0.001": 0.0
+          },
+          "dense_ae_seq5": {
+            "auc": 0.6280499948546768,
+            "ap": 0.004288416381895512,
+            "recall_at_fpr_0.01": 0.0,
+            "recall_at_fpr_0.001": 0.0
+          }
+        },
+        "by_bucket": {
+          "isolation_forest_all": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.8907029138183132,
+              "ap": 0.09456368089288739
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "isolation_forest_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.7404050945284637,
+              "ap": 0.04088195983999087
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          },
+          "dense_ae_seq5": {
+            "1": {
+              "n": 371882,
+              "n_fraud": 1200,
+              "auc": 0.7010648165633436,
+              "ap": 0.032655608740078924
+            },
+            "2-4": {
+              "n": 33536,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            "5-9": {
+              "n": 9363,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            },
+            ">=10": {
+              "n": 1035,
+              "n_fraud": 0,
+              "auc": "NaN",
+              "ap": "NaN"
+            }
+          }
+        },
+        "dense_ae_best_epoch": 50,
+        "dense_ae_best_val_loss": 0.0030803813133388758
+      }
+    ],
+    "aggregate": {
+      "n_seeds": 3,
+      "models": {
+        "isolation_forest_all": {
+          "auc_mean": 0.8247327399864507,
+          "auc_std": 0.0025066521387195426,
+          "ap_mean": 0.01019701110661469,
+          "ap_std": 0.0005133919572660702,
+          "recall_at_fpr_0.01_mean": 0.011666666666666667,
+          "recall_at_fpr_0.01_std": 0.004409585518440984,
+          "recall_at_fpr_0.001_mean": 0.0,
+          "recall_at_fpr_0.001_std": 0.0
+        },
+        "isolation_forest_seq5": {
+          "auc_mean": 0.6871999800886711,
+          "auc_std": 0.001325474966435153,
+          "ap_mean": 0.011540383691578686,
+          "ap_std": 0.0012068889481065225,
+          "recall_at_fpr_0.01_mean": 0.10777777777777776,
+          "recall_at_fpr_0.01_std": 0.01667360966495435,
+          "recall_at_fpr_0.001_mean": 0.0008333333333333334,
+          "recall_at_fpr_0.001_std": 0.0014433756729740645
+        },
+        "dense_ae_seq5": {
+          "auc_mean": 0.6245988044761096,
+          "auc_std": 0.007934183693682125,
+          "ap_mean": 0.004263594059076122,
+          "ap_std": 0.00020268789949854377,
+          "recall_at_fpr_0.01_mean": 0.0,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      "by_bucket_auc": {
+        "isolation_forest_all": {
+          "1": 0.8906405883839338,
+          "2-4": "NaN",
+          "5-9": "NaN",
+          ">=10": "NaN"
+        },
+        "isolation_forest_seq5": {
+          "1": 0.7406341351886523,
+          "2-4": "NaN",
+          "5-9": "NaN",
+          ">=10": "NaN"
+        },
+        "dense_ae_seq5": {
+          "1": 0.6957933750792084,
+          "2-4": "NaN",
+          "5-9": "NaN",
+          ">=10": "NaN"
+        }
+      },
+      "dense_ae_best_epochs": [
+        50,
+        22,
+        50
+      ]
+    }
+  }
+}

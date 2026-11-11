@@ -1,0 +1,3032 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder eval-standalone --dataset paysim_synthetic_financial --windows 1,3,5,10 --architectures plain,attention,attention_pooling,bottleneck --seeds 42,123,2026 --bootstrap 2000",
+  "run_config": {
+    "split": "test",
+    "seeds": [
+      42,
+      123,
+      2026
+    ],
+    "fpr_targets": [
+      0.01,
+      0.001
+    ],
+    "n_bootstrap": 2000,
+    "score_strategy": "frozen (per configuration, see records)",
+    "bootstrap_mode": "receiver",
+    "hidden_dim": 64,
+    "bottleneck_dim": null
+  },
+  "standalone": {
+    "configs": [
+      {
+        "architecture": "plain",
+        "window_length": 1,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_9_loss\\lstm_ae_w1_plain_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6428971455917444,
+              "ap": 0.004837463448609905,
+              "recall_at_fpr_0.01": 0.0033333333333333335,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7136865460151828,
+                "ap": 0.021101207308108702
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6262518437088357,
+              "auc_ci_high": 0.6602964746166102,
+              "ap_ci_low": 0.004438267201008962,
+              "ap_ci_high": 0.0055168606799523255,
+              "recall_at_fpr_0.01_ci_low": 0.0008097002214273548,
+              "recall_at_fpr_0.01_ci_high": 0.0069393288876824066,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_9_loss\\lstm_ae_w1_plain_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.42197610962111126,
+              "ap": 0.002716452347846273,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.4683834953769898,
+                "ap": 0.012414176687865559
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.4029434810157207,
+              "auc_ci_high": 0.4413817380132403,
+              "ap_ci_low": 0.0024571304792397287,
+              "ap_ci_high": 0.003358289626134678,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005560857112562527,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_9_loss\\lstm_ae_w1_plain_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6557607872907301,
+              "ap": 0.004754945748455737,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7261574554919491,
+                "ap": 0.02073958916964924
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6400964621531049,
+              "auc_ci_high": 0.6714210197955894,
+              "ap_ci_low": 0.004363966831007141,
+              "ap_ci_high": 0.005449809352528865,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.006547047632346009,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5735446808345286,
+          "auc_std": 0.13141971752441692,
+          "ap_mean": 0.004102953848303972,
+          "ap_std": 0.0012014541609184557,
+          "recall_at_fpr_0.01_mean": 0.002777777777777778,
+          "recall_at_fpr_0.01_std": 0.0004811252243246882,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn",
+        "window_length": 1,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 130629,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_14_loss\\lstm_ae_w1_attn_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6474205871617754,
+              "ap": 0.004611103471027941,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7215650364283492,
+                "ap": 0.01815971319114577
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6327310573640038,
+              "auc_ci_high": 0.6627639490669661,
+              "ap_ci_low": 0.004266842422740865,
+              "ap_ci_high": 0.005159192167923442,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_14_loss\\lstm_ae_w1_attn_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5702609945105833,
+              "ap": 0.0035283492922451717,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6322741482816359,
+                "ap": 0.016359878943404054
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5551259044260879,
+              "auc_ci_high": 0.5845600157642895,
+              "ap_ci_low": 0.0032337609160497716,
+              "ap_ci_high": 0.004075826082588129,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005076142131979695,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_14_loss\\lstm_ae_w1_attn_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5982321563808439,
+              "ap": 0.004053675273453491,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6669351593818961,
+                "ap": 0.014546449535090336
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5809422616520492,
+              "auc_ci_high": 0.6151074670977583,
+              "ap_ci_low": 0.003735244568662823,
+              "ap_ci_high": 0.004547507829504615,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005645389285528166,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.6053045793510675,
+          "auc_std": 0.03906296275920177,
+          "ap_mean": 0.004064376012242202,
+          "ap_std": 0.0005414563992380691,
+          "recall_at_fpr_0.01_mean": 0.0019444444444444446,
+          "recall_at_fpr_0.01_std": 0.0004811252243246881,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn_pool",
+        "window_length": 1,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 126597,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_15_loss\\lstm_ae_w1_attn_pool_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6469953362468726,
+              "ap": 0.004842514524239602,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7210930528053696,
+                "ap": 0.023962042911328498
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6311784647540474,
+              "auc_ci_high": 0.6637402221227616,
+              "ap_ci_low": 0.004460745350795881,
+              "ap_ci_high": 0.0054800544216908765,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005664121082958399,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_15_loss\\lstm_ae_w1_attn_pool_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6622565066229957,
+              "ap": 0.004975009778733249,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7341442339165826,
+                "ap": 0.02982417990115631
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6462343176547396,
+              "auc_ci_high": 0.6768997474099546,
+              "ap_ci_low": 0.004569904167741888,
+              "ap_ci_high": 0.005644082303877713,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.0042091989207373795,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_15_loss\\lstm_ae_w1_attn_pool_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6213487871910394,
+              "ap": 0.003911826535999777,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6939682654764281,
+                "ap": 0.008599735278901139
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6069975002666937,
+              "auc_ci_high": 0.6355140790322931,
+              "ap_ci_low": 0.0036159664862503776,
+              "ap_ci_high": 0.0044909611637669496,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.6435335433536359,
+          "auc_std": 0.02067240636229036,
+          "ap_mean": 0.004576450279657543,
+          "ap_std": 0.0005793809529067051,
+          "recall_at_fpr_0.01_mean": 0.0019444444444444446,
+          "recall_at_fpr_0.01_std": 0.0004811252243246881,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "bottleneck",
+        "window_length": 1,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_16_loss\\lstm_ae_w1_bottleneck_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6428971455917444,
+              "ap": 0.004837463448609905,
+              "recall_at_fpr_0.01": 0.0033333333333333335,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7136865460151828,
+                "ap": 0.021101207308108702
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6262518437088357,
+              "auc_ci_high": 0.6602964746166102,
+              "ap_ci_low": 0.004438267201008962,
+              "ap_ci_high": 0.0055168606799523255,
+              "recall_at_fpr_0.01_ci_low": 0.0008097002214273548,
+              "recall_at_fpr_0.01_ci_high": 0.0069393288876824066,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_16_loss\\lstm_ae_w1_bottleneck_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.42197610962111126,
+              "ap": 0.002716452347846273,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.4683834953769898,
+                "ap": 0.012414176687865559
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.4029434810157207,
+              "auc_ci_high": 0.4413817380132403,
+              "ap_ci_low": 0.0024571304792397287,
+              "ap_ci_high": 0.003358289626134678,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005560857112562527,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_16_loss\\lstm_ae_w1_bottleneck_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6557607872907301,
+              "ap": 0.004754945748455737,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7261574554919491,
+                "ap": 0.02073958916964924
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6400964621531049,
+              "auc_ci_high": 0.6714210197955894,
+              "ap_ci_low": 0.004363966831007141,
+              "ap_ci_high": 0.005449809352528865,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.006547047632346009,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5735446808345286,
+          "auc_std": 0.13141971752441692,
+          "ap_mean": 0.004102953848303972,
+          "ap_std": 0.0012014541609184557,
+          "recall_at_fpr_0.01_mean": 0.002777777777777778,
+          "recall_at_fpr_0.01_std": 0.0004811252243246882,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "plain",
+        "window_length": 3,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_10_loss\\lstm_ae_w3_plain_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6524852584479776,
+              "ap": 0.004786739693270294,
+              "recall_at_fpr_0.01": 0.0033333333333333335,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7263970701301925,
+                "ap": 0.018818361715628784
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6376152296011776,
+              "auc_ci_high": 0.6679453110828495,
+              "ap_ci_low": 0.004415110476429448,
+              "ap_ci_high": 0.005417703977358131,
+              "recall_at_fpr_0.01_ci_low": 0.0008097002214273548,
+              "recall_at_fpr_0.01_ci_high": 0.0069393288876824066,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_10_loss\\lstm_ae_w3_plain_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6459390134485886,
+              "ap": 0.004521137930777487,
+              "recall_at_fpr_0.01": 0.0033333333333333335,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7165002054771116,
+                "ap": 0.021401622179667075
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6306695478128529,
+              "auc_ci_high": 0.6599895107787186,
+              "ap_ci_low": 0.004104160721246315,
+              "ap_ci_high": 0.005540918456689121,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.006722830427377006,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_10_loss\\lstm_ae_w3_plain_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.661247785099144,
+              "ap": 0.005057542405508061,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7301764068213006,
+                "ap": 0.018581682039253866
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6454265953737075,
+              "auc_ci_high": 0.6767764859179758,
+              "ap_ci_low": 0.004625981178412908,
+              "ap_ci_high": 0.006016867922552241,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005645389285528166,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.6532240189985701,
+          "auc_std": 0.007681077250330544,
+          "ap_mean": 0.004788473343185281,
+          "ap_std": 0.00026820643967710137,
+          "recall_at_fpr_0.01_mean": 0.0030555555555555557,
+          "recall_at_fpr_0.01_std": 0.0004811252243246882,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn",
+        "window_length": 3,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 130629,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_11_loss\\lstm_ae_w3_attn_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5575095077935568,
+              "ap": 0.0038320278210273798,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6170176098830444,
+                "ap": 0.020093150812251864
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5394122872982972,
+              "auc_ci_high": 0.5751416717650986,
+              "ap_ci_low": 0.00349496323972735,
+              "ap_ci_high": 0.004452377807890472,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_11_loss\\lstm_ae_w3_attn_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6185430756008773,
+              "ap": 0.003920700272846032,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6868057144218854,
+                "ap": 0.018531893032237286
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.603178064264296,
+              "auc_ci_high": 0.6327156815631295,
+              "ap_ci_low": 0.0036164685397791514,
+              "ap_ci_high": 0.004446377700250061,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_11_loss\\lstm_ae_w3_attn_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5756105991246518,
+              "ap": 0.0039632186409445805,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6380739151078283,
+                "ap": 0.02308289262635082
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.559158977458817,
+              "auc_ci_high": 0.5926718959513784,
+              "ap_ci_low": 0.003624828141168528,
+              "ap_ci_high": 0.004594030310008673,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.583887727506362,
+          "auc_std": 0.03134736417162025,
+          "ap_mean": 0.003905315578272664,
+          "ap_std": 6.693485211736645e-05,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn_pool",
+        "window_length": 3,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 126597,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_12_loss\\lstm_ae_w3_attn_pool_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6439116897723838,
+              "ap": 0.005020521175008939,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.715755149742007,
+                "ap": 0.036386799805978885
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6277234866955573,
+              "auc_ci_high": 0.6615041918952691,
+              "ap_ci_low": 0.004607219498540645,
+              "ap_ci_high": 0.0057106591423833584,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_12_loss\\lstm_ae_w3_attn_pool_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6029954132257318,
+              "ap": 0.004133611484077796,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6726640995516373,
+                "ap": 0.017555137111694426
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5857020101983715,
+              "auc_ci_high": 0.6199923872767006,
+              "ap_ci_low": 0.0037688997792385435,
+              "ap_ci_high": 0.004910921649155747,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_12_loss\\lstm_ae_w3_attn_pool_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6002379028627292,
+              "ap": 0.004105356719691738,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6669163438382945,
+                "ap": 0.023348045358802676
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.583773999984189,
+              "auc_ci_high": 0.6170222483672636,
+              "ap_ci_low": 0.003779269587033366,
+              "ap_ci_high": 0.004631245249795257,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.615715001953615,
+          "auc_std": 0.0244579408130028,
+          "ap_mean": 0.004419829792926158,
+          "ap_std": 0.0005204057890810011,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "bottleneck",
+        "window_length": 3,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_13_loss\\lstm_ae_w3_bottleneck_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5480608321917148,
+              "ap": 0.003688635006234671,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6057715867868775,
+                "ap": 0.02191573194277041
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5309738676965884,
+              "auc_ci_high": 0.5646313731648057,
+              "ap_ci_low": 0.0033274777652169624,
+              "ap_ci_high": 0.00443916963391447,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005664121082958399,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_13_loss\\lstm_ae_w3_bottleneck_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5058884325094385,
+              "ap": 0.003361669346394741,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5588426333083344,
+                "ap": 0.021366999209330606
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.48860740063334596,
+              "auc_ci_high": 0.5240161757057803,
+              "ap_ci_low": 0.0030454210021034715,
+              "ap_ci_high": 0.004065868402382487,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005560857112562527,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_13_loss\\lstm_ae_w3_bottleneck_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6481739026794271,
+              "ap": 0.0047150140069963245,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7194517807716587,
+                "ap": 0.019946471745461103
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6316902475128321,
+              "auc_ci_high": 0.6643076108149404,
+              "ap_ci_low": 0.004316131559014996,
+              "ap_ci_high": 0.005560277503230321,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5673743891268601,
+          "auc_std": 0.07308247988737797,
+          "ap_mean": 0.003921772786541912,
+          "ap_std": 0.0007061517974555077,
+          "recall_at_fpr_0.01_mean": 0.0022222222222222222,
+          "recall_at_fpr_0.01_std": 0.0004811252243246881,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "plain",
+        "window_length": 5,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_5_loss\\lstm_ae_w5_plain_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6528174222252237,
+              "ap": 0.004774262215789678,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7242523027374766,
+                "ap": 0.02315273084176067
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6376009276889991,
+              "auc_ci_high": 0.6686823641095125,
+              "ap_ci_low": 0.004376829081359933,
+              "ap_ci_high": 0.00564977135664506,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005664121082958399,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_5_loss\\lstm_ae_w5_plain_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5866552163126041,
+              "ap": 0.004089075836460938,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6505122382527342,
+                "ap": 0.016179002055592293
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5701964997577504,
+              "auc_ci_high": 0.6031368262838717,
+              "ap_ci_low": 0.0036199495244398287,
+              "ap_ci_high": 0.005377388204350178,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005560857112562527,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_5_loss\\lstm_ae_w5_plain_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5670721985322965,
+              "ap": 0.004010477103666076,
+              "recall_at_fpr_0.01": 0.0025,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6246217310255151,
+                "ap": 0.01982368081997163
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5497060354603989,
+              "auc_ci_high": 0.5850994353163378,
+              "ap_ci_low": 0.0036243671235434206,
+              "ap_ci_high": 0.004718756248271949,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.005645389285528166,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.602181612356708,
+          "auc_std": 0.04493175466333699,
+          "ap_mean": 0.004291271718638897,
+          "ap_std": 0.0004201241548074907,
+          "recall_at_fpr_0.01_mean": 0.0025,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn",
+        "window_length": 5,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 130629,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_6_loss\\lstm_ae_w5_attn_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5542093296367402,
+              "ap": 0.0036583529026636575,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6186446817397842,
+                "ap": 0.02663363478641157
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5370747097787762,
+              "auc_ci_high": 0.5712556967903264,
+              "ap_ci_low": 0.003375854309489261,
+              "ap_ci_high": 0.003977009955583032,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004284674029369903
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_6_loss\\lstm_ae_w5_attn_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5102097191537873,
+              "ap": 0.0029924309256912675,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5669119589027792,
+                "ap": 0.016426466640828113
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.4946387421725951,
+              "auc_ci_high": 0.5256912694446771,
+              "ap_ci_low": 0.0027560487668611636,
+              "ap_ci_high": 0.0034350977172300265,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_6_loss\\lstm_ae_w5_attn_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6315240125803153,
+              "ap": 0.004682192309535791,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6992775995777153,
+                "ap": 0.03425626515199906
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6142024324980699,
+              "auc_ci_high": 0.6477830244564743,
+              "ap_ci_low": 0.004332264003301533,
+              "ap_ci_high": 0.005220326712811258,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5653143537902809,
+          "auc_std": 0.06141482409388206,
+          "ap_mean": 0.003777658712630239,
+          "ap_std": 0.0008511749472358055,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn_pool",
+        "window_length": 5,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 126597,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w5_attn_pool_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5267390277992167,
+              "ap": 0.0032312084171438726,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5859379928977758,
+                "ap": 0.019729327268343984
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5090771237136511,
+              "auc_ci_high": 0.5435154719667379,
+              "ap_ci_low": 0.002981914597181703,
+              "ap_ci_high": 0.0035316007264818454,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w5_attn_pool_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6370755439973373,
+              "ap": 0.004746227797200339,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7088750611485496,
+                "ap": 0.030594336021204958
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6200122598028908,
+              "auc_ci_high": 0.6534649686001038,
+              "ap_ci_low": 0.0043552789885573425,
+              "ap_ci_high": 0.005207823545330246,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_7_loss\\lstm_ae_w5_attn_pool_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.43520798964182117,
+              "ap": 0.002710664050392397,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.48324172516244834,
+                "ap": 0.01798670523891071
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.4147486225149119,
+              "auc_ci_high": 0.4538714090499643,
+              "ap_ci_low": 0.002505281921492362,
+              "ap_ci_high": 0.0029840283564252315,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5330075204794583,
+          "auc_std": 0.10107966103886085,
+          "ap_mean": 0.003562700088245536,
+          "ap_std": 0.0010574946750868427,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "bottleneck",
+        "window_length": 5,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_8_loss\\lstm_ae_w5_bottleneck_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6459255843559664,
+              "ap": 0.004559645603384185,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7187988345356218,
+                "ap": 0.022156843236040853
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6313479831317375,
+              "auc_ci_high": 0.661012011459129,
+              "ap_ci_low": 0.004178109770907277,
+              "ap_ci_high": 0.005421825742856206,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_8_loss\\lstm_ae_w5_bottleneck_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6378600510271352,
+              "ap": 0.004385584563301205,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.707296963210155,
+                "ap": 0.02323263919933959
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6217968313842843,
+              "auc_ci_high": 0.6524185282114616,
+              "ap_ci_low": 0.003983443941181307,
+              "ap_ci_high": 0.005458469018962525,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_8_loss\\lstm_ae_w5_bottleneck_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5918162307613148,
+              "ap": 0.0039452249910441484,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6569151624573084,
+                "ap": 0.025874851922900302
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5752591095860273,
+              "auc_ci_high": 0.6079099587473972,
+              "ap_ci_low": 0.0035923634546728054,
+              "ap_ci_high": 0.00483578346302828,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.6252006220481389,
+          "auc_std": 0.029191632245618722,
+          "ap_mean": 0.004296818385909846,
+          "ap_std": 0.0003166824085792925,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "plain",
+        "window_length": 10,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_1_loss\\lstm_ae_w10_plain_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6118803563618705,
+              "ap": 0.004056251273923699,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6787387954275272,
+                "ap": 0.01692406758309259
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5976713688530346,
+              "auc_ci_high": 0.626745474693883,
+              "ap_ci_low": 0.003636927807545399,
+              "ap_ci_high": 0.005177085194611084,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_1_loss\\lstm_ae_w10_plain_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6470520895639982,
+              "ap": 0.005169821205681976,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.720118882222498,
+                "ap": 0.02869729978478898
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6306365583573543,
+              "auc_ci_high": 0.663256108509652,
+              "ap_ci_low": 0.004617318513287373,
+              "ap_ci_high": 0.006618823240768513,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_1_loss\\lstm_ae_w10_plain_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5373415913761167,
+              "ap": 0.00376878801300543,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5932095940725474,
+                "ap": 0.019971597712955813
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5198327245487294,
+              "auc_ci_high": 0.5551470647241283,
+              "ap_ci_low": 0.0034237354738734307,
+              "ap_ci_high": 0.004422213754829584,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5987580124339952,
+          "auc_std": 0.05602004360743905,
+          "ap_mean": 0.004331620164203701,
+          "ap_std": 0.0007399962979947188,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn",
+        "window_length": 10,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "last",
+        "parameter_count": 130629,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_2_loss\\lstm_ae_w10_attn_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.4715282966648658,
+              "ap": 0.0026413652441924975,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5244371939200356,
+                "ap": 0.011710828662562522
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.45539984584508103,
+              "auc_ci_high": 0.4869002920409885,
+              "ap_ci_low": 0.0024572131114492307,
+              "ap_ci_high": 0.0029767581226621807,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_2_loss\\lstm_ae_w10_attn_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6362161122178915,
+              "ap": 0.004104975366069713,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7105307795271059,
+                "ap": 0.017156303727070336
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6209918486871281,
+              "auc_ci_high": 0.6497180006648332,
+              "ap_ci_low": 0.00381645146210474,
+              "ap_ci_high": 0.004484063582257136,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_2_loss\\lstm_ae_w10_attn_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.492961289281327,
+              "ap": 0.0028580550736036336,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5492894414889312,
+                "ap": 0.013691888141043863
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.47531238724756947,
+              "auc_ci_high": 0.5111478027859205,
+              "ap_ci_low": 0.002660529311131466,
+              "ap_ci_high": 0.0031491346309168626,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5335685660546948,
+          "auc_std": 0.08953899900668161,
+          "ap_mean": 0.0032014652279552815,
+          "ap_std": 0.0007899281915460585,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "attn_pool",
+        "window_length": 10,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "mean",
+        "parameter_count": 126597,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_3_loss\\lstm_ae_w10_attn_pool_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5813096978087354,
+              "ap": 0.0035039974040886085,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6458567406384268,
+                "ap": 0.021507156365822296
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5664840892698237,
+              "auc_ci_high": 0.5967192521221327,
+              "ap_ci_low": 0.003243247863442814,
+              "ap_ci_high": 0.0037896094053256712,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.0
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_3_loss\\lstm_ae_w10_attn_pool_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.639974467338453,
+              "ap": 0.004818390656532066,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7129564930317631,
+                "ap": 0.03236385529422707
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6235470001069051,
+              "auc_ci_high": 0.6566762475656773,
+              "ap_ci_low": 0.004440508709286004,
+              "ap_ci_high": 0.005223573093090653,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.0
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_3_loss\\lstm_ae_w10_attn_pool_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5104934053437398,
+              "ap": 0.0029828021759312874,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5679640466761267,
+                "ap": 0.015620738436529367
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.49306173108095985,
+              "auc_ci_high": 0.5277104042826409,
+              "ap_ci_low": 0.0027755009346533254,
+              "ap_ci_high": 0.0032247940673995816,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.0
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5772591901636427,
+          "auc_std": 0.06483549423700653,
+          "ap_mean": 0.0037683967455173204,
+          "ap_std": 0.0009459262795480001,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      },
+      {
+        "architecture": "bottleneck",
+        "window_length": 10,
+        "split": "test",
+        "hidden_dim": 64,
+        "bottleneck_dim": null,
+        "num_layers": 2,
+        "score_strategy": "last",
+        "parameter_count": 118341,
+        "seeds_found": [
+          42,
+          123,
+          2026
+        ],
+        "seeds_missing": [],
+        "runs": [
+          {
+            "seed": 42,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_4_loss\\lstm_ae_w10_bottleneck_seed42_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6332180780931432,
+              "ap": 0.004266029430643957,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.7055611278670127,
+                "ap": 0.022884841849154496
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.6187279733347011,
+              "auc_ci_high": 0.648335514437492,
+              "ap_ci_low": 0.00396351292064758,
+              "ap_ci_high": 0.004631508498962107,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004291845493562232,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004291845493562232
+            }
+          },
+          {
+            "seed": 123,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_4_loss\\lstm_ae_w10_bottleneck_seed123_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.6102796654012388,
+              "ap": 0.0038102018868584747,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.6813227184397048,
+                "ap": 0.01966897039419724
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.5946298031269761,
+              "auc_ci_high": 0.6248741013389215,
+              "ap_ci_low": 0.0035366516053570276,
+              "ap_ci_high": 0.004212203056039621,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004208754208754209,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004208754208754209
+            }
+          },
+          {
+            "seed": 2026,
+            "checkpoint": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\paysim_synthetic_financial\\version_4_loss\\lstm_ae_w10_bottleneck_seed2026_best.pt",
+            "n": 415816,
+            "n_fraud": 1200,
+            "prevalence": 0.0028858918367739577,
+            "metrics": {
+              "auc": 0.5094065733916041,
+              "ap": 0.003046159958573203,
+              "recall_at_fpr_0.01": 0.0016666666666666668,
+              "recall_at_fpr_0.001": 0.0016666666666666668
+            },
+            "by_bucket": {
+              "1": {
+                "n": 371882,
+                "n_fraud": 1200,
+                "fraud_rate": 0.0032268300159728086,
+                "auc": 0.5668187556989549,
+                "ap": 0.018645915986492873
+              },
+              "2-4": {
+                "n": 33536,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              "5-9": {
+                "n": 9363,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              },
+              ">=10": {
+                "n": 1035,
+                "n_fraud": 0,
+                "fraud_rate": 0.0,
+                "auc": "NaN",
+                "ap": "NaN"
+              }
+            },
+            "bootstrap_ci": {
+              "auc_ci_low": 0.49171704168828356,
+              "auc_ci_high": 0.5260635340417741,
+              "ap_ci_low": 0.0028242595086956043,
+              "ap_ci_high": 0.0033598594853032205,
+              "recall_at_fpr_0.01_ci_low": 0.0,
+              "recall_at_fpr_0.01_ci_high": 0.004255409764761318,
+              "recall_at_fpr_0.001_ci_low": 0.0,
+              "recall_at_fpr_0.001_ci_high": 0.004255409764761318
+            }
+          }
+        ],
+        "aggregate": {
+          "n_seeds": 3.0,
+          "auc_mean": 0.5843014389619955,
+          "auc_std": 0.06586708860129818,
+          "ap_mean": 0.0037074637586918782,
+          "ap_std": 0.0006163900749176022,
+          "recall_at_fpr_0.01_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.01_std": 0.0,
+          "recall_at_fpr_0.001_mean": 0.0016666666666666668,
+          "recall_at_fpr_0.001_std": 0.0
+        }
+      }
+    ]
+  }
+}

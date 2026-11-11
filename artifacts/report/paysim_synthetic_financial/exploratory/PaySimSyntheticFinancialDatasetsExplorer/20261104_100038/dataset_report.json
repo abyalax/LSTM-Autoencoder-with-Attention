@@ -158,7 +158,7 @@
     },
     "val": {
       "n": 0,
-      "fraud_rate": NaN
+      "fraud_rate": "NaN"
     },
     "test": {
       "n": 2,

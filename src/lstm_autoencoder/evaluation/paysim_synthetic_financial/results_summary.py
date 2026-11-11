@@ -76,7 +76,7 @@ class ResultsSummarizer:
         """Return (timestamp, report) for every JSON report of `pipeline`, oldest first."""
         found = [
             (path.parent.name, json.loads(path.read_text(encoding="utf-8")))
-            for path in (self._report_root / pipeline).glob("*/*/*.json")
+            for path in (self._report_root / pipeline).rglob("*.json")
         ]
         return sorted(found, key=lambda item: item[0])
 
@@ -386,8 +386,8 @@ class ResultsSummarizer:
             if bucket_label not in bucket_stats:
                 continue
             stats = bucket_stats[bucket_label]
-            auc_values = [v for v in stats["auc"] if not str(v) == "nan"]
-            ap_values = [v for v in stats["ap"] if not str(v) == "nan"]
+            auc_values = [float(v) for v in stats["auc"] if str(v) != "nan" and str(v) != "-"]
+            ap_values = [float(v) for v in stats["ap"] if str(v) != "nan" and str(v) != "-"]
 
             if auc_values:
                 auc_mean = float(np.mean(auc_values))
@@ -463,7 +463,9 @@ class ResultsSummarizer:
         """`mean ± std` of an aggregate metric, or '-' when the report lacks it."""
         if f"{key}_mean" not in aggregate:
             return "-"
-        return f"{aggregate[f'{key}_mean']:.{digits}f} ± {aggregate[f'{key}_std']:.{digits}f}"
+        mean_val = float(aggregate[f'{key}_mean'])
+        std_val = float(aggregate[f'{key}_std'])
+        return f"{mean_val:.{digits}f} ± {std_val:.{digits}f}"
 
     @staticmethod
     def _run_ci(config: dict, metric: str) -> str:
@@ -478,7 +480,8 @@ class ResultsSummarizer:
     @staticmethod
     def _format(mean: float, std: float | None = None, digits: int = 4) -> str:
         """Format `mean` or `mean ± std`."""
-        return f"{mean:.{digits}f}" if std is None else f"{mean:.{digits}f} ± {std:.{digits}f}"
+        mean_val = float(mean)
+        return f"{mean_val:.{digits}f}" if std is None else f"{mean_val:.{digits}f} ± {float(std):.{digits}f}"
 
     @staticmethod
     def _table(header: list[str], rows: list[list[str]]) -> str:
