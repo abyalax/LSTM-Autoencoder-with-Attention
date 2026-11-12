@@ -129,7 +129,9 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
         timestamp_col = self._schema.timestamp_column
 
         # Sort by account and timestamp
-        df_sorted = df.assign(account=account).sort_values(["account", timestamp_col])
+        df_sorted = df.copy()
+        df_sorted["account"] = account
+        df_sorted = df_sorted.sort_values(["account", timestamp_col])
         transaction_position = df_sorted.groupby("account").cumcount() + 1
 
         # Analyze fraud positions
@@ -181,7 +183,9 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
         timestamp_col = self._schema.timestamp_column
 
         # Sort by account and timestamp
-        df_sorted = df.assign(account=account).sort_values(["account", timestamp_col])
+        df_sorted = df.copy()
+        df_sorted["account"] = account
+        df_sorted = df_sorted.sort_values(["account", timestamp_col])
 
         normal_mask = df_sorted[target_col].eq(0)
         normal_count = normal_mask.groupby(df_sorted["account"], sort=False).cumsum() - normal_mask.astype(int)
@@ -331,8 +335,8 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
             by_type = (
                 df.groupby(TYPE_COLUMN)[TARGET_COLUMN]
                 .agg(n="count", n_fraud="sum")
-                .assign(fraud_rate=lambda t: t["n_fraud"] / t["n"])
             )
+            by_type["fraud_rate"] = by_type["n_fraud"] / by_type["n"]
         return {
             "n_rows": n_rows,
             "n_fraud": n_fraud,
@@ -364,7 +368,8 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
         account = account_identity(df)
         card_counts = account.value_counts()
 
-        df = df.assign(card_history_len=df.index.map(card_counts))
+        df = df.copy()
+        df["card_history_len"] = df.index.map(card_counts)
         fraud_rows = df[df[TARGET_COLUMN] == 1]
 
         coverage = {
@@ -389,13 +394,12 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
         account = account_identity(df)
         card_counts = account.value_counts()
 
-        fraud_rows = df[df[TARGET_COLUMN] == 1].assign(history_len=lambda t: t.index.map(card_counts))
-        fraud_rows = fraud_rows.assign(
-            history_bucket=pd.cut(
-                fraud_rows["history_len"],
-                bins=HISTORY_STRATA_BINS,
-                labels=HISTORY_STRATA_LABELS,
-            )
+        fraud_rows = df[df[TARGET_COLUMN] == 1].copy()
+        fraud_rows["history_len"] = fraud_rows.index.map(card_counts)
+        fraud_rows["history_bucket"] = pd.cut(
+            fraud_rows["history_len"],
+            bins=HISTORY_STRATA_BINS,
+            labels=HISTORY_STRATA_LABELS,
         )
 
         strata = fraud_rows.groupby("history_bucket", observed=True).agg(
@@ -418,13 +422,12 @@ class IEEEFraudDetectionDatasetExploratory(DatasetExploratory):
 
         account = account_identity(df)
         card_counts = account.value_counts()
-        df = df.assign(history_len=df.index.map(card_counts))
-        df = df.assign(
-            history_bucket=pd.cut(
-                df["history_len"],
-                bins=HISTORY_STRATA_BINS,
-                labels=HISTORY_STRATA_LABELS,
-            )
+        df = df.copy()
+        df["history_len"] = df.index.map(card_counts)
+        df["history_bucket"] = pd.cut(
+            df["history_len"],
+            bins=HISTORY_STRATA_BINS,
+            labels=HISTORY_STRATA_LABELS,
         )
 
         counts = (

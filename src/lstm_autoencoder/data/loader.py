@@ -149,9 +149,7 @@ class DatasetLoader:
 
     @staticmethod
     def _parse_timestamps(series: pd.Series) -> pd.Series:
-        # Try parsing as datetime first, if that fails and series is numeric, return as-is
-        parsed = pd.to_datetime(series, format="ISO8601", errors="coerce", utc=True)
-        if parsed.isna().all() and pd.api.types.is_numeric_dtype(series):
-            # Assume it's already a numeric timestamp (step, TransactionDT, etc.)
+        if pd.api.types.is_numeric_dtype(series):
             return series
+        parsed = pd.to_datetime(series, format="ISO8601", errors="coerce", utc=True)
         return parsed.dt.tz_localize(None)
