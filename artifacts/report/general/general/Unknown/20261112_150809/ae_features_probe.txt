@@ -1,0 +1,19 @@
+
+--------------------------------------------------------------------------------
+Probe GBM dengan 5 Fitur AE - ieee_fraud_detection
+--------------------------------------------------------------------------------
+Baris 590,540 | target 20,663 (3.499%)
+
+Fitur yang digunakan (5): ['amount', 'step_diff', 'log_amount_ratio', 'history_length', 'is_new_receiver']
+
+Split | train 413,378 val 88,581 test 88,581
+┌──────────────┬─────────┬────────┬────────────────┬──────────┬─────────┬─────────────────┐
+│              │ val_auc │ val_ap │ val_prevalence │ test_auc │ test_ap │ test_prevalence │
+├──────────────┼─────────┼────────┼────────────────┼──────────┼─────────┼─────────────────┤
+│ label asli   │ 0.7311  │ 0.0991 │ 0.0343         │ 0.7107   │ 0.0839  │ 0.0348          │
+│ label diacak │ 0.4988  │ 0.0351 │ 0.0343         │ 0.4915   │ 0.0356  │ 0.0348          │
+└──────────────┴─────────┴────────┴────────────────┴──────────┴─────────┴─────────────────┘
+
+Kesimpulan
+  AUC test 0.711, AP 0.0839 (prevalensi 0.0348), kontrol label-acak AUC 0.491.
+  Ada sinyal yang dapat dipelajari dari 5 fitur AE.

@@ -14,6 +14,10 @@ STEP_DIFF = "step_diff"
 LOG_AMOUNT_RATIO = "log_amount_ratio"
 IS_NEW_RECEIVER = "is_new_receiver"
 HISTORY_BUCKET = "history_bucket"
+ROLLING_LOG_RATIO_MEAN_3 = "rolling_log_ratio_mean_3"
+ROLLING_LOG_RATIO_MAX_3 = "rolling_log_ratio_max_3"
+ROLLING_LOG_RATIO_MEAN_5 = "rolling_log_ratio_mean_5"
+ROLLING_LOG_RATIO_MAX_5 = "rolling_log_ratio_max_5"
 AMOUNT_EPSILON = 1e-9
 
 DERIVED_FEATURES: tuple[str, ...] = (
@@ -22,6 +26,10 @@ DERIVED_FEATURES: tuple[str, ...] = (
     LOG_AMOUNT_RATIO,
     IS_NEW_RECEIVER,
     HISTORY_BUCKET,
+    ROLLING_LOG_RATIO_MEAN_3,
+    ROLLING_LOG_RATIO_MAX_3,
+    ROLLING_LOG_RATIO_MEAN_5,
+    ROLLING_LOG_RATIO_MAX_5,
 )
 
 
@@ -115,6 +123,37 @@ class CausalFeatureBuilder:
             labels=history_bucket_labels,
             right=False,
         ).astype(str)
+
+        # Rolling features: mean/max of log_amount_ratio from last 3 and 5 transactions
+        # Only using transactions from strictly earlier steps (causal)
+        # First, compute per-step per-account mean log_amount_ratio
+        df_for_rolling = ordered[[ACCOUNT_CODE, schema.timestamp_column, LOG_AMOUNT_RATIO]].copy()
+        step_stats = df_for_rolling.groupby([ACCOUNT_CODE, schema.timestamp_column], sort=False)[LOG_AMOUNT_RATIO].mean().reset_index()
+        step_stats.columns = [ACCOUNT_CODE, schema.timestamp_column, "step_log_ratio_mean"]
+
+        # Shift to get stats from previous steps
+        step_stats[f"prev_{LOG_AMOUNT_RATIO}"] = step_stats.groupby(ACCOUNT_CODE, sort=False)["step_log_ratio_mean"].shift(1)
+
+        # Rolling windows on the shifted series (per account)
+        rolling3 = step_stats.groupby(ACCOUNT_CODE, sort=False)[f"prev_{LOG_AMOUNT_RATIO}"].rolling(window=3, min_periods=1)
+        rolling5 = step_stats.groupby(ACCOUNT_CODE, sort=False)[f"prev_{LOG_AMOUNT_RATIO}"].rolling(window=5, min_periods=1)
+
+        step_stats[ROLLING_LOG_RATIO_MEAN_3] = rolling3.mean().reset_index(level=0, drop=True)
+        step_stats[ROLLING_LOG_RATIO_MAX_3] = rolling3.max().reset_index(level=0, drop=True)
+        step_stats[ROLLING_LOG_RATIO_MEAN_5] = rolling5.mean().reset_index(level=0, drop=True)
+        step_stats[ROLLING_LOG_RATIO_MAX_5] = rolling5.max().reset_index(level=0, drop=True)
+
+        # Merge back to original dataframe
+        rolling_cols = [ROLLING_LOG_RATIO_MEAN_3, ROLLING_LOG_RATIO_MAX_3, ROLLING_LOG_RATIO_MEAN_5, ROLLING_LOG_RATIO_MAX_5]
+        ordered = ordered.merge(
+            step_stats[[ACCOUNT_CODE, schema.timestamp_column] + rolling_cols],
+            on=[ACCOUNT_CODE, schema.timestamp_column],
+            how="left"
+        )
+
+        # Fill NaN with 0 for transactions with no history
+        for col in rolling_cols:
+            ordered[col] = ordered[col].fillna(0.0)
 
         return ordered
 

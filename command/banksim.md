@@ -64,19 +64,24 @@ Optional arguments:
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows.
 - `--max-train-rows` : Maximum number of training rows used by the probe model. Defaults to 5000.
 
-### 4. LR Ablation Baselines
+### 4. LR and GBM Ablation Baselines
 
-Train logistic regression ablations to evaluate the contribution of history features:
+Train logistic regression and GBM ablations to evaluate the contribution of history features:
 
 ```Shell
 uv run python -m lstm_autoencoder ablation --dataset banksim
 ```
 
-The ablation (BaselineEvaluator) trains three LR variants **and** compares them:
+The ablation (BaselineEvaluator) trains multiple variants and compares them:
 
+**Linear models (LogisticRegression):**
 - **full**: All features including history features (history_length, step_diff, log_amount_ratio, is_new_receiver, history_bucket)
 - **no_history**: All features except history features (checks if history is just a proxy for easier signal)
 - **history_only**: Only history features (isolates the lift from history-based features)
+
+**Non-linear models (HistGradientBoostingClassifier):**
+- **full_gbm**: GBM on all features (non-linear control)
+- **full_gbm_no_step**: GBM without the raw step column (measures how much advantage depends on hour-of-day)
 
 The command reports AUC/AP overall and per history bucket (1, 2-4, 5-9, >=10) on the test set.
 

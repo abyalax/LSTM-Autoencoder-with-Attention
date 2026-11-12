@@ -1,0 +1,19 @@
+
+--------------------------------------------------------------------------------
+Probe GBM dengan 5 Fitur AE - banksim
+--------------------------------------------------------------------------------
+Baris 594,643 | target 7,200 (1.211%)
+
+Fitur yang digunakan (5): ['amount', 'step_diff', 'log_amount_ratio', 'history_length', 'is_new_receiver']
+
+Split | train 416,250 val 89,196 test 89,197
+┌──────────────┬─────────┬────────┬────────────────┬──────────┬─────────┬─────────────────┐
+│              │ val_auc │ val_ap │ val_prevalence │ test_auc │ test_ap │ test_prevalence │
+├──────────────┼─────────┼────────┼────────────────┼──────────┼─────────┼─────────────────┤
+│ label asli   │ 0.9832  │ 0.7287 │ 0.0111         │ 0.9637   │ 0.6583  │ 0.0108          │
+│ label diacak │ 0.3026  │ 0.0085 │ 0.0111         │ 0.2802   │ 0.0083  │ 0.0108          │
+└──────────────┴─────────┴────────┴────────────────┴──────────┴─────────┴─────────────────┘
+
+Kesimpulan
+  AUC test 0.964, AP 0.6583 (prevalensi 0.0108), kontrol label-acak AUC 0.280.
+  Ada sinyal yang dapat dipelajari dari 5 fitur AE.

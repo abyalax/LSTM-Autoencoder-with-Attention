@@ -11,15 +11,21 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.banksim.causal_features import (
     ACCOUNT_CODE,
     HISTORY_BUCKET,
     HISTORY_LENGTH,
     IS_NEW_RECEIVER,
+    LOG_AMOUNT_RATIO,
+    ROLLING_LOG_RATIO_MAX_3,
+    ROLLING_LOG_RATIO_MAX_5,
+    ROLLING_LOG_RATIO_MEAN_3,
+    ROLLING_LOG_RATIO_MEAN_5,
+    STEP_DIFF,
     CausalFeatureBuilder,
 )
 from lstm_autoencoder.data.banksim.schema import BankSimSchema
+from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
 from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
@@ -52,12 +58,14 @@ class FullFeatureData:
 
 
 class BaselineEvaluator:
-    """Train logistic-regression ablations and report AUC/AP overall and per history bucket.
+    """Train logistic-regression and GBM ablations and report AUC/AP overall and per history bucket.
 
-    Three variants are compared: the full feature set, the full set minus the
-    causal history features (sanity check that history_length is not just a
-    proxy for an easier signal), and the history features alone (isolates the
-    lift found during exploration).
+    Variants compared:
+    - full: All features including history features
+    - no_history: All features except history features (checks if history is just a proxy for easier signal)
+    - history_only: Only history features (isolates the lift from history-based features)
+    - full_gbm: GBM on all features (non-linear control)
+    - full_gbm_no_step: GBM without the raw step column (measures how much advantage depends on hour-of-day)
     """
 
     def __init__(
@@ -191,16 +199,34 @@ class BaselineEvaluator:
         return features
 
     def _define_variants(self, full_data: FullFeatureData) -> list[AblationVariant]:
-        """Define the three ablation variants."""
+        """Define the ablation variants including GBM controls."""
         history_features = (HISTORY_LENGTH, IS_NEW_RECEIVER, HISTORY_BUCKET)
+        rolling_features = (
+            STEP_DIFF,
+            LOG_AMOUNT_RATIO,
+            ROLLING_LOG_RATIO_MEAN_3,
+            ROLLING_LOG_RATIO_MAX_3,
+            ROLLING_LOG_RATIO_MEAN_5,
+            ROLLING_LOG_RATIO_MAX_5,
+        )
         all_features = tuple(full_data.features.columns)
 
         no_history = tuple(col for col in all_features if col not in history_features)
+
+        # Raw `step` lets a tree model recover hour-of-day, a simulator artefact (see `audit-pipeline`);
+        # this control removes only that column to measure how much of the GBM's advantage depends on it.
+        no_step = tuple(col for col in all_features if col != self._schema.timestamp_column)
+
+        # rolling_only: test if sequential rolling features alone capture signal
+        rolling_only = tuple(col for col in rolling_features if col in all_features)
 
         return [
             AblationVariant(name="full", columns=all_features),
             AblationVariant(name="no_history", columns=no_history),
             AblationVariant(name="history_only", columns=history_features),
+            AblationVariant(name="rolling_only", columns=rolling_only),
+            AblationVariant(name="full_gbm", columns=all_features),  # Non-linear control: HistGradientBoosting
+            AblationVariant(name="full_gbm_no_step", columns=no_step),  # GBM without the raw `step` column
         ]
 
     def _fit_variant(self, variant: AblationVariant, full_data: FullFeatureData) -> np.ndarray:
@@ -213,33 +239,62 @@ class BaselineEvaluator:
         X_val = full_data.features.loc[val_idx, list(variant.columns)]
         y_val = full_data.labels[val_idx]
 
-        # Use LogisticRegression for linear models
-        model = LogisticRegression(
-            max_iter=1000,
-            class_weight="balanced",
-            random_state=self._probe.random_seed,
-        )
+        # Use GBM for variants ending with _gbm, otherwise LogisticRegression
+        if variant.name.endswith("_gbm"):
+            model = HistGradientBoostingClassifier(
+                max_iter=200,
+                learning_rate=0.1,
+                max_leaf_nodes=31,
+                early_stopping=True,
+                validation_fraction=0.1,
+                random_state=self._probe.random_seed,
+            )
+            model.fit(X_train, y_train)
+            val_scores = model.predict_proba(X_val)[:, 1]
 
-        # Scale features
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_val_scaled = scaler.transform(X_val)
+            # Retrain on train+val and score on all data
+            train_val_idx = np.concatenate([train_idx, val_idx])
+            X_train_val = full_data.features.loc[train_val_idx, list(variant.columns)]
+            y_train_val = full_data.labels[train_val_idx]
+            model.fit(X_train_val, y_train_val)
+            all_scores = model.predict_proba(full_data.features[list(variant.columns)])[:, 1]
+        else:
+            # Use LogisticRegression for linear models
+            model = LogisticRegression(
+                max_iter=1000,
+                class_weight="balanced",
+                random_state=self._probe.random_seed,
+            )
 
-        model.fit(X_train_scaled, y_train)
+            # Scale features
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_val_scaled = scaler.transform(X_val)
 
-        # Score on validation for threshold selection
-        val_scores = model.predict_proba(X_val_scaled)[:, 1]
+            model.fit(X_train_scaled, y_train)
 
-        # Retrain on train+val and score on all data
-        train_val_idx = np.concatenate([train_idx, val_idx])
-        X_train_val = full_data.features.loc[train_val_idx, list(variant.columns)]
-        y_train_val = full_data.labels[train_val_idx]
+            # Score on validation for threshold selection
+            val_scores = model.predict_proba(X_val_scaled)[:, 1]
 
-        X_train_val_scaled = scaler.fit_transform(X_train_val)
-        model.fit(X_train_val_scaled, y_train_val)
+            # Retrain on train+val and score on all data
+            train_val_idx = np.concatenate([train_idx, val_idx])
+            X_train_val = full_data.features.loc[train_val_idx, list(variant.columns)]
+            y_train_val = full_data.labels[train_val_idx]
 
-        X_all_scaled = scaler.transform(full_data.features[list(variant.columns)])
-        all_scores = model.predict_proba(X_all_scaled)[:, 1]
+            X_train_val_scaled = scaler.fit_transform(X_train_val)
+            model.fit(X_train_val_scaled, y_train_val)
+
+            X_all_scaled = scaler.transform(full_data.features[list(variant.columns)])
+            all_scores = model.predict_proba(X_all_scaled)[:, 1]
+
+            # Log coefficient importance for LR
+            coef_df = pd.DataFrame({
+                'feature': list(variant.columns),
+                'coef_abs': np.abs(model.coef_[0]),
+                'coef': model.coef_[0]
+            }).sort_values('coef_abs', ascending=False)
+            self._reporter.display_section(f"Feature coefficients ({variant.name})")
+            self._reporter.display_table(coef_df.head(20))
 
         return all_scores
 
