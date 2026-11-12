@@ -15,8 +15,8 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
     BaselineEvaluator,
 )
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
-from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.model.trainer import Trainer
+from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 SCORE_DEFINITIONS: tuple[str, ...] = ("mean", "last", "max")

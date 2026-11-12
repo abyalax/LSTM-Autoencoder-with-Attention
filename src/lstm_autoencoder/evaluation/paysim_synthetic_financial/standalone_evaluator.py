@@ -19,8 +19,8 @@ from lstm_autoencoder.model.config import (
     SequenceConfig,
     TrainConfig,
 )
-from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.model.trainer import Trainer
+from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 ARCHITECTURES: tuple[str, ...] = ("attention", "bottleneck", "plain", "attention_pooling")

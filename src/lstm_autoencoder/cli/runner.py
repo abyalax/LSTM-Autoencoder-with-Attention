@@ -7,8 +7,10 @@ import sys
 from pathlib import Path
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.banksim.exploratory import BankSimDatasetsExplorer
 from lstm_autoencoder.data.config import ExploratoryConfig
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
+from lstm_autoencoder.data.ieee_fraud_detection.exploratory import IEEEFraudDetectionDatasetsExplorer
 from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
@@ -54,7 +56,11 @@ from lstm_autoencoder.model.config import (
     SequenceConfig,
     TrainConfig,
 )
-from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
+from lstm_autoencoder.pipeline.banksim.banksim_pipeline import BankSimModelTrainingPipeline
+from lstm_autoencoder.pipeline.ieee_fraud_detection.ieee_fraud_detection_pipeline import (
+    IEEEFraudDetectionModelTrainingPipeline,
+)
+from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline
 from lstm_autoencoder.reporting.figures import FigureBuilder
 
 
@@ -72,7 +78,9 @@ class RunnerCLI:
         exploratory_config = ExploratoryConfig()
         split_config = SplitConfig()
         explorers = {
+            "banksim": BankSimDatasetsExplorer,
             "financial_fraud_detection": FinancialFraudDetectionExplorer,
+            "ieee_fraud_detection": IEEEFraudDetectionDatasetsExplorer,
             "paysim_synthetic_financial": PaySimSyntheticFinancialDatasetsExplorer,
         }
         explorer = explorers.get(dataset.lower())
@@ -145,13 +153,33 @@ class RunnerCLI:
         """Execute LSTM-Autoencoder training, as a single run or a multi-seed aggregate."""
         config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
         sequence_config = SequenceConfig(window_length=window)
-        pipeline = PaySimModelTrainingPipeline(
-            dataset_config=config,
-            sequence_config=sequence_config,
-            model_config=model_config,
-            train_config=train_config,
-            split_config=SplitConfig(),
-        )
+
+        # Select pipeline based on dataset
+        if dataset.lower() == "banksim":
+            pipeline = BankSimModelTrainingPipeline(
+                dataset_config=config,
+                sequence_config=sequence_config,
+                model_config=model_config,
+                train_config=train_config,
+                split_config=SplitConfig(stratify_by="none"),
+            )
+        elif dataset.lower() == "ieee_fraud_detection":
+            pipeline = IEEEFraudDetectionModelTrainingPipeline(
+                dataset_config=config,
+                sequence_config=sequence_config,
+                model_config=model_config,
+                train_config=train_config,
+                split_config=SplitConfig(stratify_by="none"),
+            )
+        else:
+            pipeline = PaySimModelTrainingPipeline(
+                dataset_config=config,
+                sequence_config=sequence_config,
+                model_config=model_config,
+                train_config=train_config,
+                split_config=SplitConfig(),
+            )
+
         if seeds:
             pipeline.run_with_seeds(seeds)
         else:
@@ -409,7 +437,15 @@ class RunnerCLI:
             for seed in seeds_list:
                 checkpoint_name = f"lstm_ae_w{window}_{arch_tag}_seed{seed}_best.pt"
                 # Each training run writes into its own version_N_* folder, so search all of them.
-                if PaySimModelTrainingPipeline.find_checkpoint(project_root / "artifacts", checkpoint_name) is None:
+                # Select the correct pipeline class based on dataset
+                if dataset.lower() == "banksim":
+                    pipeline_class = BankSimModelTrainingPipeline
+                elif dataset.lower() == "ieee_fraud_detection":
+                    pipeline_class = IEEEFraudDetectionModelTrainingPipeline
+                else:
+                    pipeline_class = PaySimModelTrainingPipeline
+
+                if pipeline_class.find_checkpoint(project_root / "artifacts", checkpoint_name) is None:
                     all_exist = False
                     break
 
@@ -553,7 +589,7 @@ class RunnerCLI:
                 arch_flags = []
 
             # Check if report exists
-            report_dir = project_root / "artifacts" / "report" / "paysim_synthetic_financial" / "hybrid_classifier"
+            report_dir = project_root / "artifacts" / "report" / dataset.lower() / "hybrid_classifier"
             report_exists = False
             if report_dir.exists():
                 for timestamp_dir in report_dir.iterdir():

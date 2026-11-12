@@ -22,8 +22,8 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import (
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.score_strategy_registry import FrozenScoreStrategy
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.lstm_autoencoder import LSTMAutoencoder
-from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.model.trainer import Trainer
+from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline, SplitScoringData
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 BASELINE = "baseline_train"

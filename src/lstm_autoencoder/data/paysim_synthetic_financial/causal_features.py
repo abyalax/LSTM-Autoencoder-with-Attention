@@ -92,12 +92,14 @@ class CausalFeatureBuilder:
             )
             .reset_index(drop=True)
         )
+        # Rename amount column to standard "amount" for consistency across datasets
+        ordered["amount"] = ordered[schema.amount_column]
 
         n_rows = len(ordered)
         position = np.arange(n_rows)
         code = ordered[ACCOUNT_CODE].to_numpy()
         step = ordered[schema.timestamp_column].to_numpy().astype("int64")
-        amount = ordered[schema.amount_column].to_numpy(dtype="float64")
+        amount = ordered["amount"].to_numpy(dtype="float64")
 
         new_account = np.ones(n_rows, dtype=bool)
         new_step = np.ones(n_rows, dtype=bool)
@@ -117,7 +119,7 @@ class CausalFeatureBuilder:
 
         # Per-account running sum keeps the numbers small (float precision); the
         # prior total is the running sum at the last row of the previous step group.
-        running = ordered.groupby(ACCOUNT_CODE, sort=False)[schema.amount_column].cumsum().to_numpy(dtype="float64")
+        running = ordered.groupby(ACCOUNT_CODE, sort=False)["amount"].cumsum().to_numpy(dtype="float64")
         prior_total = np.where(has_history, running[previous], 0.0)
         prior_mean = np.where(has_history, prior_total / np.maximum(history, 1), np.nan)
         ratio = (amount + AMOUNT_EPSILON) / (prior_mean + AMOUNT_EPSILON)

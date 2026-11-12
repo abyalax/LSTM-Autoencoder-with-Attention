@@ -81,10 +81,10 @@ class DatasetLoader:
         frame[self._schema.target_column] = target.loc[frame.index].astype("int8")
         frame[self._schema.timestamp_column] = timestamps.loc[frame.index]
 
-        # Apply PaySim-specific scope filter if applicable
+        # Apply dataset-specific scope filter if applicable
         n_filtered_by_scope = 0
         if hasattr(self._schema, "valid_transaction_types") and hasattr(self._schema, "transaction_type_column"):
-            if self._schema.transaction_type_column in frame.columns:
+            if self._schema.transaction_type_column in frame.columns and self._schema.valid_transaction_types:
                 n_before_filter = len(frame)
                 frame = frame[
                     frame[self._schema.transaction_type_column].isin(self._schema.valid_transaction_types)
@@ -102,10 +102,28 @@ class DatasetLoader:
 
     def _read_raw(self) -> tuple[pd.DataFrame, Path]:
         config = self._config
-        # Merge dtype with PaySim-specific defaults if not already set
-        dtype = config.dtype or {"nameOrig": "string", "nameDest": "string", "type": "string"}
-        csv_path = config.raw_dir / f"{config.dataset_name}.csv"
-        zip_path = config.raw_dir / f"{config.dataset_name}.zip"
+        # Merge dtype with dataset-specific defaults if not already set
+        if config.dtype:
+            dtype = config.dtype
+        elif config.dataset_name == "banksim":
+            dtype = {"customer": "string", "merchant": "string", "category": "string"}
+        elif config.dataset_name == "ieee_fraud_detection":
+            dtype = {"card1": "string", "ProductCD": "string"}
+        else:
+            dtype = {"nameOrig": "string", "nameDest": "string", "type": "string"}
+
+        # Handle different file naming conventions per dataset
+        if config.dataset_name == "banksim":
+            csv_path = config.raw_dir / "bs140513_032310.csv"
+            zip_path = config.raw_dir / "banksim.zip"
+        elif config.dataset_name == "ieee_fraud_detection":
+            # IEEE-CIS has separate train/test files, use train for now
+            csv_path = config.raw_dir / "train_transaction.csv"
+            zip_path = config.raw_dir / "ieee_fraud_detection.zip"
+        else:
+            csv_path = config.raw_dir / f"{config.dataset_name}.csv"
+            zip_path = config.raw_dir / f"{config.dataset_name}.zip"
+
         if csv_path.exists():
             frame = pd.read_csv(csv_path, nrows=config.row_limit, low_memory=False, dtype=dtype)
             return frame, csv_path
@@ -116,7 +134,15 @@ class DatasetLoader:
     def _read_zip(self, zip_path: Path, dtype: dict[str, str] | None = None) -> pd.DataFrame:
         with zipfile.ZipFile(zip_path) as archive:
             names = archive.namelist()
-            csv_name = f"{self._config.dataset_name}.csv"
+
+            # Handle different zip structures per dataset
+            if self._config.dataset_name == "banksim":
+                csv_name = "bs140513_032310.csv"
+            elif self._config.dataset_name == "ieee_fraud_detection":
+                csv_name = "train_transaction.csv"
+            else:
+                csv_name = f"{self._config.dataset_name}.csv"
+
             matches = [n for n in names if n.endswith(csv_name)]
             candidates = matches or [n for n in names if n.lower().endswith(".csv")]
             if not candidates:
@@ -139,5 +165,9 @@ class DatasetLoader:
 
     @staticmethod
     def _parse_timestamps(series: pd.Series) -> pd.Series:
+        # Try parsing as datetime first, if that fails and series is numeric, return as-is
         parsed = pd.to_datetime(series, format="ISO8601", errors="coerce", utc=True)
+        if parsed.isna().all() and pd.api.types.is_numeric_dtype(series):
+            # Assume it's already a numeric timestamp (step, TransactionDT, etc.)
+            return series
         return parsed.dt.tz_localize(None)

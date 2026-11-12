@@ -318,7 +318,7 @@ class PaySimModelTrainingPipeline:
         train_normal_mask = built[self._schema.receiver_column].isin(receiver_ids["train"]) & (
             built[self._schema.target_column] == 0
         )
-        log1p_columns = (self._schema.amount_column, HISTORY_LENGTH)
+        log1p_columns = ("amount", HISTORY_LENGTH)
         scaler = FeatureScaler(self._sequence_config.feature_columns, log1p_columns).fit(built, train_normal_mask)
         scaled = scaler.transform(built)
 

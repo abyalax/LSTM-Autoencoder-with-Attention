@@ -22,8 +22,8 @@ from lstm_autoencoder.evaluation.paysim_synthetic_financial.standalone_evaluator
     model_config_for,
 )
 from lstm_autoencoder.model.config import DEFAULT_HIDDEN_DIM, SCORE_STRATEGIES, SequenceConfig, TrainConfig
-from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
 from lstm_autoencoder.model.trainer import Trainer
+from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 DEFAULT_TIE_BREAK = "mean"  # the training loss, and the score reported so far

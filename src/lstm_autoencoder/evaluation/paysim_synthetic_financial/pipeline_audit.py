@@ -506,7 +506,7 @@ class PipelineAudit:
         """Run the split checks with the pipeline's own splitter, and compare it with the baseline's."""
         from lstm_autoencoder.evaluation.config import SplitConfig
         from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
-        from lstm_autoencoder.model.pipeline import PaySimModelTrainingPipeline
+        from lstm_autoencoder.pipeline.paysim.paysim_pipeline import PaySimModelTrainingPipeline
 
         built = self._builder.build(frame)
         pipeline = PaySimModelTrainingPipeline(
