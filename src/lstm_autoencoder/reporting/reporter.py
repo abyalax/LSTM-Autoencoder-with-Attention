@@ -114,7 +114,7 @@ class ReportWritter:
             if lstm_idx + 1 < len(parts):
                 section = parts[lstm_idx + 1]
                 if section in ("data", "evaluation") and lstm_idx + 2 < len(parts):
-                    self._domain_data = parts[lstm_idx + 2]
+                    self._domain_data = parts[lstm_idx + 2].replace(".py", "")
                     if lstm_idx + 3 < len(parts):
                         self._pipeline = parts[lstm_idx + 3].replace(".py", "")
         except ValueError:

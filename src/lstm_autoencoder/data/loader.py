@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.dataset_files import DATASET_FILES
 
 
 class Schema:
@@ -102,52 +103,35 @@ class DatasetLoader:
 
     def _read_raw(self) -> tuple[pd.DataFrame, Path]:
         config = self._config
-        # Merge dtype with dataset-specific defaults if not already set
-        if config.dtype:
-            dtype = config.dtype
-        elif config.dataset_name == "banksim":
-            dtype = {"customer": "string", "merchant": "string", "category": "string"}
-        elif config.dataset_name == "ieee_fraud_detection":
-            dtype = {"card1": "string", "ProductCD": "string"}
-        else:
-            dtype = {"nameOrig": "string", "nameDest": "string", "type": "string"}
-
-        # Handle different file naming conventions per dataset
-        if config.dataset_name == "banksim":
-            csv_path = config.raw_dir / "bs140513_032310.csv"
-            zip_path = config.raw_dir / "banksim.zip"
-        elif config.dataset_name == "ieee_fraud_detection":
-            # IEEE-CIS has separate train/test files, use train for now
-            csv_path = config.raw_dir / "train_transaction.csv"
-            zip_path = config.raw_dir / "ieee_fraud_detection.zip"
-        else:
-            csv_path = config.raw_dir / f"{config.dataset_name}.csv"
-            zip_path = config.raw_dir / f"{config.dataset_name}.zip"
+        try:
+            spec = DATASET_FILES[config.dataset_name]
+        except KeyError as exc:
+            supported = sorted(DATASET_FILES)
+            raise ValueError(
+                f"Unsupported dataset: {config.dataset_name!r}. Supported: {supported}"
+            ) from exc
+        dtype = config.dtype if config.dtype is not None else spec.dtype
+        csv_path = config.raw_dir / spec.csv_name
+        zip_path = config.raw_dir / spec.archive_name
 
         if csv_path.exists():
             frame = pd.read_csv(csv_path, nrows=config.row_limit, low_memory=False, dtype=dtype)
             return frame, csv_path
         if zip_path.exists():
-            return self._read_zip(zip_path, dtype), zip_path
+            return self._read_zip(zip_path, spec.archive_member, dtype), zip_path
         raise FileNotFoundError(f"Dataset not found. Expected {csv_path} or {zip_path}.")
 
-    def _read_zip(self, zip_path: Path, dtype: dict[str, str] | None = None) -> pd.DataFrame:
+    def _read_zip(
+        self, zip_path: Path, archive_member: str, dtype: dict[str, str] | None = None
+    ) -> pd.DataFrame:
         with zipfile.ZipFile(zip_path) as archive:
             names = archive.namelist()
-
-            # Handle different zip structures per dataset
-            if self._config.dataset_name == "banksim":
-                csv_name = "bs140513_032310.csv"
-            elif self._config.dataset_name == "ieee_fraud_detection":
-                csv_name = "train_transaction.csv"
-            else:
-                csv_name = f"{self._config.dataset_name}.csv"
-
-            matches = [n for n in names if n.endswith(csv_name)]
-            candidates = matches or [n for n in names if n.lower().endswith(".csv")]
-            if not candidates:
-                raise ValueError(f"No CSV file found inside {zip_path}.")
-            with archive.open(candidates[0]) as handle:
+            matches = [name for name in names if name == archive_member or name.endswith("/" + archive_member)]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"Expected one {archive_member!r} member in {zip_path}, found {len(matches)}."
+                )
+            with archive.open(matches[0]) as handle:
                 return pd.read_csv(handle, nrows=self._config.row_limit, low_memory=False, dtype=dtype)
 
     def _validate_columns(self, frame: pd.DataFrame) -> None:

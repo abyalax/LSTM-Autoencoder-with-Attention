@@ -1,0 +1,100 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder inspect-data --dataset ieee_fraud_detection",
+  "entity_cardinality": {
+    "n_unique_accounts": 13553,
+    "n_total_transactions": 590540,
+    "avg_transactions_per_account": 43.572640743746774
+  },
+  "history_distribution": {
+    "min_transactions": 1,
+    "max_transactions": 14932,
+    "median_transactions": 4.0,
+    "mean_transactions": 43.572640743746774,
+    "p25_transactions": 1.0,
+    "p75_transactions": 14.0,
+    "p95_transactions": 107.0,
+    "p99_transactions": 786.4399999999987
+  },
+  "fraud_distribution": {
+    "total_fraud_transactions": 20663,
+    "accounts_with_fraud": 1740,
+    "accounts_with_history": 10109,
+    "accounts_with_history_and_fraud": 1594,
+    "fraud_with_history_1": 20663,
+    "pct_fraud_with_history_1": 100.0,
+    "fraud_with_history_3": 20412,
+    "pct_fraud_with_history_3": 98.79,
+    "fraud_with_history_5": 20211,
+    "pct_fraud_with_history_5": 97.81,
+    "fraud_with_history_10": 19832,
+    "pct_fraud_with_history_10": 95.98,
+    "fraud_with_history_15": 19529,
+    "pct_fraud_with_history_15": 94.51,
+    "fraud_with_history_20": 19250,
+    "pct_fraud_with_history_20": 93.16
+  },
+  "fraud_position": {
+    "n_fraud": 20663,
+    "n_fraud_first_transaction": 348,
+    "n_fraud_second_transaction": 251,
+    "n_fraud_third_transaction": 203,
+    "n_fraud_after_third": 19861,
+    "pct_fraud_first_transaction": 1.68,
+    "pct_fraud_second_transaction": 1.21,
+    "pct_fraud_third_transaction": 0.98,
+    "pct_fraud_after_third": 96.12,
+    "median_position": 415.0,
+    "mean_position": 1242.970139863524
+  },
+  "history_before_fraud": {
+    "n_fraud": 20663,
+    "median_normal_before_fraud": 414.0,
+    "mean_normal_before_fraud": 1241.970139863524,
+    "p25_normal_before_fraud": 72.0,
+    "p75_normal_before_fraud": 1456.0,
+    "p95_normal_before_fraud": 5412.399999999987,
+    "pct_fraud_with_no_history": 1.68,
+    "pct_fraud_with_1_4_history": 3.9,
+    "pct_fraud_with_5_9_history": 3.15,
+    "pct_fraud_with_10_plus_history": 91.27
+  },
+  "sequence_length": {
+    "n_accounts": 13553,
+    "accounts_with_sequence_1": 13553,
+    "pct_accounts_with_sequence_1": 100.0,
+    "accounts_with_sequence_3": 8419,
+    "pct_accounts_with_sequence_3": 62.12,
+    "accounts_with_sequence_5": 6512,
+    "pct_accounts_with_sequence_5": 48.05,
+    "accounts_with_sequence_10": 4298,
+    "pct_accounts_with_sequence_10": 31.71,
+    "accounts_with_sequence_15": 3247,
+    "pct_accounts_with_sequence_15": 23.96,
+    "accounts_with_sequence_20": 2635,
+    "pct_accounts_with_sequence_20": 19.44,
+    "total_sequences_1": 590540,
+    "total_sequences_3": 566878,
+    "total_sequences_5": 551144,
+    "total_sequences_10": 523806,
+    "total_sequences_15": 504627,
+    "total_sequences_20": 489730
+  },
+  "temporal_distribution": {
+    "time_start": "1970-01-01 00:00:00.000086400",
+    "time_end": "1970-01-01 00:00:00.015811131",
+    "time_range_days": 0,
+    "n_periods": 1,
+    "period_type": "hour",
+    "min_fraud_rate_per_period": 0.03499000914417313,
+    "max_fraud_rate_per_period": 0.03499000914417313,
+    "mean_fraud_rate_per_period": 0.03499000914417313,
+    "temporal_drift_ratio": 0.0,
+    "period_stats": {
+      "0": {
+        "n_transactions": 590540,
+        "n_fraud": 20663,
+        "fraud_rate": 0.03499000914417313
+      }
+    }
+  }
+}

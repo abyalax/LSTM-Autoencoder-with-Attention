@@ -7,11 +7,16 @@ import sys
 from pathlib import Path
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.data.banksim.exploratory import BankSimDatasetsExplorer
+from lstm_autoencoder.data.banksim.exploratory import BankSimDatasetExploratory
 from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.data.exploratory import DatasetExploratory
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
-from lstm_autoencoder.data.ieee_fraud_detection.exploratory import IEEEFraudDetectionDatasetsExplorer
-from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import PaySimSyntheticFinancialDatasetsExplorer
+from lstm_autoencoder.data.ieee_fraud_detection.exploratory import (
+    IEEEFraudDetectionDatasetExploratory,
+)
+from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import (
+    PaySimDatasetExploratory,
+)
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
@@ -69,28 +74,44 @@ class RunnerCLI:
 
     @staticmethod
     def run_inspect_data(project_root: Path, dataset: str, nrows: int | None) -> int:
-        """Execute dataset exploration."""
+        """Execute dataset inspection using modular exploratories."""
         dataset_config = DatasetConfig(
             project_root=project_root,
             dataset_name=dataset,
             row_limit=nrows,
         )
-        exploratory_config = ExploratoryConfig()
-        split_config = SplitConfig()
-        explorers = {
-            "banksim": BankSimDatasetsExplorer,
-            "financial_fraud_detection": FinancialFraudDetectionExplorer,
-            "ieee_fraud_detection": IEEEFraudDetectionDatasetsExplorer,
-            "paysim_synthetic_financial": PaySimSyntheticFinancialDatasetsExplorer,
+
+        # Map dataset names to their specific exploratory classes
+        exploratories: dict[str, type[DatasetExploratory]] = {
+            "banksim": BankSimDatasetExploratory,
+            "ieee_fraud_detection": IEEEFraudDetectionDatasetExploratory,
+            "paysim_synthetic_financial": PaySimDatasetExploratory,
         }
-        explorer = explorers.get(dataset.lower())
-        if explorer is None:
+
+        # Get the appropriate exploratory for the dataset
+        exploratory_class = exploratories.get(dataset.lower())
+
+        if exploratory_class is None:
+            # Fall back to old explorers for datasets without modular exploratories yet
+            exploratory_config = ExploratoryConfig()
+            split_config = SplitConfig()
+            explorers = {
+                "financial_fraud_detection": FinancialFraudDetectionExplorer,
+            }
+            explorer = explorers.get(dataset.lower())
+            if explorer is None:
+                print(f"No exploratory or explorer found for dataset: {dataset}")
+                return 1
+            explorer(
+                dataset_config=dataset_config,
+                exploratory_config=exploratory_config,
+                split_config=split_config,
+            ).run()
             return 0
-        explorer(
-            dataset_config=dataset_config,
-            exploratory_config=exploratory_config,
-            split_config=split_config,
-        ).run()
+
+        # Use the new modular exploratory
+        exploratory = exploratory_class(dataset_config=dataset_config)
+        exploratory.run()
         return 0
 
     @staticmethod
@@ -779,3 +800,4 @@ class RunnerCLI:
 
         print("Pipeline completed successfully!")
         return 0
+

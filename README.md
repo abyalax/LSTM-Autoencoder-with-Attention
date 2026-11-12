@@ -29,7 +29,27 @@ uv run ruff check .
 uv run ruff format .
 ```
 
+# Data layout
+
+Raw files are resolved through `lstm_autoencoder.data.dataset_files.DATASET_FILES`.
+Each dataset keeps its untouched source under `data/raw/<dataset>/`. Dataset
+processing code can use `DatasetConfig` path accessors for the corresponding
+working areas:
+
+```text
+data/
+├── raw/<dataset>/
+├── preprocessed/<dataset>/
+├── splits/{train,test,eval}/<dataset>/
+└── evaluations/<dataset>/
+```
+
+`DatasetConfig.preprocessed_dir`, `split_dir("train" | "test" | "eval")`, and
+`evaluations_dir` return these paths. They are paths only; callers create the
+directory when writing an artifact.
+
 ## Usage
 See on command/
 
 _Last Updated 4 November 2026_
+

@@ -13,20 +13,26 @@ Dataset paths, column names, thresholds, and split fractions are defined in `src
 
 ### 2. Inspect the Dataset
 
-Run the full set of dataset checks:
+Run the comprehensive dataset inspection pipeline:
 
 ```Shell
 uv run python -m lstm_autoencoder inspect-data --dataset banksim
 ```
 
-The explorer (BanksimDatasetsExplorer) performs the following operations:
+The exploratory (BankSimDatasetExploratory) performs the following operations:
 
-- **Structure inspection**: column count, data types, missing values, duplicate rows, and unique value counts
+- **Entity cardinality**: Number of unique accounts and average transactions per account
+- **History distribution**: Statistics on transactions per account (min, max, median, percentiles)
+- **Fraud distribution**: Total fraud transactions, accounts with fraud, and fraud by account history length
+- **Fraud position**: Whether fraud appears as first, second, third, or subsequent transaction
+- **History before fraud**: Number of normal transactions before fraud occurrences
+- **Sequence length availability**: Accounts and sequences available for different window lengths (1, 3, 5, 10, 15, 20)
+- **Temporal distribution**: Fraud rate distribution across time periods and temporal drift analysis
 
 The command saves the following artifacts under `artifacts/`:
 
-- `dataset_report.txt`
-- `dataset_report.json`
+- `dataset_inspection.txt` - Human-readable inspection report
+- `dataset_inspection.json` - Machine-readable inspection results
 
 Optional arguments:
 

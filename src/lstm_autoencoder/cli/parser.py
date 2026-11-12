@@ -626,4 +626,5 @@ class ParserArgs:
             default=ProbeConfig.max_train_rows,
             help="Maximum number of training rows used by the probe model.",
         )
+
         return parser

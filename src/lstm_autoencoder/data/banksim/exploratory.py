@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.data.config import ExploratoryConfig
-from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.banksim.schema import BankSimSchema
+from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.data.exploratory import DatasetExploratory
+from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.metrics import (
     SIGNAL_THRESHOLD,
@@ -26,8 +27,12 @@ HISTORY_STRATA_BINS: tuple[int, ...] = (0, 1, 4, 9, np.inf)
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
-class BankSimDatasetsExplorer:
-    """Explorer for BankSim datasets."""
+class BankSimDatasetExploratory(DatasetExploratory):
+    """Exploratory for BankSim datasets.
+
+    Inherits from DatasetExploratory and adds BankSim-specific functional exploration
+    including structural analysis, leakage-aware signal checks, and split simulation.
+    """
 
     def __init__(
         self,
@@ -38,16 +43,20 @@ class BankSimDatasetsExplorer:
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create an explorer; the loader and reporter default to standard ones."""
-        self._dataset_config = dataset_config
+        super().__init__(dataset_config, loader=loader, reporter=reporter)
         self._exploratory_config = exploratory_config or ExploratoryConfig()
         self._split_config = split_config or SplitConfig()
-        self._schema = BankSimSchema()
-        self._loader = loader or DatasetLoader(dataset_config, self._schema)
-        self._reporter = reporter or ReportWritter(dataset_config)
-        self._reporter.set_path_info_from_module()
         # Override loader methods for BankSim-specific handling
         self._loader._parse_timestamps = self._skip_timestamp_parsing
         self._loader._normalize_target = self._skip_target_normalization
+
+    def get_schema(self) -> BankSimSchema:
+        """Return the BankSim schema.
+
+        Returns:
+            BankSimSchema with BankSim-specific column names and settings
+        """
+        return BankSimSchema()
 
     @staticmethod
     def _skip_timestamp_parsing(series: pd.Series) -> pd.Series:
@@ -59,7 +68,7 @@ class BankSimDatasetsExplorer:
         """Skip target normalization for BankSim - fraud is already 0/1."""
         return series
 
-    def run(self) -> dict[str, object]:
+    def run_functional(self) -> dict[str, object]:
         """Run structural and leakage-aware signal checks before committing to BankSim."""
         self._reporter.display_section("BankSim Datasets Exploration")
 

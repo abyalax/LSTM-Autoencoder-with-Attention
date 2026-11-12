@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from lstm_autoencoder.data.exploratory import DatasetExploratory
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.config import ExploratoryConfig
@@ -26,8 +27,12 @@ HISTORY_STRATA_BINS: tuple[int, ...] = (0, 1, 4, 9, np.inf)
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
-class PaySimSyntheticFinancialDatasetsExplorer:
-    """Explorer for PaySim synthetic financial datasets."""
+class PaySimDatasetExploratory(DatasetExploratory):
+    """Exploratory for PaySim synthetic financial datasets.
+
+    Inherits from DatasetExploratory and adds PaySim-specific functional exploration
+    including structural analysis, leakage-aware signal checks, and split simulation.
+    """
 
     def __init__(
         self,
@@ -38,16 +43,21 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create an explorer; the loader and reporter default to standard ones."""
-        self._dataset_config = dataset_config
+        super().__init__(dataset_config, loader=loader, reporter=reporter)
         self._exploratory_config = exploratory_config or ExploratoryConfig()
         self._split_config = split_config or SplitConfig()
-        self._schema = PaySimSchema()
-        self._loader = loader or DatasetLoader(dataset_config, self._schema)
-        self._reporter = reporter or ReportWritter(dataset_config)
-        self._reporter.set_path_info_from_module()
         # Override loader methods for PaySim-specific handling
         self._loader._parse_timestamps = self._skip_timestamp_parsing
         self._loader._normalize_target = self._skip_target_normalization
+
+    def get_schema(self) -> PaySimSchema:
+        """Return the PaySim schema.
+
+        Returns:
+            PaySimSchema with PaySim-specific column names and settings
+        """
+        return PaySimSchema()
+
 
     @staticmethod
     def _skip_timestamp_parsing(series: pd.Series) -> pd.Series:
@@ -59,7 +69,7 @@ class PaySimSyntheticFinancialDatasetsExplorer:
         """Skip target normalization for PaySim - isFraud is already 0/1."""
         return series
 
-    def run(self) -> dict[str, object]:
+    def run_functional(self) -> dict[str, object]:
         """Run structural and leakage-aware signal checks before committing to PaySim."""
         self._reporter.display_section("PaySim Synthetic Financial Datasets Exploration")
 
