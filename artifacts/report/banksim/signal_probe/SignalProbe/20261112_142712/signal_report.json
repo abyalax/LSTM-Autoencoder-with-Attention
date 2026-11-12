@@ -1,0 +1,3 @@
+{
+  "command": "C:\\Users\\abya\\python\\lstm-autoencoder\\.venv\\Scripts\\python.exe -m lstm_autoencoder probe-signal --dataset banksim"
+}

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class BankSimSchema:
     """Column names and schema-specific settings for BankSim datasets."""
 
+    id_column: str = "customer"  # Use customer as ID since there's no explicit transaction ID
     target_column: str = "fraud"
     timestamp_column: str = "step"
     sender_column: str = "customer"

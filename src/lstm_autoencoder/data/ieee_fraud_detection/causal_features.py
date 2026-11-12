@@ -26,9 +26,16 @@ DERIVED_FEATURES: tuple[str, ...] = (
 
 
 def account_identity(frame: pd.DataFrame, schema: IEEEFraudDetectionSchema | None = None) -> pd.Series:
-    """Account under analysis per row: `card1` for IEEE-CIS Fraud Detection."""
+    """Account under analysis per row: composite uid from card1-card6 for IEEE-CIS Fraud Detection."""
     schema = schema or IEEEFraudDetectionSchema()
-    return frame[schema.sender_column]
+    # Build composite uid from card1-card6 for more robust account identification
+    card_cols = [col for col in ["card1", "card2", "card3", "card4", "card5", "card6"] if col in frame.columns]
+    if len(card_cols) == 1:
+        return frame[card_cols[0]]
+    # Combine multiple card columns into a composite uid, handling NaN values
+    uid_parts = frame[card_cols].fillna("NA").astype(str)
+    uid = uid_parts.agg("_".join, axis=1)
+    return uid
 
 
 class CausalFeatureBuilder:
@@ -43,7 +50,7 @@ class CausalFeatureBuilder:
         self._schema = schema or IEEEFraudDetectionSchema()
 
     def account_identity(self, frame: pd.DataFrame) -> pd.Series:
-        """Account under analysis per row: `card1` for IEEE-CIS."""
+        """Account under analysis per row: composite uid from card1-card6 for IEEE-CIS."""
         return account_identity(frame, self._schema)
 
     def tie_break_columns(self, frame: pd.DataFrame) -> list[str]:

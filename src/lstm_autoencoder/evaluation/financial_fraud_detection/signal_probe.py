@@ -90,26 +90,27 @@ class SignalProbe(BaseSignalProbe):
             *self._schema.reuse_columns,
         }
         derived = self._builder.feature_columns(ordered)
-        features = pd.DataFrame(index=ordered.index)
+        feature_dict: dict[str, pd.Series] = {}
         categorical: list[bool] = []
         for column in ordered.columns:
             if column in excluded or column in derived:
                 continue
             series = ordered[column]
             if pd.api.types.is_numeric_dtype(series):
-                features[column] = series
+                feature_dict[column] = series
                 categorical.append(False)
             elif series.nunique() <= self._probe.max_categories:
-                features[column] = pd.factorize(series)[0].astype("int32")
+                feature_dict[column] = pd.factorize(series)[0].astype("int32")
                 categorical.append(True)
         for column in derived:
-            features[column] = ordered[column]
+            feature_dict[column] = ordered[column]
             categorical.append(False)
         for column in self._schema.reuse_columns:
             if column in ordered.columns:
                 for name, values in self._reuse_counts(ordered, column).items():
-                    features[name] = values
+                    feature_dict[name] = values
                     categorical.append(False)
+        features = pd.DataFrame(feature_dict, index=ordered.index)
         return features, categorical
 
     @staticmethod

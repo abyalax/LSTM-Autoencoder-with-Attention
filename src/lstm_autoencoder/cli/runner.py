@@ -18,7 +18,9 @@ from lstm_autoencoder.data.paysim_synthetic_financial.exploratory import (
     PaySimDatasetExploratory,
 )
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
-from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe
+from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe as FinancialFraudSignalProbe
+from lstm_autoencoder.evaluation.ieee_fraud_detection.signal_probe import SignalProbe as IEEESignalProbe
+from lstm_autoencoder.evaluation.banksim.signal_probe import SignalProbe as BankSimSignalProbe
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier import (
     HybridClassifierConfig,
@@ -124,15 +126,27 @@ class RunnerCLI:
         )
         probe_config = ProbeConfig(max_train_rows=max_train_rows)
         split_config = SplitConfig()
-        # Use PaySim probe for PaySim dataset, otherwise use the default financial fraud detection probe
+        # Use PaySim probe for PaySim dataset, IEEE probe for IEEE, BankSim probe for BankSim, otherwise use the default financial fraud detection probe
         if "paysim" in dataset.lower():
             PaySimSignalProbe(
                 dataset_config=dataset_config,
                 probe_config=probe_config,
                 split_config=split_config,
             ).run()
+        elif "ieee" in dataset.lower():
+            IEEESignalProbe(
+                dataset_config=dataset_config,
+                probe_config=probe_config,
+                split_config=split_config,
+            ).run()
+        elif "banksim" in dataset.lower():
+            BankSimSignalProbe(
+                dataset_config=dataset_config,
+                probe_config=probe_config,
+                split_config=split_config,
+            ).run()
         else:
-            SignalProbe(
+            FinancialFraudSignalProbe(
                 dataset_config=dataset_config,
                 probe_config=probe_config,
                 split_config=split_config,
@@ -144,11 +158,22 @@ class RunnerCLI:
         """Execute the full/no-history/history-only ablation baselines."""
         dataset_config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
         split_config = SplitConfig()
-        BaselineEvaluator(
-            dataset_config=dataset_config,
-            split_config=split_config,
-            keep_account_code=not no_account_code,
-        ).run()
+
+        # Use BankSim baseline for BankSim dataset, otherwise use the default PaySim baseline
+        if "banksim" in dataset.lower():
+            from lstm_autoencoder.evaluation.banksim.baseline import BaselineEvaluator as BankSimBaselineEvaluator
+
+            BankSimBaselineEvaluator(
+                dataset_config=dataset_config,
+                split_config=split_config,
+                keep_account_code=not no_account_code,
+            ).run()
+        else:
+            BaselineEvaluator(
+                dataset_config=dataset_config,
+                split_config=split_config,
+                keep_account_code=not no_account_code,
+            ).run()
         return 0
 
     @staticmethod

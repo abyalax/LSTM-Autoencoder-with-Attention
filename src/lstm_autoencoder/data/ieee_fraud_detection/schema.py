@@ -7,10 +7,11 @@ from dataclasses import dataclass
 class IEEEFraudDetectionSchema:
     """Column names and schema-specific settings for IEEE-CIS Fraud Detection datasets."""
 
+    id_column: str = "TransactionID"
     target_column: str = "isFraud"
     timestamp_column: str = "TransactionDT"
     timestamp_unit: str = "s"
-    sender_column: str = "card1"
+    sender_column: str = "card1"  # Fallback, actual uid is composite in causal_features
     receiver_column: str = "card1"
     amount_column: str = "TransactionAmt"
     transaction_type_column: str = "ProductCD"
