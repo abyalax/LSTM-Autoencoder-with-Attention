@@ -28,7 +28,7 @@ from lstm_autoencoder.reporting.reporter import ReportWritter
 
 
 @dataclass(frozen=True)
-class InspectionConfig:
+class ExploratoryConfig:
     """Configuration for dataset exploratory."""
 
     window_lengths: tuple[int, ...] = (1, 3, 5, 10, 15, 20)
@@ -48,7 +48,7 @@ class DatasetExploratory(ABC):
     def __init__(
         self,
         dataset_config: DatasetConfig,
-        exploratory_config: InspectionConfig | None = None,
+        exploratory_config: ExploratoryConfig | None = None,
         loader: DatasetLoader | None = None,
         reporter: ReportWritter | None = None,
     ) -> None:
@@ -62,7 +62,7 @@ class DatasetExploratory(ABC):
         """
         self._dataset_config = dataset_config
         self._schema = self.get_schema()
-        self._exploratory_config = exploratory_config or InspectionConfig()
+        self._exploratory_config = exploratory_config or ExploratoryConfig()
         self._loader = loader or DatasetLoader(dataset_config, self._schema)
         self._reporter = reporter or ReportWritter(dataset_config)
         self._reporter.set_path_info_from_module()
@@ -282,8 +282,9 @@ class DatasetExploratory(ABC):
         # Sort by account and timestamp
         df_sorted = df.sort_values([account_col, timestamp_col])
 
-        position = df_sorted.groupby(account_col).cumcount()
-        normal_before = position.loc[df_sorted[target_col] == 1]
+        normal_mask = df_sorted[target_col].eq(0)
+        normal_count = normal_mask.groupby(df_sorted[account_col], sort=False).cumsum() - normal_mask.astype(int)
+        normal_before = normal_count.loc[df_sorted[target_col] == 1]
         n_fraud = len(normal_before)
         if n_fraud == 0:
             return {
@@ -351,26 +352,30 @@ class DatasetExploratory(ABC):
         target_col = self._schema.target_column
         timestamp_col = self._schema.timestamp_column
 
-        # Get timestamp range
-        timestamps = df[timestamp_col]
-        time_range = timestamps.max() - timestamps.min()
+        raw_timestamps = df[timestamp_col]
+        if pd.api.types.is_numeric_dtype(raw_timestamps):
+            unit = getattr(self._schema, "timestamp_unit", "h")
+            timestamps = pd.to_timedelta(raw_timestamps, unit=unit, errors="coerce")
+            elapsed_days = timestamps.dt.total_seconds() / 86400
+            time_range = timestamps.max() - timestamps.min()
+        else:
+            timestamps = pd.to_datetime(raw_timestamps, errors="coerce")
+            elapsed_days = timestamps.astype("int64", copy=False) / 86400e9
+            elapsed_days = elapsed_days.where(timestamps.notna())
+            time_range = timestamps.max() - timestamps.min()
 
-        # Parse timestamps if they're not datetime
-        if not pd.api.types.is_datetime64_any_dtype(timestamps):
-            timestamps = pd.to_datetime(timestamps, errors="coerce")
-
-        # Split into time periods (days if range > 30 days, otherwise hours)
-        if hasattr(time_range, "days") and time_range.days > 30:
-            periods = timestamps.dt.to_period("M")
-            period_label = "month"
-        elif hasattr(time_range, "days") and time_range.days > 7:
-            periods = timestamps.dt.to_period("W")
+        range_days = float(time_range.total_seconds() / 86400) if pd.notna(time_range) else 0.0
+        if range_days > 30:
+            periods = np.floor(elapsed_days / 30).astype("Int64")
+            period_label = "30-day"
+        elif range_days > 7:
+            periods = np.floor(elapsed_days / 7).astype("Int64")
             period_label = "week"
-        elif hasattr(time_range, "days"):
-            periods = timestamps.dt.date
+        elif range_days >= 1:
+            periods = np.floor(elapsed_days).astype("Int64")
             period_label = "day"
         else:
-            periods = timestamps.dt.hour
+            periods = np.floor(elapsed_days * 24).astype("Int64")
             period_label = "hour"
 
         # Calculate fraud rate per period
@@ -400,9 +405,9 @@ class DatasetExploratory(ABC):
             }
 
         return {
-            "time_start": str(timestamps.min()),
-            "time_end": str(timestamps.max()),
-            "time_range_days": float(time_range.total_seconds() / 86400) if hasattr(time_range, "total_seconds") else 0,
+            "time_start": str(raw_timestamps.min()),
+            "time_end": str(raw_timestamps.max()),
+            "time_range_days": range_days,
             "n_periods": len(period_stats),
             "period_type": period_label,
             "min_fraud_rate_per_period": float(fraud_rates.min()) if len(fraud_rates) > 0 else 0.0,

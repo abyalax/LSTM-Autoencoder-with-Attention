@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from lstm_autoencoder.data.exploratory import DatasetExploratory
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.data.exploratory import DatasetExploratory, ExploratoryConfig
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.data.paysim_synthetic_financial.schema import PaySimSchema
 from lstm_autoencoder.evaluation.config import SplitConfig
@@ -43,8 +42,7 @@ class PaySimDatasetExploratory(DatasetExploratory):
         reporter: ReportWritter | None = None,
     ) -> None:
         """Create an explorer; the loader and reporter default to standard ones."""
-        super().__init__(dataset_config, loader=loader, reporter=reporter)
-        self._exploratory_config = exploratory_config or ExploratoryConfig()
+        super().__init__(dataset_config, exploratory_config=exploratory_config, loader=loader, reporter=reporter)
         self._split_config = split_config or SplitConfig()
         # Override loader methods for PaySim-specific handling
         self._loader._parse_timestamps = self._skip_timestamp_parsing

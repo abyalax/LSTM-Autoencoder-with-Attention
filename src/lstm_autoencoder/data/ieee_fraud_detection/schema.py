@@ -9,6 +9,7 @@ class IEEEFraudDetectionSchema:
 
     target_column: str = "isFraud"
     timestamp_column: str = "TransactionDT"
+    timestamp_unit: str = "s"
     sender_column: str = "card1"
     receiver_column: str = "card1"
     amount_column: str = "TransactionAmt"

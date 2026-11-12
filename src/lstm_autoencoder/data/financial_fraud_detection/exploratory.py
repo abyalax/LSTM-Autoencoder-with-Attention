@@ -7,6 +7,7 @@ import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.data.exploratory import ExploratoryConfig
 from lstm_autoencoder.evaluation.config import SplitConfig
 from lstm_autoencoder.data.financial_fraud_detection.causal_features import CausalFeatureBuilder
 from lstm_autoencoder.data.financial_fraud_detection.schema import FinancialFraudDetectionSchema
@@ -48,7 +49,7 @@ class FinancialFraudDetectionExplorer:
         self._reporter.set_path_info_from_module()
         self._builder = CausalFeatureBuilder(dataset_config, self._schema)
         self._profiler = SequenceProfiler(
-            dataset_config, self._exploratory_config, self._schema, self._reporter.reporter
+            dataset_config, ExploratoryConfig(), self._schema, self._reporter.reporter
         )
 
     def run(self) -> dict[str, object]:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
-from lstm_autoencoder.data.config import ExploratoryConfig
+from lstm_autoencoder.data.exploratory import ExploratoryConfig
 from lstm_autoencoder.data.paysim_synthetic_financial.causal_features import (
     ACCOUNT_CODE,
     HISTORY_LENGTH,
@@ -84,7 +84,7 @@ class SequenceProfiler:
     ) -> float:
         rows: list[dict[str, float]] = []
         reference_share = 0.0
-        for window in self._exploratory_config.window_sizes:
+        for window in self._exploratory_config.window_lengths:
             has_window = built[HISTORY_LENGTH] >= window - 1
             fraud_share = float((fraud_rows[HISTORY_LENGTH] >= window - 1).mean())
             if window == REFERENCE_WINDOW:

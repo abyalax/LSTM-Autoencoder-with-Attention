@@ -9,7 +9,7 @@ from pathlib import Path
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.banksim.exploratory import BankSimDatasetExploratory
 from lstm_autoencoder.data.config import ExploratoryConfig
-from lstm_autoencoder.data.exploratory import DatasetExploratory
+from lstm_autoencoder.data.exploratory import DatasetExploratory, ExploratoryConfig
 from lstm_autoencoder.data.financial_fraud_detection.exploratory import FinancialFraudDetectionExplorer
 from lstm_autoencoder.data.ieee_fraud_detection.exploratory import (
     IEEEFraudDetectionDatasetExploratory,
@@ -110,7 +110,7 @@ class RunnerCLI:
             return 0
 
         # Use the new modular exploratory
-        exploratory = exploratory_class(dataset_config=dataset_config)
+        exploratory = exploratory_class(dataset_config=dataset_config, exploratory_config=ExploratoryConfig())
         exploratory.run()
         return 0
 
