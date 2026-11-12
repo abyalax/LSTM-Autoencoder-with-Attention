@@ -9,6 +9,7 @@ class PaySimSchema:
 
     target_column: str = "isFraud"
     timestamp_column: str = "step"
+    timestamp_unit: str = "h"  # PaySim step is in hours
     sender_column: str = "nameOrig"
     receiver_column: str = "nameDest"
     amount_column: str = "amount"

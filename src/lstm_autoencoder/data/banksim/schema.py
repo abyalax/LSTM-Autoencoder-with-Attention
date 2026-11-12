@@ -10,6 +10,7 @@ class BankSimSchema:
     id_column: str = "customer"  # Use customer as ID since there's no explicit transaction ID
     target_column: str = "fraud"
     timestamp_column: str = "step"
+    timestamp_unit: str = "D"  # BankSim step is in days (180 days total)
     sender_column: str = "customer"
     receiver_column: str = "merchant"
     amount_column: str = "amount"
