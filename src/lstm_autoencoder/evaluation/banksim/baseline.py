@@ -106,7 +106,7 @@ class BaselineEvaluator:
 
     def run(self) -> None:
         """Run all ablation variants and report results."""
-        self._reporter.display_section("ABLATION: LR full / no-history / history-only")
+        self._reporter.display_section("Ablation: LR full / no-history / history-only")
 
         full_data = self._prepare_full_data()
         variants = self._define_variants(full_data)

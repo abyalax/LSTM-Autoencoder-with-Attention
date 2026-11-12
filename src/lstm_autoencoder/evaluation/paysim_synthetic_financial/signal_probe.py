@@ -101,7 +101,7 @@ class PaySimSignalProbe(BaseSignalProbe):
         loaded = self._loader.load()
         ordered, labels, splits = self._prepare_data(loaded)
 
-        self._reporter.display_section("PROBE SINYAL: apakah isFraud bisa dipelajari?")
+        self._reporter.display_section("Probe Signal: apakah isFraud bisa dipelajari?")
         self._reporter.display_text(
             f"Baris {len(ordered):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)"
         )
@@ -167,7 +167,7 @@ class PaySimSignalProbe(BaseSignalProbe):
         auc, ap = real["test_auc"], real["test_ap"]
         prevalence = real["test_prevalence"]
         reporter = self._reporter.reporter
-        reporter.display_text("\nKESIMPULAN")
+        reporter.display_text("\nKesimpulan")
         summary = (
             f"AUC test {auc:.3f}, AP {ap:.4f} (prevalensi {prevalence:.4f}), kontrol label-acak AUC {control_auc:.3f}."
         )

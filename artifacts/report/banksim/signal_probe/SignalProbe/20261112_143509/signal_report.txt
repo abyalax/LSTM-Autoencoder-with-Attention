@@ -1,0 +1,22 @@
+
+------------------------------------------------------------------------------------------------------------------------
+PROBE SINYAL: apakah target bisa dipelajari?
+------------------------------------------------------------------------------------------------------------------------
+Baris 594,643 | target 7,200 (1.211%)
+
+Indeks dispersi fraud per akun = 37.2504 (1.0 berarti fraud tersebar acak antar akun)
+  -> ada akun yang lebih berisiko.
+
+Fitur (12): ['age', 'gender', 'zipcodeOri', 'zipMerchant', 'category', 'amount', 'merchant_raw', 'history_length', 'step_diff', 'log_amount_ratio', 'is_new_receiver', 'history_bucket']
+
+Batas atas supervised | train 416,250 val 89,196 test 89,197
+┌──────────────┬─────────┬────────┬────────────────┬──────────┬─────────┬─────────────────┐
+│              │ val_auc │ val_ap │ val_prevalence │ test_auc │ test_ap │ test_prevalence │
+├──────────────┼─────────┼────────┼────────────────┼──────────┼─────────┼─────────────────┤
+│ label asli   │ 0.999   │ 0.9439 │ 0.0111         │ 0.9991   │ 0.9427  │ 0.0108          │
+│ label diacak │ 0.1908  │ 0.0067 │ 0.0111         │ 0.2767   │ 0.0077  │ 0.0108          │
+└──────────────┴─────────┴────────┴────────────────┴──────────┴─────────┴─────────────────┘
+
+KESIMPULAN
+  AUC test 0.999, AP 0.9427 (prevalensi 0.0108), kontrol label-acak AUC 0.277.
+  Ada sinyal yang dapat dipelajari, lanjut ke desain model.

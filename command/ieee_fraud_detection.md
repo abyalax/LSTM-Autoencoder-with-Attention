@@ -21,7 +21,7 @@ uv run python -m lstm_autoencoder inspect-data --dataset ieee_fraud_detection
 
 The exploratory (IEEEFraudDetectionDatasetExploratory) performs the following operations:
 
-- **Entity cardinality**: Number of unique accounts and average transactions per account
+- **Entity cardinality**: Number of unique accounts (composite uid from card1-card6) and average transactions per account
 - **History distribution**: Statistics on transactions per account (min, max, median, percentiles)
 - **Fraud distribution**: Total fraud transactions, accounts with fraud, and fraud by account history length
 - **Fraud position**: Whether fraud appears as first, second, third, or subsequent transaction
@@ -39,3 +39,27 @@ Optional arguments:
 - `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
 - `--dataset` : Dataset folder name in `data/raw/` (e.g., `ieee_fraud_detection`). Required.
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Use it for a quick trial run only, because the file is not time-ordered and a partial read distorts the per-account sequence statistics.
+
+### 3. Probe Signal Learnability
+
+Check whether the fraud label can be learned from the available features:
+
+```Shell
+uv run python -m lstm_autoencoder probe-signal --dataset ieee_fraud_detection
+```
+
+The signal probe (IEEESignalProbe) trains a strong supervised model (HistGradientBoostingClassifier) and compares it with a shuffled-label control to determine if the target is learnable.
+
+This step is critical: if the best supervised model cannot beat chance, no model (including LSTM-AE) can detect fraud in this dataset.
+
+The command saves the following artifacts under `artifacts/`:
+
+- `signal_report.txt` - Human-readable signal probe report
+- `signal_report.json` - Machine-readable signal probe results
+
+Optional arguments:
+
+- `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
+- `--dataset` : Dataset folder name in `data/raw/` (e.g., `ieee_fraud_detection`). Required.
+- `--nrows` : Read only the first N rows of the file. Defaults to all rows.
+- `--max-train-rows` : Maximum number of training rows used by the probe model. Defaults to 5000.

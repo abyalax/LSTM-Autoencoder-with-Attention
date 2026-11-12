@@ -39,3 +39,55 @@ Optional arguments:
 - `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
 - `--dataset` : Dataset folder name in `data/raw/` (e.g., `banksim`). Required.
 - `--nrows` : Read only the first N rows of the file. Defaults to all rows. Use it for a quick trial run only, because the file is not time-ordered and a partial read distorts the per-account sequence statistics.
+
+### 3. Probe Signal Learnability
+
+Check whether the fraud label can be learned from the available features:
+
+```Shell
+uv run python -m lstm_autoencoder probe-signal --dataset banksim
+```
+
+The signal probe (BankSimSignalProbe) trains a strong supervised model (HistGradientBoostingClassifier) and compares it with a shuffled-label control to determine if the target is learnable.
+
+This step is critical: if the best supervised model cannot beat chance, no model (including LSTM-AE) can detect fraud in this dataset.
+
+The command saves the following artifacts under `artifacts/`:
+
+- `signal_report.txt` - Human-readable signal probe report
+- `signal_report.json` - Machine-readable signal probe results
+
+Optional arguments:
+
+- `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
+- `--dataset` : Dataset folder name in `data/raw/` (e.g., `banksim`). Required.
+- `--nrows` : Read only the first N rows of the file. Defaults to all rows.
+- `--max-train-rows` : Maximum number of training rows used by the probe model. Defaults to 5000.
+
+### 4. LR Ablation Baselines
+
+Train logistic regression ablations to evaluate the contribution of history features:
+
+```Shell
+uv run python -m lstm_autoencoder ablation --dataset banksim
+```
+
+The ablation (BaselineEvaluator) trains three LR variants **and** compares them:
+
+- **full**: All features including history features (history_length, step_diff, log_amount_ratio, is_new_receiver, history_bucket)
+- **no_history**: All features except history features (checks if history is just a proxy for easier signal)
+- **history_only**: Only history features (isolates the lift from history-based features)
+
+The command reports AUC/AP overall and per history bucket (1, 2-4, 5-9, >=10) on the test set.
+
+The command saves the following artifacts under `artifacts/`:
+
+- `ablation_report.txt` - Human-readable ablation report
+- `ablation_report.json` - Machine-readable ablation results
+
+Optional arguments:
+
+- `--project-root` : Project root that contains `data/raw/`. Defaults to the current working directory.
+- `--dataset` : Dataset folder name in `data/raw/` (e.g., `banksim`). Required.
+- `--nrows` : Read only the first N rows of the file. Defaults to all rows.
+- `--no-account-code` : Exclude account_code from features (it's a factorized ID, not behavioral).

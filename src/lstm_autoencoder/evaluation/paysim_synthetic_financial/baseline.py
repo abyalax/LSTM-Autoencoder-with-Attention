@@ -143,7 +143,7 @@ class BaselineEvaluator:
         buckets = built[HISTORY_BUCKET].to_numpy()
         splits = self._receiver_split(built)
 
-        self._reporter.display_section("ABLATION: full vs no-history vs history-only vs non-linear controls")
+        self._reporter.display_section("Ablation: full vs no-history vs history-only vs non-linear controls")
         self._reporter.display_text(f"Baris {len(built):,} | fraud {int(labels.sum()):,} ({labels.mean() * 100:.3f}%)")
 
         encoded = self._encode(built)
