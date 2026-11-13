@@ -214,6 +214,28 @@ class ParserArgs:
             help="Path to the trained checkpoint. Defaults to the standard train-model naming convention.",
         )
 
+        eval_banksim_parser = subparsers.add_parser(
+            "eval-banksim",
+            help=(
+                "Score trained BankSim LSTM-AE checkpoints standalone and on top of the GBM baseline "
+                "(second stage fitted on val, judged on test, customer-cluster bootstrap)."
+            ),
+        )
+        ParserArgs._add_dataset_arguments(eval_banksim_parser)
+        eval_banksim_parser.add_argument("--window", type=int, default=SequenceConfig().window_length)
+        eval_banksim_parser.add_argument("--bottleneck", action="store_true", help="Match the checkpoints: bottleneck.")
+        eval_banksim_parser.add_argument("--plain", action="store_true", help="Match the checkpoints: plain.")
+        eval_banksim_parser.add_argument(
+            "--attention-pooling", action="store_true", help="Match the checkpoints: attention pooling."
+        )
+        ParserArgs._add_capacity_arguments(eval_banksim_parser)
+        eval_banksim_parser.add_argument(
+            "--seeds", type=str, default="42,123,2026", help="Seeds of already-trained checkpoints."
+        )
+        eval_banksim_parser.add_argument(
+            "--bootstrap", type=int, default=1000, help="Customer-cluster bootstrap resamples per seed (0 to skip)."
+        )
+
         eval_hybrid_parser = subparsers.add_parser(
             "eval-hybrid",
             help=(

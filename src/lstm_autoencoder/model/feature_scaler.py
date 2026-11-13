@@ -21,14 +21,25 @@ class FeatureScaler:
     how the autoencoder itself is trained.
     """
 
-    def __init__(self, feature_columns: tuple[str, ...], log1p_columns: tuple[str, ...] = ()) -> None:
+    def __init__(
+        self,
+        feature_columns: tuple[str, ...],
+        log1p_columns: tuple[str, ...] = (),
+        passthrough_columns: tuple[str, ...] = (),
+    ) -> None:
         """Bind the scaler to the feature columns it will standardize.
 
         `log1p_columns` names the heavy-tailed, non-negative columns (subset of
         `feature_columns`) that get log1p'd before the StandardScaler fit/transform.
+
+        `passthrough_columns` (subset of `feature_columns`) are left exactly as they are:
+        use it for 0/1 indicators and one-hot columns, whose z-score would turn a rare
+        category into a feature of magnitude ~20 and let it dominate the reconstruction loss.
         """
         self._feature_columns = list(feature_columns)
         self._log1p_columns = [c for c in log1p_columns if c in feature_columns]
+        passthrough = set(passthrough_columns)
+        self._scaled_columns = [c for c in self._feature_columns if c not in passthrough]
         self._scaler = StandardScaler()
 
     def _pre_transform(self, built: pd.DataFrame) -> pd.DataFrame:
@@ -40,11 +51,12 @@ class FeatureScaler:
 
     def fit(self, built: pd.DataFrame, fit_mask: pd.Series) -> FeatureScaler:
         """Fit mean/std from the rows selected by `fit_mask`, after log1p."""
-        self._scaler.fit(self._pre_transform(built.loc[fit_mask]))
+        self._scaler.fit(self._pre_transform(built.loc[fit_mask])[self._scaled_columns])
         return self
 
     def transform(self, built: pd.DataFrame) -> pd.DataFrame:
         """Return a copy of `built` with feature columns log1p'd (where configured) and standardized."""
         scaled = built.copy()
-        scaled[self._feature_columns] = self._scaler.transform(self._pre_transform(built))
+        pre = self._pre_transform(built)
+        scaled[self._scaled_columns] = self._scaler.transform(pre[self._scaled_columns])
         return scaled

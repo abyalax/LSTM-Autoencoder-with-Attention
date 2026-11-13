@@ -89,6 +89,21 @@ class CommandCLI:
                 arguments.bootstrap,
                 arguments.bootstrap_mode,
             ),
+            "eval-banksim": lambda: RunnerCLI.run_eval_banksim(
+                project_root,
+                arguments.dataset,
+                arguments.nrows,
+                arguments.window,
+                _build_model_config(
+                    arguments.bottleneck,
+                    arguments.plain,
+                    arguments.attention_pooling,
+                    arguments.hidden_dim,
+                    arguments.bottleneck_dim,
+                ),
+                [int(seed) for seed in arguments.seeds.split(",")],
+                arguments.bootstrap,
+            ),
             "diagnose-scores": lambda: RunnerCLI.run_diagnose_scores(
                 project_root,
                 arguments.dataset,

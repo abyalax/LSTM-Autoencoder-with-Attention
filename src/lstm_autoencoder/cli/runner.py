@@ -21,6 +21,7 @@ from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.financial_fraud_detection.signal_probe import SignalProbe as FinancialFraudSignalProbe
 from lstm_autoencoder.evaluation.ieee_fraud_detection.signal_probe import SignalProbe as IEEESignalProbe
 from lstm_autoencoder.evaluation.banksim.signal_probe import SignalProbe as BankSimSignalProbe
+from lstm_autoencoder.evaluation.banksim.split import BANKSIM_SPLIT_CONFIG
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.baseline import BaselineEvaluator
 from lstm_autoencoder.evaluation.paysim_synthetic_financial.hybrid_classifier import (
     HybridClassifierConfig,
@@ -157,7 +158,7 @@ class RunnerCLI:
     def run_ablation(project_root: Path, dataset: str, nrows: int | None, no_account_code: bool) -> int:
         """Execute the full/no-history/history-only ablation baselines."""
         dataset_config = DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows)
-        split_config = SplitConfig()
+        split_config = BANKSIM_SPLIT_CONFIG if "banksim" in dataset.lower() else SplitConfig()
 
         # Use BankSim baseline for BankSim dataset, otherwise use the default PaySim baseline
         if "banksim" in dataset.lower():
@@ -207,7 +208,7 @@ class RunnerCLI:
                 sequence_config=sequence_config,
                 model_config=model_config,
                 train_config=train_config,
-                split_config=SplitConfig(stratify_by="none"),
+                split_config=BANKSIM_SPLIT_CONFIG,
             )
         elif dataset.lower() == "ieee_fraud_detection":
             pipeline = IEEEFraudDetectionModelTrainingPipeline(
@@ -275,6 +276,30 @@ class RunnerCLI:
             sequence_config=SequenceConfig(window_length=window),
             model_config=model_config,
             config=HybridClassifierConfig(seeds=tuple(seeds), n_bootstrap=n_bootstrap, bootstrap_mode=bootstrap_mode),
+        ).run()
+        return 0
+
+    @staticmethod
+    def run_eval_banksim(
+        project_root: Path,
+        dataset: str,
+        nrows: int | None,
+        window: int,
+        model_config: ModelConfig,
+        seeds: list[int],
+        n_bootstrap: int,
+    ) -> int:
+        """Score trained BankSim checkpoints standalone and against the GBM baseline."""
+        if dataset.lower() != "banksim":
+            raise ValueError("eval-banksim only supports --dataset banksim.")
+        from lstm_autoencoder.evaluation.banksim.model_evaluator import BankSimModelEvaluator
+
+        BankSimModelEvaluator(
+            dataset_config=DatasetConfig(project_root=project_root, dataset_name=dataset, row_limit=nrows),
+            sequence_config=SequenceConfig(window_length=window),
+            model_config=model_config,
+            seeds=tuple(seeds),
+            n_bootstrap=n_bootstrap,
         ).run()
         return 0
 

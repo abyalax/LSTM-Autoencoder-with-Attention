@@ -13,34 +13,39 @@ from sklearn.preprocessing import StandardScaler
 from lstm_autoencoder.config import DatasetConfig
 from lstm_autoencoder.data.banksim.causal_features import (
     ACCOUNT_CODE,
+    DERIVED_FEATURES,
+    DEVIATION_FEATURES,
     HISTORY_BUCKET,
     HISTORY_LENGTH,
     IS_NEW_RECEIVER,
-    LOG_AMOUNT_RATIO,
-    ROLLING_LOG_RATIO_MAX_3,
-    ROLLING_LOG_RATIO_MAX_5,
-    ROLLING_LOG_RATIO_MEAN_3,
-    ROLLING_LOG_RATIO_MEAN_5,
-    STEP_DIFF,
     CausalFeatureBuilder,
 )
 from lstm_autoencoder.data.banksim.schema import BankSimSchema
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.evaluation.config import ProbeConfig, SplitConfig
 from lstm_autoencoder.evaluation.metrics import RankingMetrics
-from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
-from lstm_autoencoder.model.config import SequenceConfig
+from lstm_autoencoder.evaluation.banksim.split import BANKSIM_SPLIT_CONFIG, split_customers
 from lstm_autoencoder.reporting.reporter import ReportWritter
 
 HISTORY_STRATA_LABELS: tuple[str, ...] = ("1", "2-4", "5-9", ">=10")
 
 
+MODEL_LR = "lr"
+MODEL_GBM = "gbm"
+
+
 @dataclass(frozen=True)
 class AblationVariant:
-    """One feature-set ablation to train and compare."""
+    """One feature-set ablation to train and compare.
+
+    `model` selects the learner explicitly. It used to be inferred from the variant
+    name (`name.endswith("_gbm")`), which silently sent `full_gbm_no_step` to the
+    logistic regression.
+    """
 
     name: str
     columns: tuple[str, ...]
+    model: str = MODEL_LR
 
 
 @dataclass(frozen=True)
@@ -64,8 +69,10 @@ class BaselineEvaluator:
     - full: All features including history features
     - no_history: All features except history features (checks if history is just a proxy for easier signal)
     - history_only: Only history features (isolates the lift from history-based features)
+    - rolling_only: only the within-customer deviation features (`DEVIATION_FEATURES`)
     - full_gbm: GBM on all features (non-linear control)
-    - full_gbm_no_step: GBM without the raw step column (measures how much advantage depends on hour-of-day)
+    - static_gbm: GBM on the per-transaction columns only, no derived history features
+      (full_gbm vs static_gbm measures what history is worth to a non-linear model)
     """
 
     def __init__(
@@ -84,7 +91,7 @@ class BaselineEvaluator:
         """
         self._dataset_config = dataset_config
         self._probe = probe_config or ProbeConfig()
-        self._split_config = split_config or SplitConfig()
+        self._split_config = split_config or BANKSIM_SPLIT_CONFIG
         self._schema = BankSimSchema()
         self._loader = loader or DatasetLoader(dataset_config, self._schema)
         self._loader._parse_timestamps = self._skip_timestamp_parsing
@@ -135,6 +142,10 @@ class BaselineEvaluator:
             json_filename="ablation_report.json",
         )
 
+    def prepare_full_data(self) -> FullFeatureData:
+        """Feature matrix, labels and the shared customer split (public entry for downstream evaluators)."""
+        return self._prepare_full_data()
+
     def _prepare_full_data(self) -> FullFeatureData:
         """Load, build features, and prepare the full feature matrix."""
         loaded = self._loader.load()
@@ -143,10 +154,9 @@ class BaselineEvaluator:
         builder = CausalFeatureBuilder(self._dataset_config, self._schema)
         built = builder.build(df)
 
-        # Split by account
+        # Split by customer; the LSTM-AE pipeline takes its split from the same function.
         account = builder.account_identity(built)
-        splitter = ReceiverSplitter(self._split_config, random_seed=42)
-        groups = splitter.split(account)
+        groups = split_customers(account, self._split_config)
         splits = {name: built[account.isin(ids)].index.values for name, ids in groups.items()}
 
         # Build feature matrix
@@ -201,32 +211,23 @@ class BaselineEvaluator:
     def _define_variants(self, full_data: FullFeatureData) -> list[AblationVariant]:
         """Define the ablation variants including GBM controls."""
         history_features = (HISTORY_LENGTH, IS_NEW_RECEIVER, HISTORY_BUCKET)
-        rolling_features = (
-            STEP_DIFF,
-            LOG_AMOUNT_RATIO,
-            ROLLING_LOG_RATIO_MEAN_3,
-            ROLLING_LOG_RATIO_MAX_3,
-            ROLLING_LOG_RATIO_MEAN_5,
-            ROLLING_LOG_RATIO_MAX_5,
-        )
         all_features = tuple(full_data.features.columns)
 
         no_history = tuple(col for col in all_features if col not in history_features)
 
-        # Raw `step` lets a tree model recover hour-of-day, a simulator artefact (see `audit-pipeline`);
-        # this control removes only that column to measure how much of the GBM's advantage depends on it.
-        no_step = tuple(col for col in all_features if col != self._schema.timestamp_column)
+        # Per-transaction columns only: everything the causal builder derived is dropped.
+        static = tuple(col for col in all_features if col not in DERIVED_FEATURES)
 
         # rolling_only: test if sequential rolling features alone capture signal
-        rolling_only = tuple(col for col in rolling_features if col in all_features)
+        rolling_only = tuple(col for col in DEVIATION_FEATURES if col in all_features)
 
         return [
             AblationVariant(name="full", columns=all_features),
             AblationVariant(name="no_history", columns=no_history),
             AblationVariant(name="history_only", columns=history_features),
             AblationVariant(name="rolling_only", columns=rolling_only),
-            AblationVariant(name="full_gbm", columns=all_features),  # Non-linear control: HistGradientBoosting
-            AblationVariant(name="full_gbm_no_step", columns=no_step),  # GBM without the raw `step` column
+            AblationVariant(name="full_gbm", columns=all_features, model=MODEL_GBM),
+            AblationVariant(name="static_gbm", columns=static, model=MODEL_GBM),
         ]
 
     def _fit_variant(self, variant: AblationVariant, full_data: FullFeatureData) -> np.ndarray:
@@ -239,8 +240,7 @@ class BaselineEvaluator:
         X_val = full_data.features.loc[val_idx, list(variant.columns)]
         y_val = full_data.labels[val_idx]
 
-        # Use GBM for variants ending with _gbm, otherwise LogisticRegression
-        if variant.name.endswith("_gbm"):
+        if variant.model == MODEL_GBM:
             model = HistGradientBoostingClassifier(
                 max_iter=200,
                 learning_rate=0.1,

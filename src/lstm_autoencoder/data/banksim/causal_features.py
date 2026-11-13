@@ -18,6 +18,9 @@ ROLLING_LOG_RATIO_MEAN_3 = "rolling_log_ratio_mean_3"
 ROLLING_LOG_RATIO_MAX_3 = "rolling_log_ratio_max_3"
 ROLLING_LOG_RATIO_MEAN_5 = "rolling_log_ratio_mean_5"
 ROLLING_LOG_RATIO_MAX_5 = "rolling_log_ratio_max_5"
+IS_NEW_MERCHANT = "is_new_merchant"
+LOG_MERCHANT_VISITS = "log_merchant_visits"
+LOG_AMOUNT_RATIO_CAT = "log_amount_ratio_cat"
 AMOUNT_EPSILON = 1e-9
 
 DERIVED_FEATURES: tuple[str, ...] = (
@@ -30,7 +33,46 @@ DERIVED_FEATURES: tuple[str, ...] = (
     ROLLING_LOG_RATIO_MAX_3,
     ROLLING_LOG_RATIO_MEAN_5,
     ROLLING_LOG_RATIO_MAX_5,
+    IS_NEW_MERCHANT,
+    LOG_MERCHANT_VISITS,
+    LOG_AMOUNT_RATIO_CAT,
 )
+
+# Columns that describe how a transaction deviates from the customer's own past
+# (used by the `rolling_only` ablation); the three newest are merchant/category aware.
+DEVIATION_FEATURES: tuple[str, ...] = (
+    STEP_DIFF,
+    LOG_AMOUNT_RATIO,
+    ROLLING_LOG_RATIO_MEAN_3,
+    ROLLING_LOG_RATIO_MAX_3,
+    ROLLING_LOG_RATIO_MEAN_5,
+    ROLLING_LOG_RATIO_MAX_5,
+    IS_NEW_MERCHANT,
+    LOG_MERCHANT_VISITS,
+    LOG_AMOUNT_RATIO_CAT,
+)
+
+
+def earlier_step_count(keys: np.ndarray, step: np.ndarray) -> np.ndarray:
+    """Per row: how many rows with the same key sit at a STRICTLY earlier step.
+
+    Requires the rows to be ordered by step within every key (the builder orders by
+    (account, step), which implies it for any key nested in the account). Rows that
+    share a step never count for each other, so the result does not depend on how the
+    same-step rows happen to be ordered.
+    """
+    frame = pd.DataFrame({"key": keys, "step": step})
+    position = frame.groupby("key", sort=False).cumcount().to_numpy()
+    position_in_step = frame.groupby(["key", "step"], sort=False).cumcount().to_numpy()
+    return position - position_in_step
+
+
+def earlier_step_sum(keys: np.ndarray, step: np.ndarray, values: np.ndarray) -> np.ndarray:
+    """Per row: the sum of `values` over the rows with the same key at a STRICTLY earlier step."""
+    frame = pd.DataFrame({"key": keys, "step": step, "value": values})
+    running = frame.groupby("key", sort=False)["value"].cumsum().to_numpy()
+    running_in_step = frame.groupby(["key", "step"], sort=False)["value"].cumsum().to_numpy()
+    return running - running_in_step
 
 
 def account_identity(frame: pd.DataFrame, schema: BankSimSchema | None = None) -> pd.Series:
@@ -111,7 +153,8 @@ class CausalFeatureBuilder:
         ratio = (amount + AMOUNT_EPSILON) / (prior_mean + AMOUNT_EPSILON)
         ordered[LOG_AMOUNT_RATIO] = np.nan_to_num(np.log(ratio), nan=0.0)
 
-        # is_new_receiver: no transaction of this receiver at an earlier step
+        # NOTE: despite the name (kept so reports stay comparable with PaySim), this flags a
+        # customer with no transaction at an earlier step, NOT a first visit to a merchant.
         ordered[IS_NEW_RECEIVER] = (~has_history).astype("int8")
 
         # history_bucket: categorical grouping for stratified reporting
@@ -155,7 +198,38 @@ class CausalFeatureBuilder:
         for col in rolling_cols:
             ordered[col] = ordered[col].fillna(0.0)
 
+        # Re-read the arrays from the merged frame so the features below never depend on
+        # the row order the merge happened to return.
+        code = ordered[ACCOUNT_CODE].to_numpy().astype("int64")
+        step = ordered[schema.timestamp_column].to_numpy().astype("int64")
+        amount = ordered["amount"].to_numpy(dtype="float64")
+        self._add_merchant_and_category_features(ordered, code, step, amount)
         return ordered
+
+    def _add_merchant_and_category_features(
+        self, ordered: pd.DataFrame, code: np.ndarray, step: np.ndarray, amount: np.ndarray
+    ) -> None:
+        """Add merchant-novelty and category-aware deviation features (in place), causally.
+
+        Everything is computed from rows of the same customer at STRICTLY earlier steps,
+        like the other derived features, so it is available in a streaming setting where
+        same-day order is unknown. No label is read.
+        """
+        schema = self._schema
+        merchant_code = pd.factorize(ordered[schema.receiver_column])[0].astype("int64")
+        pair = code * (int(merchant_code.max()) + 1) + merchant_code
+        visits = earlier_step_count(pair, step)
+        ordered[IS_NEW_MERCHANT] = (visits == 0).astype("int8")
+        ordered[LOG_MERCHANT_VISITS] = np.log1p(visits)
+
+        category_code = pd.factorize(ordered[schema.transaction_type_column])[0].astype("int64")
+        category_pair = code * (int(category_code.max()) + 1) + category_code
+        prior_count = earlier_step_count(category_pair, step)
+        prior_total = earlier_step_sum(category_pair, step, amount)
+        has_prior = prior_count > 0
+        prior_mean = np.where(has_prior, prior_total / np.maximum(prior_count, 1), np.nan)
+        ratio = (amount + AMOUNT_EPSILON) / (prior_mean + AMOUNT_EPSILON)
+        ordered[LOG_AMOUNT_RATIO_CAT] = np.where(has_prior, np.log(ratio), 0.0)
 
     def feature_columns(self, built: pd.DataFrame) -> list[str]:
         """List the derived feature columns present in a built frame."""

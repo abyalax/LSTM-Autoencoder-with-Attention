@@ -1,0 +1,6 @@
+Run config: architecture=bottleneck_z16 | W=10 | seeds=[42]
+
+-----------------------------------------------------------------
+LSTM-Autoencoder training (W=10)
+-----------------------------------------------------------------
+Best epoch 2 (val_loss) | val loss 0.28636 | val AUC 0.9059 (peak 0.9059 @ep2) | test AUC 0.8995 | test AP 0.1108 | recall@0.1%=0.0000 | recall@1%=0.1500

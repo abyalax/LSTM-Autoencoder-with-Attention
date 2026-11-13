@@ -12,14 +12,19 @@ import numpy as np
 import pandas as pd
 
 from lstm_autoencoder.config import DatasetConfig
+from lstm_autoencoder.data.banksim.ae_features import (
+    CONTINUOUS_FEATURES,
+    LOG1P_FEATURES,
+    add_ae_features,
+)
 from lstm_autoencoder.data.banksim.causal_features import (
-    HISTORY_LENGTH,
     CausalFeatureBuilder,
+    account_identity,
 )
 from lstm_autoencoder.data.banksim.schema import BankSimSchema
 from lstm_autoencoder.data.loader import DatasetLoader
 from lstm_autoencoder.evaluation.config import SplitConfig
-from lstm_autoencoder.evaluation.receiver_split import ReceiverSplitter
+from lstm_autoencoder.evaluation.banksim.split import BANKSIM_SPLIT_CONFIG, split_customers
 from lstm_autoencoder.model.config import ModelConfig, SequenceConfig, TrainConfig
 from lstm_autoencoder.model.dataset import TransactionSequenceDataset
 from lstm_autoencoder.model.feature_scaler import FeatureScaler
@@ -85,8 +90,12 @@ class BankSimModelTrainingPipeline:
         self._sequence_config = sequence_config or SequenceConfig()
         self._model_config = model_config or ModelConfig()
         self._train_config = train_config or TrainConfig()
-        self._split_config = split_config or SplitConfig()
+        self._split_config = split_config or BANKSIM_SPLIT_CONFIG
         self._schema = BankSimSchema()
+        # Windows are built per CUSTOMER. `SequenceBuilder` keys its windows (and the
+        # `receiver` of every example) on `receiver_column`, which is `merchant` in the
+        # BankSim schema, so point it at the customer column instead.
+        self._sequence_schema = replace(self._schema, receiver_column=self._schema.sender_column)
 
         self._reporter = reporter or ReportWritter(
             dataset_config,
@@ -100,10 +109,30 @@ class BankSimModelTrainingPipeline:
         # compare, and never overwrite an earlier experiment.
         self._artifact_version_dir: Path | None = None
 
+    @property
+    def sequence_config(self) -> SequenceConfig:
+        """Sequence config with the BankSim feature columns (final after `_prepare_data` ran)."""
+        return self._sequence_config
+
+    @property
+    def model_config(self) -> ModelConfig:
+        """Model config with `input_dim` matching the feature columns (final after `_prepare_data` ran)."""
+        return self._model_config
+
+    def _resolve_features(self, columns: tuple[str, ...]) -> None:
+        """Adopt the BankSim feature columns and size the model input to match.
+
+        The number of one-hot category columns comes from the data, so the input
+        dimension is only known once the data is loaded. Whatever `feature_columns` /
+        `input_dim` the caller passed (the PaySim defaults) is replaced here.
+        """
+        self._sequence_config = replace(self._sequence_config, feature_columns=columns)
+        self._model_config = replace(self._model_config, input_dim=len(columns))
+
     def run(self) -> dict[str, object]:
         """Run the full pipeline once and return a JSON-friendly summary."""
+        prepared = self._prepare_data()  # first: it fixes the feature columns / input_dim
         self._record_run_config([self._train_config.seed])
-        prepared = self._prepare_data()
         summary = self._train_and_evaluate(prepared, self._train_config)
         self._report_single(summary)
         return summary
@@ -115,8 +144,8 @@ class BankSimModelTrainingPipeline:
         so they run once; only model init/shuffle/dropout vary per seed. This
         separates genuine improvement from run-to-run training noise.
         """
+        prepared = self._prepare_data()  # first: it fixes the feature columns / input_dim
         self._record_run_config(list(seeds))
-        prepared = self._prepare_data()
         per_seed: list[dict[str, object]] = []
         for seed in seeds:
             seed_train_config = replace(self._train_config, seed=seed)
@@ -169,7 +198,9 @@ class BankSimModelTrainingPipeline:
             "architecture": config.architecture_tag,
             "window_length": self._sequence_config.window_length,
             "seeds": list(seeds),
+            "feature_columns": list(self._sequence_config.feature_columns),
             "model_config": {
+                "input_dim": config.input_dim,
                 "attention": config.attention,
                 "bottleneck": config.bottleneck,
                 "attention_pooling": config.attention_pooling,
@@ -312,14 +343,20 @@ class BankSimModelTrainingPipeline:
         built = CausalFeatureBuilder(self._dataset_config, self._schema).build(loaded.frame)
         receiver_ids = self._split_receiver_ids(built)
 
-        train_normal_mask = built[self._schema.receiver_column].isin(receiver_ids["train"]) & (
+        train_normal_mask = account_identity(built, self._schema).isin(receiver_ids["train"]) & (
             built[self._schema.target_column] == 0
         )
-        log1p_columns = ("amount", HISTORY_LENGTH)
-        scaler = FeatureScaler(self._sequence_config.feature_columns, log1p_columns).fit(built, train_normal_mask)
+        # Category one-hots and the per-category amount z-score; the z-score statistics are
+        # learned from train-normal rows only. The built frame keeps its row order.
+        built, feature_columns = add_ae_features(built, train_normal_mask, self._schema)
+        self._resolve_features(feature_columns)
+        indicator_columns = tuple(c for c in feature_columns if c not in CONTINUOUS_FEATURES)
+        scaler = FeatureScaler(feature_columns, LOG1P_FEATURES, passthrough_columns=indicator_columns).fit(
+            built, train_normal_mask
+        )
         scaled = scaler.transform(built)
 
-        batch = SequenceBuilder(self._sequence_config, self._schema).build(scaled)
+        batch = SequenceBuilder(self._sequence_config, self._sequence_schema).build(scaled)
         splits = self._rows_by_receiver(batch, receiver_ids)
         normal_train_idx = splits["train"][batch.labels[splits["train"]] == 0]
 
@@ -504,9 +541,13 @@ class BankSimModelTrainingPipeline:
         return self._split_receiver_ids(built)
 
     def _split_receiver_ids(self, built: pd.DataFrame) -> dict[str, pd.Index]:
-        """Split receivers by split_config fractions WITHOUT reading any label."""
-        splitter = ReceiverSplitter(self._split_config, random_seed=self._seed)
-        return splitter.split(built[self._schema.receiver_column])
+        """Split CUSTOMERS by split_config fractions WITHOUT reading any label.
+
+        The method keeps its PaySim-era name ("receiver") because the shared audit and
+        hybrid code call it; for BankSim the split unit is the customer, the same unit the
+        windows and the ablation baselines use.
+        """
+        return split_customers(account_identity(built, self._schema), self._split_config, self._seed)
 
     def _rows_by_receiver(self, batch: SequenceBatch, receiver_ids: dict[str, pd.Index]) -> dict[str, np.ndarray]:
         """Map receiver-id splits onto sequence-batch row indices."""

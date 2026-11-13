@@ -1,0 +1,94 @@
+{
+  "command": "C:\\Users\\abya\\AppData\\Roaming\\uv\\python\\cpython-3.13-windows-x86_64-none\\python.exe -m lstm_autoencoder train-model --dataset banksim --nrows 100000 --window 10 --bottleneck --bottleneck-dim 16 --max-epochs 2",
+  "run_config": {
+    "artifact_version": "version_1_loss",
+    "pipeline_revision": "2026-11-10-role-aware-strict-step-rightpad-v1",
+    "selection_metric": "val_loss",
+    "architecture": "bottleneck_z16",
+    "window_length": 10,
+    "seeds": [
+      42
+    ],
+    "feature_columns": [
+      "amount",
+      "step_diff",
+      "log_amount_ratio",
+      "log_amount_ratio_cat",
+      "amount_cat_z",
+      "is_new_merchant",
+      "cat_es_barsandrestaurants",
+      "cat_es_contents",
+      "cat_es_fashion",
+      "cat_es_food",
+      "cat_es_health",
+      "cat_es_home",
+      "cat_es_hotelservices",
+      "cat_es_hyper",
+      "cat_es_leisure",
+      "cat_es_otherservices",
+      "cat_es_sportsandtoys",
+      "cat_es_tech",
+      "cat_es_transportation",
+      "cat_es_travel",
+      "cat_es_wellnessandbeauty"
+    ],
+    "model_config": {
+      "input_dim": 21,
+      "attention": false,
+      "bottleneck": true,
+      "attention_pooling": false,
+      "hidden_dim": 64,
+      "bottleneck_dim": 16,
+      "num_layers": 2,
+      "dropout": 0.1,
+      "decoder": "lstm",
+      "parameter_count": 125605
+    },
+    "train_config": {
+      "optimizer": "adam",
+      "batch_size": 16384,
+      "max_epochs": 2,
+      "learning_rate": 0.001,
+      "weight_decay": 1e-05,
+      "patience": 5,
+      "min_delta": 0.01,
+      "selection_metric": "val_loss",
+      "device": "cuda"
+    },
+    "checkpoints": [
+      "lstm_ae_w10_bottleneck_z16_seed42_best.pt"
+    ]
+  },
+  "training": {
+    "architecture": "bottleneck_z16",
+    "checkpoint_path": "C:\\Users\\abya\\python\\lstm-autoencoder\\artifacts\\model\\banksim\\version_1_loss\\lstm_ae_w10_bottleneck_z16_seed42_best.pt",
+    "window_length": 10,
+    "n_train_normal": 68741,
+    "n_val": 15169,
+    "n_test": 15002,
+    "best_epoch": 2,
+    "selection_metric": "val_loss",
+    "best_val_loss": 0.28636452555656433,
+    "best_val_auc": 0.9058685668708121,
+    "peak_val_auc": 0.9058685668708121,
+    "peak_val_auc_epoch": 2,
+    "test_auc": 0.899473380410501,
+    "test_ap": 0.11082851424448098,
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.3045519716903604,
+        "val_loss": 0.2969523072242737,
+        "val_auc": 0.9045460135417654
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.29405619721935616,
+        "val_loss": 0.28636452555656433,
+        "val_auc": 0.9058685668708121
+      }
+    ],
+    "test_recall_at_fpr_0.01": 0.15,
+    "test_recall_at_fpr_0.001": 0.0
+  }
+}

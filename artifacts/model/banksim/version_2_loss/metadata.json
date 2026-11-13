@@ -1,0 +1,63 @@
+{
+  "artifact_version": "version_2_loss",
+  "pipeline_revision": "2026-11-10-role-aware-strict-step-rightpad-v1",
+  "selection_metric": "val_loss",
+  "architecture": "bottleneck_z16",
+  "window_length": 10,
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "feature_columns": [
+    "amount",
+    "step_diff",
+    "log_amount_ratio",
+    "log_amount_ratio_cat",
+    "amount_cat_z",
+    "is_new_merchant",
+    "cat_es_barsandrestaurants",
+    "cat_es_contents",
+    "cat_es_fashion",
+    "cat_es_food",
+    "cat_es_health",
+    "cat_es_home",
+    "cat_es_hotelservices",
+    "cat_es_hyper",
+    "cat_es_leisure",
+    "cat_es_otherservices",
+    "cat_es_sportsandtoys",
+    "cat_es_tech",
+    "cat_es_transportation",
+    "cat_es_travel",
+    "cat_es_wellnessandbeauty"
+  ],
+  "model_config": {
+    "input_dim": 21,
+    "attention": false,
+    "bottleneck": true,
+    "attention_pooling": false,
+    "hidden_dim": 64,
+    "bottleneck_dim": 16,
+    "num_layers": 2,
+    "dropout": 0.1,
+    "decoder": "lstm",
+    "parameter_count": 125605
+  },
+  "train_config": {
+    "optimizer": "adam",
+    "batch_size": 16384,
+    "max_epochs": 50,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "patience": 5,
+    "min_delta": 0.01,
+    "selection_metric": "val_loss",
+    "device": "cuda"
+  },
+  "checkpoints": [
+    "lstm_ae_w10_bottleneck_z16_seed42_best.pt",
+    "lstm_ae_w10_bottleneck_z16_seed123_best.pt",
+    "lstm_ae_w10_bottleneck_z16_seed2026_best.pt"
+  ]
+}
